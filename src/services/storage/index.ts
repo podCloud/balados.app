@@ -1,0 +1,127 @@
+import Dexie, { type EntityTable } from "dexie";
+import type {
+  Subscription,
+  PlayStatus,
+  LocalEvent,
+  PodcastFeed,
+  AppSettings,
+} from "../../types";
+
+// Feed cache with expiration
+export interface FeedCache {
+  url: string;
+  feed: PodcastFeed;
+  cachedAt: number;
+}
+
+// Database schema
+class BaladosDatabase extends Dexie {
+  subscriptions!: EntityTable<Subscription, "url">;
+  playStatuses!: EntityTable<PlayStatus, "episodeId">;
+  events!: EntityTable<LocalEvent, "id">;
+  feedCache!: EntityTable<FeedCache, "url">;
+  settings!: EntityTable<AppSettings & { id: string }, "id">;
+
+  constructor() {
+    super("balados");
+
+    this.version(1).stores({
+      subscriptions: "url, addedAt",
+      playStatuses: "episodeId, feedUrl, updatedAt",
+      events: "++id, type, feedUrl, timestamp",
+      feedCache: "url, cachedAt",
+      settings: "id",
+    });
+  }
+}
+
+export const db = new BaladosDatabase();
+
+// Settings helpers
+const SETTINGS_ID = "app_settings";
+
+export const getSettings = async (): Promise<AppSettings> => {
+  const settings = await db.settings.get(SETTINGS_ID);
+  if (settings) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...rest } = settings;
+    return rest;
+  }
+  return {
+    locale: "fr",
+    proxies: [
+      {
+        url: "https://api.allorigins.win/raw?url=",
+        name: "AllOrigins",
+        enabled: true,
+        priority: 1,
+      },
+      {
+        url: "https://corsproxy.io/?",
+        name: "CORS Proxy",
+        enabled: true,
+        priority: 2,
+      },
+    ],
+  };
+};
+
+export const saveSettings = async (
+  settings: Partial<AppSettings>,
+): Promise<void> => {
+  const current = await getSettings();
+  await db.settings.put({ id: SETTINGS_ID, ...current, ...settings });
+};
+
+// Feed cache helpers
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+export const getCachedFeed = async (
+  url: string,
+): Promise<PodcastFeed | null> => {
+  const cached = await db.feedCache.get(url);
+  if (!cached) return null;
+
+  const isExpired = Date.now() - cached.cachedAt > CACHE_DURATION;
+  if (isExpired) {
+    await db.feedCache.delete(url);
+    return null;
+  }
+
+  return cached.feed;
+};
+
+export const cacheFeed = async (
+  url: string,
+  feed: PodcastFeed,
+): Promise<void> => {
+  await db.feedCache.put({
+    url,
+    feed,
+    cachedAt: Date.now(),
+  });
+};
+
+export const invalidateFeedCache = async (url: string): Promise<void> => {
+  await db.feedCache.delete(url);
+};
+
+// Migration helper for localStorage data
+export const migrateFromLocalStorage = async (): Promise<void> => {
+  const STORAGE_KEY = "podcast_subscriptions";
+  const stored = localStorage.getItem(STORAGE_KEY);
+
+  if (stored) {
+    try {
+      const subs = JSON.parse(stored) as Subscription[];
+      const existingCount = await db.subscriptions.count();
+
+      if (existingCount === 0 && subs.length > 0) {
+        await db.subscriptions.bulkPut(subs);
+        console.log(`Migrated ${subs.length} subscriptions from localStorage`);
+      }
+    } catch (e) {
+      console.error("Failed to migrate localStorage data:", e);
+    }
+  }
+};
