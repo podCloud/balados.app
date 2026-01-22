@@ -3,9 +3,9 @@
 ## Vue d'ensemble des phases
 
 ```
-Phase 1: Fondations          ████████░░░░░░░░░░░░
+Phase 1: Fondations          ████████████████░░░░  80%
 Phase 2: PWA & Offline       ░░░░░░░░░░░░░░░░░░░░
-Phase 3: Internationalisation░░░░░░░░░░░░░░░░░░░░
+Phase 3: Internationalisation████████████░░░░░░░░  60%
 Phase 4: Synchronisation     ░░░░░░░░░░░░░░░░░░░░
 Phase 5: Tendances           ░░░░░░░░░░░░░░░░░░░░
 ```
@@ -18,17 +18,17 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 1.1 Setup du projet
 
-- [ ] Configurer Vitest + Testing Library
-- [ ] Installer et configurer TanStack Query
-- [ ] Installer Dexie.js pour IndexedDB
-- [ ] Configurer react-i18next (structure de base)
-- [ ] Setup ESLint avec règles strictes
+- [x] Configurer Vitest + Testing Library
+- [x] Installer et configurer TanStack Query
+- [x] Installer Dexie.js pour IndexedDB
+- [x] Configurer react-i18next (structure de base)
+- [x] Setup ESLint avec règles strictes
 
 ### 1.2 Refactoring de App.tsx
 
-- [ ] Extraire les types dans `types/index.ts`
-- [ ] Créer le service de stockage (`services/storage/`)
-- [ ] Créer le service RSS (`services/rss/`)
+- [x] Extraire les types dans `types/index.ts`
+- [x] Créer le service de stockage (`services/storage/`)
+- [x] Créer le service RSS (`services/rss/`)
 - [ ] Extraire les composants:
   - [ ] `components/library/Library.tsx`
   - [ ] `components/library/SubscriptionItem.tsx`
@@ -40,14 +40,14 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 1.3 Gestion des proxies
 
-- [ ] Créer `ProxyManager` avec fallback
+- [x] Créer `ProxyManager` avec fallback
 - [ ] UI Settings pour gérer les proxies
 - [ ] Gestion des erreurs et retry
 
 ### 1.4 Stockage local persistant
 
-- [ ] Migration localStorage → IndexedDB
-- [ ] Schema Dexie pour toutes les entités
+- [ ] Migration localStorage -> IndexedDB
+- [x] Schema Dexie pour toutes les entités
 - [ ] Tests de persistence
 
 ### 1.5 Tests
@@ -106,15 +106,15 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 3.1 Setup i18n
 
-- [ ] Configurer i18next
-- [ ] Créer structure locales/
-- [ ] Language detector
+- [x] Configurer i18next
+- [x] Créer structure locales/
+- [x] Language detector
 
 ### 3.2 Extraction des textes
 
-- [ ] Extraire tous les textes FR dans fr.json
-- [ ] Créer traductions EN
-- [ ] Pluralisation
+- [x] Extraire tous les textes FR dans fr.json
+- [x] Créer traductions EN
+- [x] Pluralisation
 - [ ] Formatage dates/nombres
 
 ### 3.3 UI
