@@ -1,4 +1,44 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import {
+  Library as LibraryIcon,
+  Play,
+  Search,
+  Bug,
+  Plus,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  RefreshCw,
+  AlertTriangle,
+  Headphones,
+  Loader2,
+  Terminal,
+  AlertCircle,
+  Info,
+} from "lucide-react";
+
+// Types
+interface Episode {
+  title: string;
+  description: string;
+  pubDate: string;
+  enclosureUrl: string;
+  duration: string;
+  image: string;
+}
+
+interface PodcastFeed {
+  title: string;
+  description: string;
+  image: string;
+  items: Episode[];
+  url: string;
+}
+
+interface Subscription {
+  url: string;
+  addedAt: number;
+}
 
 // Debug logs storage
 type DebugLog = {
@@ -6,7 +46,7 @@ type DebugLog = {
   message: string;
   timestamp: string;
 };
-const debugLogs = [] as DebugLog[];
+const debugLogs: DebugLog[] = [];
 const debugListeners = new Set<(logs: DebugLog[]) => void>();
 
 const addDebugLog = (
@@ -21,7 +61,7 @@ const addDebugLog = (
     .join(" ");
 
   debugLogs.push({ type, message, timestamp });
-  if (debugLogs.length > 100) debugLogs.shift(); // Keep last 100 logs
+  if (debugLogs.length > 100) debugLogs.shift();
 
   debugListeners.forEach((listener) => listener([...debugLogs]));
 };
@@ -31,48 +71,57 @@ const originalLog = console.log;
 const originalError = console.error;
 const originalWarn = console.warn;
 
-console.log = (...args) => {
+console.log = (...args: unknown[]) => {
   originalLog(...args);
   addDebugLog("log", ...args);
 };
 
-console.error = (...args) => {
+console.error = (...args: unknown[]) => {
   originalError(...args);
   addDebugLog("error", ...args);
 };
 
-console.warn = (...args) => {
+console.warn = (...args: unknown[]) => {
   originalWarn(...args);
   addDebugLog("warn", ...args);
 };
 
 // Mock React Query - Simple cache implementation
-const queryCache = new Map();
+const queryCache = new Map<string, PodcastFeed>();
 
-const useQuery = (key, fetchFn, options = {}) => {
-  const [data, setData] = useState(null);
+interface QueryResult<T> {
+  data: T | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+}
+
+const useQuery = <T,>(
+  key: unknown[],
+  fetchFn: () => Promise<T>,
+): QueryResult<T> => {
+  const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
   const cacheKey = JSON.stringify(key);
 
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Check cache first
       if (queryCache.has(cacheKey)) {
         const cached = queryCache.get(cacheKey);
-        setData(cached);
+        setData(cached as T);
         setIsLoading(false);
         return;
       }
 
       const result = await fetchFn();
-      queryCache.set(cacheKey, result);
+      queryCache.set(cacheKey, result as PodcastFeed);
       setData(result);
     } catch (err) {
       console.error("Query error:", err);
-      setError(err);
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setIsLoading(false);
     }
@@ -80,6 +129,7 @@ const useQuery = (key, fetchFn, options = {}) => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey]);
 
   return { data, isLoading, error, refetch: fetchData };
@@ -88,16 +138,16 @@ const useQuery = (key, fetchFn, options = {}) => {
 // Utility functions for localStorage
 const STORAGE_KEY = "podcast_subscriptions";
 
-const getSubscriptions = () => {
+const getSubscriptions = (): Subscription[] => {
   const stored = localStorage.getItem(STORAGE_KEY);
   return stored ? JSON.parse(stored) : [];
 };
 
-const saveSubscriptions = (subs) => {
+const saveSubscriptions = (subs: Subscription[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(subs));
 };
 
-const getFeedCache = (url) => {
+const getFeedCache = (url: string): PodcastFeed | null => {
   const cached = localStorage.getItem(`feed_${url}`);
   if (!cached) return null;
   const data = JSON.parse(cached);
@@ -105,7 +155,7 @@ const getFeedCache = (url) => {
   return isExpired ? null : data.feed;
 };
 
-const saveFeedCache = (url, feed) => {
+const saveFeedCache = (url: string, feed: PodcastFeed) => {
   localStorage.setItem(
     `feed_${url}`,
     JSON.stringify({
@@ -116,75 +166,74 @@ const saveFeedCache = (url, feed) => {
 };
 
 // Parse RSS feed
-const parseRSS = async (url) => {
+const parseRSS = async (url: string): Promise<PodcastFeed> => {
   const cached = getFeedCache(url);
   if (cached) return cached;
 
+  let text: string | undefined;
+
   try {
-    let response;
-    let text;
-
-    // Try direct fetch first
-    try {
-      console.log(`Tentative directe sans proxy: ${url}`);
-      response = await fetch(url);
-      if (response.ok) {
-        text = await response.text();
-        console.log("✅ Succès en direct sans proxy!");
-      }
-    } catch (e) {
-      console.log("❌ Échec en direct:", e.message);
+    console.log(`Tentative directe sans proxy: ${url}`);
+    const response = await fetch(url);
+    if (response.ok) {
+      text = await response.text();
+      console.log("Succes en direct sans proxy!");
     }
+  } catch (e) {
+    const error = e as Error;
+    console.log("Echec en direct:", error.message);
+  }
 
-    // If direct fetch failed, try CORS proxies
-    if (!text) {
-      const proxies = [
-        "https://api.allorigins.win/raw?url=",
-        "https://corsproxy.io/?",
-        "https://cors-anywhere.herokuapp.com/",
-      ];
+  if (!text) {
+    const proxies = [
+      "https://api.allorigins.win/raw?url=",
+      "https://corsproxy.io/?",
+      "https://cors-anywhere.herokuapp.com/",
+    ];
 
-      for (const proxy of proxies) {
-        try {
-          console.log(`Tentative avec proxy ${proxy}`);
-          response = await fetch(proxy + encodeURIComponent(url));
-          if (response.ok) {
-            text = await response.text();
-            console.log("✅ Succès avec", proxy);
-            break;
-          }
-        } catch (e) {
-          console.log(`❌ Échec avec ${proxy}:`, e.message);
-          continue;
+    for (const proxy of proxies) {
+      try {
+        console.log(`Tentative avec proxy ${proxy}`);
+        const response = await fetch(proxy + encodeURIComponent(url));
+        if (response.ok) {
+          text = await response.text();
+          console.log("Succes avec", proxy);
+          break;
         }
+      } catch (e) {
+        const error = e as Error;
+        console.log(`Echec avec ${proxy}:`, error.message);
+        continue;
       }
     }
+  }
 
-    if (!text) {
-      throw new Error("Impossible de récupérer le flux RSS");
-    }
+  if (!text) {
+    throw new Error("Impossible de recuperer le flux RSS");
+  }
 
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, "text/xml");
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(text, "text/xml");
 
-    const getElementText = (parent, tag) => {
-      const el = parent.querySelector(tag);
-      return el ? el.textContent : "";
-    };
+  const getElementText = (parent: Element, tag: string): string => {
+    const el = parent.querySelector(tag);
+    return el?.textContent || "";
+  };
 
-    const channel = xml.querySelector("channel");
-    if (!channel) {
-      throw new Error("Format RSS invalide");
-    }
+  const channel = xml.querySelector("channel");
+  if (!channel) {
+    throw new Error("Format RSS invalide");
+  }
 
-    const title = getElementText(channel, "title");
-    const description = getElementText(channel, "description");
-    const image =
-      channel.querySelector("image url")?.textContent ||
-      channel.querySelector("itunes\\:image")?.getAttribute("href") ||
-      "";
+  const title = getElementText(channel, "title");
+  const description = getElementText(channel, "description");
+  const image =
+    channel.querySelector("image url")?.textContent ||
+    channel.querySelector("itunes\\:image")?.getAttribute("href") ||
+    "";
 
-    const items = Array.from(xml.querySelectorAll("item")).map((item) => {
+  const items: Episode[] = Array.from(xml.querySelectorAll("item")).map(
+    (item) => {
       const enclosure = item.querySelector("enclosure");
       const duration = getElementText(item, "itunes\\:duration");
       const itemImage =
@@ -200,38 +249,43 @@ const parseRSS = async (url) => {
         duration: duration || "",
         image: itemImage,
       };
-    });
+    },
+  );
 
-    const feed = { title, description, image, items, url };
-    saveFeedCache(url, feed);
-    console.log("Feed parsé avec succès:", title, items.length, "épisodes");
-    return feed;
-  } catch (error) {
-    console.error("Erreur lors du parsing RSS:", error);
-    throw error;
-  }
+  const feed: PodcastFeed = { title, description, image, items, url };
+  saveFeedCache(url, feed);
+  console.log("Feed parse avec succes:", title, items.length, "episodes");
+  return feed;
 };
 
 // Library: List of subscriptions
-const Library = ({ onNavigate }) => {
-  // Initialize with default podcast if no subscriptions exist
-  useEffect(() => {
-    const subs = getSubscriptions();
-    if (subs.length === 0) {
-      const defaultSub = {
-        url: "https://decouvrez.lepodcast.fr/rss",
-        addedAt: Date.now(),
-      };
-      saveSubscriptions([defaultSub]);
-      setSubscriptions([defaultSub]);
-    }
-  }, []);
+interface LibraryProps {
+  onNavigate: (view: string, feedUrl?: string | null) => void;
+}
 
-  const [subscriptions, setSubscriptions] = useState(getSubscriptions());
+const initializeSubscriptions = (): Subscription[] => {
+  const subs = getSubscriptions();
+  if (subs.length === 0) {
+    const defaultSub: Subscription = {
+      url: "https://decouvrez.lepodcast.fr/rss",
+      addedAt: Date.now(),
+    };
+    saveSubscriptions([defaultSub]);
+    return [defaultSub];
+  }
+  return subs;
+};
+
+const Library = ({ onNavigate }: LibraryProps) => {
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(
+    initializeSubscriptions,
+  );
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFeedUrl, setNewFeedUrl] = useState("");
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = (
+    e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent,
+  ) => {
     if (e) e.preventDefault();
     if (!newFeedUrl.trim()) return;
 
@@ -252,9 +306,9 @@ const Library = ({ onNavigate }) => {
           <h2 className="text-base font-semibold text-gray-900">Podcasts</h2>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="text-blue-500 text-2xl font-light w-8 h-8 flex items-center justify-center"
+            className="text-blue-500 w-8 h-8 flex items-center justify-center"
           >
-            {showAddForm ? "×" : "+"}
+            {showAddForm ? <X size={24} /> : <Plus size={24} />}
           </button>
         </div>
 
@@ -279,7 +333,7 @@ const Library = ({ onNavigate }) => {
               S'abonner
             </button>
             <p className="text-xs text-gray-500 text-center">
-              💡 Consultez l'onglet Debug 🐛 pour voir les logs
+              Consultez l'onglet Debug pour voir les logs
             </p>
           </div>
         )}
@@ -287,7 +341,7 @@ const Library = ({ onNavigate }) => {
         {subscriptions.length === 0 ? (
           <div className="flex items-center justify-center h-64 text-gray-400">
             <div className="text-center">
-              <div className="text-5xl mb-3">🎧</div>
+              <Headphones size={48} className="mx-auto mb-3" />
               <p className="text-sm">Aucun podcast</p>
             </div>
           </div>
@@ -307,15 +361,21 @@ const Library = ({ onNavigate }) => {
   );
 };
 
-const SubscriptionItem = ({ url, onNavigate }) => {
-  const {
-    data: feed,
-    isLoading,
-    error,
-  } = useQuery(["feed", url], () => parseRSS(url));
+interface SubscriptionItemProps {
+  url: string;
+  onNavigate: (view: string, feedUrl?: string | null) => void;
+}
+
+const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => {
+  const { data: feed, isLoading, error } = useQuery<PodcastFeed>(
+    ["feed", url],
+    () => parseRSS(url),
+  );
 
   const handleUnsubscribe = () => {
-    if (window.confirm(`Se désabonner de "${feed?.title || "ce podcast"}" ?`)) {
+    if (
+      window.confirm(`Se desabonner de "${feed?.title || "ce podcast"}" ?`)
+    ) {
       const subs = getSubscriptions().filter((s) => s.url !== url);
       saveSubscriptions(subs);
       localStorage.removeItem(`feed_${url}`);
@@ -324,20 +384,19 @@ const SubscriptionItem = ({ url, onNavigate }) => {
     }
   };
 
-  // Always display the item, even while loading
   const displayTitle =
     feed?.title ||
     url.replace("https://", "").replace("http://", "").split("/")[0];
   const displayImage =
     feed?.image ||
-    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="56" height="56"%3E%3Crect fill="%23ddd" width="56" height="56"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999" font-size="24"%3E🎧%3C/text%3E%3C/svg%3E';
+    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="56" height="56"%3E%3Crect fill="%23ddd" width="56" height="56"/%3E%3C/svg%3E';
   const episodeCount = feed?.items?.length || 0;
 
   if (error) {
     return (
       <div className="flex items-center px-4 py-3 bg-red-50 border-b border-red-100">
-        <div className="w-14 h-14 bg-red-200 rounded-lg flex items-center justify-center text-2xl">
-          ⚠️
+        <div className="w-14 h-14 bg-red-200 rounded-lg flex items-center justify-center">
+          <AlertTriangle size={24} className="text-red-600" />
         </div>
         <div className="ml-3 flex-1 min-w-0">
           <div className="text-sm font-medium text-red-900 truncate">
@@ -347,9 +406,9 @@ const SubscriptionItem = ({ url, onNavigate }) => {
         </div>
         <button
           onClick={handleUnsubscribe}
-          className="ml-2 text-red-500 text-xl px-2"
+          className="ml-2 text-red-500 px-2"
         >
-          ×
+          <X size={20} />
         </button>
       </div>
     );
@@ -369,7 +428,7 @@ const SubscriptionItem = ({ url, onNavigate }) => {
         />
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 rounded-lg">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <Loader2 size={24} className="text-blue-500 animate-spin" />
           </div>
         )}
       </div>
@@ -382,23 +441,28 @@ const SubscriptionItem = ({ url, onNavigate }) => {
         </div>
         <div className="text-xs text-gray-500 mt-0.5">
           {isLoading
-            ? "Récupération des épisodes..."
-            : `${episodeCount} épisode${episodeCount > 1 ? "s" : ""}`}
+            ? "Recuperation des episodes..."
+            : `${episodeCount} episode${episodeCount > 1 ? "s" : ""}`}
         </div>
       </div>
-      {!isLoading && <div className="text-gray-400 text-xl ml-2">›</div>}
+      {!isLoading && <ChevronRight size={20} className="text-gray-400 ml-2" />}
     </button>
   );
 };
 
 // Podcast Detail: List of episodes
-const PodcastDetail = ({ feedUrl, onNavigate }) => {
+interface PodcastDetailProps {
+  feedUrl: string;
+  onNavigate: (view: string, feedUrl?: string | null) => void;
+}
+
+const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
   const {
     data: feed,
     isLoading,
     error,
     refetch,
-  } = useQuery(["feed", feedUrl], () => parseRSS(feedUrl));
+  } = useQuery<PodcastFeed>(["feed", feedUrl], () => parseRSS(feedUrl));
 
   const handleRefresh = () => {
     localStorage.removeItem(`feed_${feedUrl}`);
@@ -410,7 +474,7 @@ const PodcastDetail = ({ feedUrl, onNavigate }) => {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="text-5xl mb-4 animate-bounce">🎧</div>
+          <Loader2 size={48} className="mx-auto mb-4 text-blue-500 animate-spin" />
           <div className="text-gray-500 text-sm">Chargement...</div>
         </div>
       </div>
@@ -425,13 +489,13 @@ const PodcastDetail = ({ feedUrl, onNavigate }) => {
             onClick={() => onNavigate("library")}
             className="text-white text-base flex items-center gap-1"
           >
-            <span className="text-xl">‹</span>
-            <span>Bibliothèque</span>
+            <ChevronLeft size={20} />
+            <span>Bibliotheque</span>
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
-            <div className="text-5xl mb-4">⚠️</div>
+            <AlertTriangle size={48} className="mx-auto mb-4 text-orange-500" />
             <h2 className="text-lg font-semibold text-gray-700 mb-2">
               Erreur de chargement
             </h2>
@@ -440,9 +504,10 @@ const PodcastDetail = ({ feedUrl, onNavigate }) => {
             </p>
             <button
               onClick={handleRefresh}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2"
             >
-              Réessayer
+              <RefreshCw size={16} />
+              Reessayer
             </button>
           </div>
         </div>
@@ -457,11 +522,15 @@ const PodcastDetail = ({ feedUrl, onNavigate }) => {
           onClick={() => onNavigate("library")}
           className="text-white text-base flex items-center gap-1"
         >
-          <span className="text-xl">‹</span>
-          <span>Bibliothèque</span>
+          <ChevronLeft size={20} />
+          <span>Bibliotheque</span>
         </button>
-        <button onClick={handleRefresh} className="ml-auto text-white text-sm">
-          ↻ MAJ
+        <button
+          onClick={handleRefresh}
+          className="ml-auto text-white text-sm flex items-center gap-1"
+        >
+          <RefreshCw size={14} />
+          MAJ
         </button>
       </div>
 
@@ -520,9 +589,10 @@ const PodcastDetail = ({ feedUrl, onNavigate }) => {
                   )}
                 </div>
               </div>
-              <div className="text-gray-400 text-xl flex-shrink-0 self-center">
-                ›
-              </div>
+              <ChevronRight
+                size={20}
+                className="text-gray-400 flex-shrink-0 self-center"
+              />
             </div>
           </button>
         ))}
@@ -536,9 +606,9 @@ const Player = () => {
   return (
     <div className="h-full pb-16 flex items-center justify-center bg-white">
       <div className="text-center">
-        <div className="text-6xl mb-4">▶️</div>
+        <Play size={64} className="mx-auto mb-4 text-gray-300" />
         <h2 className="text-xl font-semibold text-gray-700 mb-2">Lecteur</h2>
-        <p className="text-gray-400 text-sm">Bientôt disponible</p>
+        <p className="text-gray-400 text-sm">Bientot disponible</p>
       </div>
     </div>
   );
@@ -549,9 +619,9 @@ const Explorer = () => {
   return (
     <div className="h-full pb-16 flex items-center justify-center bg-white">
       <div className="text-center">
-        <div className="text-6xl mb-4">🔍</div>
+        <Search size={64} className="mx-auto mb-4 text-gray-300" />
         <h2 className="text-xl font-semibold text-gray-700 mb-2">Explorer</h2>
-        <p className="text-gray-400 text-sm">Bientôt disponible</p>
+        <p className="text-gray-400 text-sm">Bientot disponible</p>
       </div>
     </div>
   );
@@ -559,12 +629,14 @@ const Explorer = () => {
 
 // Debug console
 const Debug = () => {
-  const [logs, setLogs] = useState([...debugLogs]);
+  const [logs, setLogs] = useState<DebugLog[]>([...debugLogs]);
 
   useEffect(() => {
-    const listener = (newLogs) => setLogs(newLogs);
+    const listener = (newLogs: DebugLog[]) => setLogs(newLogs);
     debugListeners.add(listener);
-    return () => debugListeners.delete(listener);
+    return () => {
+      debugListeners.delete(listener);
+    };
   }, []);
 
   const clearLogs = () => {
@@ -572,7 +644,7 @@ const Debug = () => {
     setLogs([]);
   };
 
-  const getLogColor = (type) => {
+  const getLogColor = (type: DebugLog["type"]) => {
     switch (type) {
       case "error":
         return "text-red-600 bg-red-50";
@@ -583,14 +655,14 @@ const Debug = () => {
     }
   };
 
-  const getLogIcon = (type) => {
+  const getLogIcon = (type: DebugLog["type"]) => {
     switch (type) {
       case "error":
-        return "❌";
+        return <AlertCircle size={14} className="text-red-500" />;
       case "warn":
-        return "⚠️";
+        return <AlertTriangle size={14} className="text-orange-500" />;
       default:
-        return "📝";
+        return <Info size={14} className="text-blue-500" />;
     }
   };
 
@@ -609,7 +681,7 @@ const Debug = () => {
       <div className="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-xs">
         {logs.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            <div className="text-3xl mb-2">🐛</div>
+            <Terminal size={32} className="mx-auto mb-2" />
             <p>Aucun log pour le moment</p>
           </div>
         ) : (
@@ -619,7 +691,7 @@ const Debug = () => {
               className={`p-2 rounded border ${getLogColor(log.type)} border-gray-700`}
             >
               <div className="flex items-start gap-2">
-                <span className="flex-shrink-0">{getLogIcon(log.type)}</span>
+                <span className="flex-shrink-0 mt-0.5">{getLogIcon(log.type)}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-gray-500 text-[10px] mb-1">
                     {log.timestamp}
@@ -636,7 +708,7 @@ const Debug = () => {
 
       <div className="bg-gray-800 px-4 py-2 border-t border-gray-700">
         <div className="text-xs text-gray-400 text-center">
-          {logs.length} log{logs.length > 1 ? "s" : ""} enregistré
+          {logs.length} log{logs.length > 1 ? "s" : ""} enregistre
           {logs.length > 1 ? "s" : ""}
         </div>
       </div>
@@ -645,29 +717,37 @@ const Debug = () => {
 };
 
 // Tab Bar
-const TabBar = ({ activeTab, onTabChange }) => {
+interface TabBarProps {
+  activeTab: string;
+  onTabChange: (tabId: string) => void;
+}
+
+const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
   const tabs = [
-    { id: "library", label: "Bibliothèque", icon: "📚" },
-    { id: "player", label: "Lecteur", icon: "▶️" },
-    { id: "explorer", label: "Explorer", icon: "🔍" },
-    { id: "debug", label: "Debug", icon: "🐛" },
+    { id: "library", label: "Bibliotheque", icon: LibraryIcon },
+    { id: "player", label: "Lecteur", icon: Play },
+    { id: "explorer", label: "Explorer", icon: Search },
+    { id: "debug", label: "Debug", icon: Bug },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-inset-bottom">
       <div className="max-w-md mx-auto flex">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`flex-1 py-2 flex flex-col items-center gap-1 transition-colors ${
-              activeTab === tab.id ? "text-blue-500" : "text-gray-400"
-            }`}
-          >
-            <span className="text-2xl">{tab.icon}</span>
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`flex-1 py-2 flex flex-col items-center gap-1 transition-colors ${
+                activeTab === tab.id ? "text-blue-500" : "text-gray-400"
+              }`}
+            >
+              <Icon size={24} />
+              <span className="text-xs font-medium">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -677,14 +757,14 @@ const TabBar = ({ activeTab, onTabChange }) => {
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState("library");
   const [currentView, setCurrentView] = useState("library");
-  const [selectedFeedUrl, setSelectedFeedUrl] = useState(null);
+  const [selectedFeedUrl, setSelectedFeedUrl] = useState<string | null>(null);
 
-  const handleNavigate = (view, feedUrl = null) => {
+  const handleNavigate = (view: string, feedUrl: string | null = null) => {
     setCurrentView(view);
     setSelectedFeedUrl(feedUrl);
   };
 
-  const handleTabChange = (tabId) => {
+  const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     setCurrentView(tabId);
     setSelectedFeedUrl(null);
@@ -721,8 +801,8 @@ const AppContent = () => {
 
 const App = () => {
   useEffect(() => {
-    console.log("🎧 iPod Podcast Player démarré");
-    console.log("📱 Consultez l'onglet Debug pour voir les logs");
+    console.log("balados.app demarre");
+    console.log("Consultez l'onglet Debug pour voir les logs");
   }, []);
 
   return <AppContent />;
