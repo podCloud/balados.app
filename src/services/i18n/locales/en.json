@@ -1,0 +1,49 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "confirm": "Confirm"
+  },
+  "library": {
+    "title": "Podcasts",
+    "empty": "No podcasts",
+    "subscribe": "Subscribe",
+    "unsubscribe": "Unsubscribe",
+    "unsubscribeConfirm": "Unsubscribe from \"{{title}}\"?",
+    "feedUrl": "RSS feed URL",
+    "episodeCount": "{{count}} episode",
+    "episodeCount_other": "{{count}} episodes",
+    "loadingEpisodes": "Fetching episodes...",
+    "loadError": "Loading error"
+  },
+  "podcast": {
+    "backToLibrary": "Library",
+    "refresh": "Refresh",
+    "loadError": "Unable to load this podcast"
+  },
+  "player": {
+    "title": "Player",
+    "comingSoon": "Coming soon"
+  },
+  "explorer": {
+    "title": "Explore",
+    "comingSoon": "Coming soon"
+  },
+  "debug": {
+    "title": "Debug Console",
+    "clear": "Clear",
+    "noLogs": "No logs yet",
+    "logCount": "{{count}} log recorded",
+    "logCount_other": "{{count}} logs recorded"
+  },
+  "tabs": {
+    "library": "Library",
+    "player": "Player",
+    "explorer": "Explore",
+    "debug": "Debug"
+  }
+}

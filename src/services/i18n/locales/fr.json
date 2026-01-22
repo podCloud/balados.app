@@ -1,0 +1,49 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "confirm": "Confirmer"
+  },
+  "library": {
+    "title": "Podcasts",
+    "empty": "Aucun podcast",
+    "subscribe": "S'abonner",
+    "unsubscribe": "Se désabonner",
+    "unsubscribeConfirm": "Se désabonner de \"{{title}}\" ?",
+    "feedUrl": "URL du flux RSS",
+    "episodeCount": "{{count}} épisode",
+    "episodeCount_other": "{{count}} épisodes",
+    "loadingEpisodes": "Récupération des épisodes...",
+    "loadError": "Erreur de chargement"
+  },
+  "podcast": {
+    "backToLibrary": "Bibliothèque",
+    "refresh": "MAJ",
+    "loadError": "Impossible de charger ce podcast"
+  },
+  "player": {
+    "title": "Lecteur",
+    "comingSoon": "Bientôt disponible"
+  },
+  "explorer": {
+    "title": "Explorer",
+    "comingSoon": "Bientôt disponible"
+  },
+  "debug": {
+    "title": "Console Debug",
+    "clear": "Effacer",
+    "noLogs": "Aucun log pour le moment",
+    "logCount": "{{count}} log enregistré",
+    "logCount_other": "{{count}} logs enregistrés"
+  },
+  "tabs": {
+    "library": "Bibliothèque",
+    "player": "Lecteur",
+    "explorer": "Explorer",
+    "debug": "Debug"
+  }
+}
