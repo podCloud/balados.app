@@ -6,6 +6,7 @@ import { EpisodePlayer } from "./components/player/EpisodePlayer";
 import { MiniPlayer } from "./components/player/MiniPlayer";
 import { Explorer } from "./components/explorer/Explorer";
 import { Debug } from "./components/debug/Debug";
+import { Settings } from "./components/settings/Settings";
 import { TabBar } from "./components/ui/TabBar";
 import { OfflineBanner } from "./components/ui/OfflineBanner";
 import { PlayerProvider, usePlayer } from "./contexts";
@@ -52,6 +53,10 @@ const AppContent = () => {
   };
 
   const renderContent = () => {
+    if (currentView === "settings") {
+      return <Settings onBack={() => handleNavigate("library")} />;
+    }
+
     if (currentView === "podcast" && selectedFeedUrl) {
       return (
         <PodcastDetail feedUrl={selectedFeedUrl} onNavigate={handleNavigate} />

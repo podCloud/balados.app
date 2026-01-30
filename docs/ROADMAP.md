@@ -5,7 +5,7 @@
 ```
 Phase 1: Fondations          ████████████████████  100% ✓
 Phase 2: PWA & Offline       ████████████░░░░░░░░  60%
-Phase 3: Internationalisation████████████████░░░░  80%
+Phase 3: Internationalisation████████████████████  100% ✓
 Phase 4: Synchronisation     ░░░░░░░░░░░░░░░░░░░░
 Phase 5: Tendances           ░░░░░░░░░░░░░░░░░░░░
 ```
@@ -123,8 +123,8 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 3.3 UI
 
-- [ ] Sélecteur de langue dans Settings
-- [ ] Persistence du choix
+- [x] Sélecteur de langue dans Settings
+- [x] Persistence du choix (localStorage)
 - [ ] Tests multilingues
 
 ---

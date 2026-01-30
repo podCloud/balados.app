@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useTranslation } from "react-i18next";
-import { Plus, X, Headphones } from "lucide-react";
+import { Plus, X, Headphones, Settings } from "lucide-react";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
 import { SubscriptionItem } from "./SubscriptionItem";
@@ -45,6 +45,12 @@ export const Library = ({ onNavigate }: LibraryProps) => {
     <div className="h-full pb-16">
       <div className="bg-white h-full">
         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200">
+          <button
+            onClick={() => onNavigate("settings")}
+            className="text-gray-500 w-8 h-8 flex items-center justify-center"
+          >
+            <Settings size={22} />
+          </button>
           <h2 className="text-base font-semibold text-gray-900">
             {t("library.title")}
           </h2>

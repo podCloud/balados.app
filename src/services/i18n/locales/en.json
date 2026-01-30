@@ -50,5 +50,13 @@
     "player": "Player",
     "explorer": "Explore",
     "debug": "Debug"
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "language": "Language",
+    "about": "About",
+    "description": "French podcast player, offline-first",
+    "version": "Version"
   }
 }

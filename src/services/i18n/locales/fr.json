@@ -50,5 +50,13 @@
     "player": "Lecteur",
     "explorer": "Explorer",
     "debug": "Debug"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "back": "Retour",
+    "language": "Langue",
+    "about": "À propos",
+    "description": "Lecteur de podcasts français, offline-first",
+    "version": "Version"
   }
 }
