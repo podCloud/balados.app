@@ -3,9 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Library } from "./components/library/Library";
 import { PodcastDetail } from "./components/podcast/PodcastDetail";
 import { EpisodePlayer } from "./components/player/EpisodePlayer";
+import { MiniPlayer } from "./components/player/MiniPlayer";
 import { Explorer } from "./components/explorer/Explorer";
 import { Debug } from "./components/debug/Debug";
 import { TabBar } from "./components/ui/TabBar";
+import { PlayerProvider, usePlayer } from "./contexts/PlayerContext";
 import { initDebugConsole } from "./services/debug";
 import { migrateFromLocalStorage } from "./services/storage";
 import type { TabId } from "./types";
@@ -69,9 +71,17 @@ const AppContent = () => {
     }
   };
 
+  const { currentEpisode } = usePlayer();
+  const showMiniPlayer = currentEpisode && activeTab !== "player" && currentView !== "player";
+
   return (
     <div className="h-screen bg-gray-50 flex flex-col max-w-md mx-auto">
-      <div className="flex-1 overflow-hidden">{renderContent()}</div>
+      <div className={`flex-1 overflow-hidden ${showMiniPlayer ? "pb-14" : ""}`}>
+        {renderContent()}
+      </div>
+      {showMiniPlayer && (
+        <MiniPlayer onExpand={() => handleTabChange("player")} />
+      )}
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
@@ -80,7 +90,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <PlayerProvider>
+        <AppContent />
+      </PlayerProvider>
     </QueryClientProvider>
   );
 };

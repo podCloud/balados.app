@@ -3,9 +3,9 @@
 ## Vue d'ensemble des phases
 
 ```
-Phase 1: Fondations          ████████████████░░░░  80%
+Phase 1: Fondations          ████████████████████  100% ✓
 Phase 2: PWA & Offline       ░░░░░░░░░░░░░░░░░░░░
-Phase 3: Internationalisation████████████░░░░░░░░  60%
+Phase 3: Internationalisation████████████████░░░░  80%
 Phase 4: Synchronisation     ░░░░░░░░░░░░░░░░░░░░
 Phase 5: Tendances           ░░░░░░░░░░░░░░░░░░░░
 ```
@@ -29,26 +29,30 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 - [x] Extraire les types dans `types/index.ts`
 - [x] Créer le service de stockage (`services/storage/`)
 - [x] Créer le service RSS (`services/rss/`)
-- [ ] Extraire les composants:
-  - [ ] `components/library/Library.tsx`
-  - [ ] `components/library/SubscriptionItem.tsx`
-  - [ ] `components/podcast/PodcastDetail.tsx`
-  - [ ] `components/podcast/EpisodeList.tsx`
-  - [ ] `components/player/EpisodePlayer.tsx`
-  - [ ] `components/player/PlayerControls.tsx`
-- [ ] Migrer vers TanStack Query
+- [x] Extraire les composants:
+  - [x] `components/library/Library.tsx`
+  - [x] `components/library/SubscriptionItem.tsx`
+  - [x] `components/podcast/PodcastDetail.tsx`
+  - [x] `components/podcast/EpisodeList.tsx`
+  - [x] `components/player/EpisodePlayer.tsx`
+  - [x] `components/player/PlayerControls.tsx`
+  - [x] `components/player/MiniPlayer.tsx`
+  - [x] `components/explorer/Explorer.tsx` (iframe vers sync.balados.app)
+- [x] Créer PlayerContext pour la gestion globale du lecteur
+- [x] Migrer vers TanStack Query
 
 ### 1.3 Gestion des proxies
 
 - [x] Créer `ProxyManager` avec fallback
-- [ ] UI Settings pour gérer les proxies
-- [ ] Gestion des erreurs et retry
+- [x] Gestion des erreurs et retry
+- [ ] UI Settings pour gérer les proxies (déplacé vers Phase 3)
 
 ### 1.4 Stockage local persistant
 
-- [ ] Migration localStorage -> IndexedDB
+- [x] Migration localStorage -> IndexedDB
 - [x] Schema Dexie pour toutes les entités
-- [ ] Tests de persistence
+- [x] Sauvegarde/restauration des positions de lecture
+- [ ] Tests de persistence (déplacé vers Phase 2)
 
 ### 1.5 Tests
 

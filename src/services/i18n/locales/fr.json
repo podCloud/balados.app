@@ -27,7 +27,11 @@
   },
   "player": {
     "title": "Lecteur",
-    "comingSoon": "Bientôt disponible"
+    "selectEpisode": "Sélectionnez un épisode pour commencer",
+    "play": "Lecture",
+    "pause": "Pause",
+    "skipForward": "Avancer de 30 secondes",
+    "skipBackward": "Reculer de 15 secondes"
   },
   "explorer": {
     "title": "Explorer",

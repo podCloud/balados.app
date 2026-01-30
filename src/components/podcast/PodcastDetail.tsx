@@ -123,7 +123,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <EpisodeList episodes={feed.items} />
+        <EpisodeList episodes={feed.items} feedUrl={feedUrl} />
       </div>
     </div>
   );

@@ -27,7 +27,11 @@
   },
   "player": {
     "title": "Player",
-    "comingSoon": "Coming soon"
+    "selectEpisode": "Select an episode to start",
+    "play": "Play",
+    "pause": "Pause",
+    "skipForward": "Skip forward 30 seconds",
+    "skipBackward": "Skip backward 15 seconds"
   },
   "explorer": {
     "title": "Explore",
