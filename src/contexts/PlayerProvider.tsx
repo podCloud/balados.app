@@ -67,6 +67,12 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     // Save current position before switching
     await savePosition();
 
+    // Revoke previous blob URL to prevent memory leak
+    const prevSrc = audioRef.current.src;
+    if (prevSrc?.startsWith('blob:')) {
+      URL.revokeObjectURL(prevSrc);
+    }
+
     setState((prev) => ({
       ...prev,
       currentEpisode: episode,

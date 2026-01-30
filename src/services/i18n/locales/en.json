@@ -59,6 +59,12 @@
     "description": "French podcast player, offline-first",
     "version": "Version"
   },
+  "error": {
+    "title": "Oops! Something went wrong",
+    "description": "The app encountered an unexpected error. Try reloading the page.",
+    "reload": "Reload",
+    "details": "Technical details"
+  },
   "downloads": {
     "storage": "Storage",
     "download": "Download",

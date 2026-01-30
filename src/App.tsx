@@ -9,6 +9,7 @@ import { Debug } from "./components/debug/Debug";
 import { Settings } from "./components/settings/Settings";
 import { TabBar } from "./components/ui/TabBar";
 import { OfflineBanner } from "./components/ui/OfflineBanner";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { PlayerProvider, usePlayer, DownloadProvider } from "./contexts";
 import { initDebugConsole } from "./services/debug";
 import { migrateFromLocalStorage } from "./services/storage";
@@ -96,13 +97,15 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <DownloadProvider>
-        <PlayerProvider>
-          <AppContent />
-        </PlayerProvider>
-      </DownloadProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <DownloadProvider>
+          <PlayerProvider>
+            <AppContent />
+          </PlayerProvider>
+        </DownloadProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

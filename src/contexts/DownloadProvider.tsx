@@ -60,6 +60,9 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
     async (episode: Episode, feedUrl: string): Promise<void> => {
       const episodeId = getEpisodeId(episode);
 
+      // Prevent duplicate downloads - check if already downloading
+      if (progress.has(episodeId)) return;
+
       // Set initial progress
       setProgress((prev) => {
         const next = new Map(prev);
