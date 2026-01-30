@@ -9,7 +9,7 @@ import { Debug } from "./components/debug/Debug";
 import { Settings } from "./components/settings/Settings";
 import { TabBar } from "./components/ui/TabBar";
 import { OfflineBanner } from "./components/ui/OfflineBanner";
-import { PlayerProvider, usePlayer } from "./contexts";
+import { PlayerProvider, usePlayer, DownloadProvider } from "./contexts";
 import { initDebugConsole } from "./services/debug";
 import { migrateFromLocalStorage } from "./services/storage";
 import type { TabId } from "./types";
@@ -97,9 +97,11 @@ const AppContent = () => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <PlayerProvider>
-        <AppContent />
-      </PlayerProvider>
+      <DownloadProvider>
+        <PlayerProvider>
+          <AppContent />
+        </PlayerProvider>
+      </DownloadProvider>
     </QueryClientProvider>
   );
 };

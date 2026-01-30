@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Play, Pause } from "lucide-react";
 import { usePlayer } from "../../contexts";
+import { DownloadButton } from "../ui/DownloadButton";
 import type { Episode } from "../../types";
 
 interface EpisodeListProps {
@@ -89,10 +90,10 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
                   )}
                 </div>
               </div>
-              <ChevronRight
-                size={20}
-                className="text-gray-400 flex-shrink-0 self-center"
-              />
+              <div className="flex items-center gap-1 flex-shrink-0 self-center">
+                <DownloadButton episode={episode} feedUrl={feedUrl} />
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
             </div>
           </button>
         );

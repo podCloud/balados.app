@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
 import { usePlayer } from "../../contexts";
 import { PlayerControls } from "./PlayerControls";
+import { DownloadButton } from "../ui/DownloadButton";
 
 export const EpisodePlayer = () => {
   const { t } = useTranslation();
-  const { currentEpisode } = usePlayer();
+  const { currentEpisode, feedUrl } = usePlayer();
 
   if (!currentEpisode) {
     return (
@@ -24,7 +25,7 @@ export const EpisodePlayer = () => {
   return (
     <div className="h-full pb-16 flex flex-col bg-white">
       {/* Episode artwork */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-8">
         <img
           src={
             currentEpisode.image ||
@@ -33,6 +34,16 @@ export const EpisodePlayer = () => {
           alt={currentEpisode.title}
           className="w-full max-w-[280px] aspect-square rounded-xl shadow-lg"
         />
+        {feedUrl && (
+          <div className="mt-4">
+            <DownloadButton
+              episode={currentEpisode}
+              feedUrl={feedUrl}
+              size="md"
+              showLabel
+            />
+          </div>
+        )}
       </div>
 
       {/* Episode info */}

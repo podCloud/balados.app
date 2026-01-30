@@ -10,6 +10,7 @@ import {
   getPlayStatus,
   savePlayStatus,
 } from "../services/storage/playStatus";
+import { getCachedAudioUrl } from "../services/storage/downloads";
 import { PlayerContext } from "./playerContext";
 
 interface PlayerState {
@@ -74,7 +75,9 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
       isPlaying: false,
     }));
 
-    audioRef.current.src = episode.enclosureUrl;
+    // Check if episode is cached for offline playback
+    const cachedUrl = await getCachedAudioUrl(episode.enclosureUrl);
+    audioRef.current.src = cachedUrl || episode.enclosureUrl;
     audioRef.current.load();
 
     // Restore position after loading
@@ -82,6 +85,14 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
       await restorePosition(episode);
       audioRef.current?.play();
     };
+
+    // Clean up blob URL when switching episodes
+    if (cachedUrl) {
+      const currentCachedUrl = cachedUrl;
+      audioRef.current.onended = () => {
+        URL.revokeObjectURL(currentCachedUrl);
+      };
+    }
   }, [savePosition, restorePosition]);
 
   const pause = useCallback(() => {

@@ -58,5 +58,20 @@
     "about": "À propos",
     "description": "Lecteur de podcasts français, offline-first",
     "version": "Version"
+  },
+  "downloads": {
+    "storage": "Stockage",
+    "download": "Télécharger",
+    "downloading": "Téléchargement...",
+    "downloaded": "Épisodes téléchargés",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer cet épisode téléchargé ?",
+    "clearAll": "Tout supprimer",
+    "clearAllConfirm": "Supprimer tous les téléchargements ?",
+    "used": "{{size}} utilisés",
+    "episodeCount": "{{count}} épisode",
+    "episodeCount_other": "{{count}} épisodes",
+    "error": "Erreur de téléchargement",
+    "noDownloads": "Aucun épisode téléchargé"
   }
 }

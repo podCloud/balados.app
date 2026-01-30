@@ -97,3 +97,21 @@ export interface SyncResponse {
 // RSS item ID encoding helper types
 export type RssFeedId = string; // base64 encoded feed URL
 export type RssItemId = string; // base64 encoded `${guid},${enclosureUrl}`
+
+// Downloaded episode metadata
+export interface DownloadedEpisode {
+  episodeId: string;
+  feedUrl: string;
+  enclosureUrl: string;
+  title: string;
+  fileSize: number;
+  downloadedAt: number;
+}
+
+// Download progress tracking
+export interface DownloadProgress {
+  episodeId: string;
+  percent: number;
+  status: "downloading" | "completed" | "error";
+  error?: string;
+}

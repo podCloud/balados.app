@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check } from "lucide-react";
+import { StorageSettings } from "./StorageSettings";
 
 interface SettingsProps {
   onBack: () => void;
@@ -56,6 +57,9 @@ export const Settings = ({ onBack }: SettingsProps) => {
             ))}
           </div>
         </div>
+
+        {/* Storage section */}
+        <StorageSettings />
 
         {/* About section */}
         <div className="mt-6">

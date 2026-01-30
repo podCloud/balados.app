@@ -58,5 +58,20 @@
     "about": "About",
     "description": "French podcast player, offline-first",
     "version": "Version"
+  },
+  "downloads": {
+    "storage": "Storage",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "downloaded": "Downloaded episodes",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this downloaded episode?",
+    "clearAll": "Clear all",
+    "clearAllConfirm": "Delete all downloads?",
+    "used": "{{size}} used",
+    "episodeCount": "{{count}} episode",
+    "episodeCount_other": "{{count}} episodes",
+    "error": "Download error",
+    "noDownloads": "No downloaded episodes"
   }
 }
