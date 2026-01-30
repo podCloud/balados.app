@@ -6,7 +6,8 @@
     "cancel": "Annuler",
     "save": "Enregistrer",
     "delete": "Supprimer",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "offline": "Mode hors-ligne"
   },
   "library": {
     "title": "Podcasts",
@@ -27,7 +28,11 @@
   },
   "player": {
     "title": "Lecteur",
-    "comingSoon": "Bientôt disponible"
+    "selectEpisode": "Sélectionnez un épisode pour commencer",
+    "play": "Lecture",
+    "pause": "Pause",
+    "skipForward": "Avancer de 30 secondes",
+    "skipBackward": "Reculer de 15 secondes"
   },
   "explorer": {
     "title": "Explorer",
@@ -45,5 +50,34 @@
     "player": "Lecteur",
     "explorer": "Explorer",
     "debug": "Debug"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "back": "Retour",
+    "language": "Langue",
+    "about": "À propos",
+    "description": "Lecteur de podcasts français, offline-first",
+    "version": "Version"
+  },
+  "error": {
+    "title": "Oups ! Quelque chose s'est mal passé",
+    "description": "L'application a rencontré une erreur inattendue. Essayez de recharger la page.",
+    "reload": "Recharger",
+    "details": "Détails techniques"
+  },
+  "downloads": {
+    "storage": "Stockage",
+    "download": "Télécharger",
+    "downloading": "Téléchargement...",
+    "downloaded": "Épisodes téléchargés",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer cet épisode téléchargé ?",
+    "clearAll": "Tout supprimer",
+    "clearAllConfirm": "Supprimer tous les téléchargements ?",
+    "used": "{{size}} utilisés",
+    "episodeCount": "{{count}} épisode",
+    "episodeCount_other": "{{count}} épisodes",
+    "error": "Erreur de téléchargement",
+    "noDownloads": "Aucun épisode téléchargé"
   }
 }

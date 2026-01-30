@@ -6,7 +6,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "delete": "Delete",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "offline": "Offline mode"
   },
   "library": {
     "title": "Podcasts",
@@ -27,7 +28,11 @@
   },
   "player": {
     "title": "Player",
-    "comingSoon": "Coming soon"
+    "selectEpisode": "Select an episode to start",
+    "play": "Play",
+    "pause": "Pause",
+    "skipForward": "Skip forward 30 seconds",
+    "skipBackward": "Skip backward 15 seconds"
   },
   "explorer": {
     "title": "Explore",
@@ -45,5 +50,34 @@
     "player": "Player",
     "explorer": "Explore",
     "debug": "Debug"
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "language": "Language",
+    "about": "About",
+    "description": "French podcast player, offline-first",
+    "version": "Version"
+  },
+  "error": {
+    "title": "Oops! Something went wrong",
+    "description": "The app encountered an unexpected error. Try reloading the page.",
+    "reload": "Reload",
+    "details": "Technical details"
+  },
+  "downloads": {
+    "storage": "Storage",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "downloaded": "Downloaded episodes",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this downloaded episode?",
+    "clearAll": "Clear all",
+    "clearAllConfirm": "Delete all downloads?",
+    "used": "{{size}} used",
+    "episodeCount": "{{count}} episode",
+    "episodeCount_other": "{{count}} episodes",
+    "error": "Download error",
+    "noDownloads": "No downloaded episodes"
   }
 }

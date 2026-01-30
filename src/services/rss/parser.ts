@@ -17,11 +17,10 @@ const parseEpisode = (item: Element, feedImage: string): Episode => {
   const guidEl = item.querySelector("guid");
   const guid = guidEl?.textContent || undefined;
 
-  // Clean description from HTML tags
+  // Clean description from HTML tags safely using DOM parser
   const rawDescription = getElementText(item, "description");
-  const cleanDescription = rawDescription
-    .replace(/<[^>]*>/g, "")
-    .substring(0, 200);
+  const descDoc = new DOMParser().parseFromString(rawDescription, "text/html");
+  const cleanDescription = (descDoc.body.textContent || "").substring(0, 200);
 
   return {
     title: getElementText(item, "title"),

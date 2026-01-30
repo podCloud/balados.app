@@ -3,9 +3,9 @@
 ## Vue d'ensemble des phases
 
 ```
-Phase 1: Fondations          ████████████████░░░░  80%
-Phase 2: PWA & Offline       ░░░░░░░░░░░░░░░░░░░░
-Phase 3: Internationalisation████████████░░░░░░░░  60%
+Phase 1: Fondations          ████████████████████  100% ✓
+Phase 2: PWA & Offline       ████████████░░░░░░░░  60%
+Phase 3: Internationalisation████████████████████  100% ✓
 Phase 4: Synchronisation     ░░░░░░░░░░░░░░░░░░░░
 Phase 5: Tendances           ░░░░░░░░░░░░░░░░░░░░
 ```
@@ -29,26 +29,30 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 - [x] Extraire les types dans `types/index.ts`
 - [x] Créer le service de stockage (`services/storage/`)
 - [x] Créer le service RSS (`services/rss/`)
-- [ ] Extraire les composants:
-  - [ ] `components/library/Library.tsx`
-  - [ ] `components/library/SubscriptionItem.tsx`
-  - [ ] `components/podcast/PodcastDetail.tsx`
-  - [ ] `components/podcast/EpisodeList.tsx`
-  - [ ] `components/player/EpisodePlayer.tsx`
-  - [ ] `components/player/PlayerControls.tsx`
-- [ ] Migrer vers TanStack Query
+- [x] Extraire les composants:
+  - [x] `components/library/Library.tsx`
+  - [x] `components/library/SubscriptionItem.tsx`
+  - [x] `components/podcast/PodcastDetail.tsx`
+  - [x] `components/podcast/EpisodeList.tsx`
+  - [x] `components/player/EpisodePlayer.tsx`
+  - [x] `components/player/PlayerControls.tsx`
+  - [x] `components/player/MiniPlayer.tsx`
+  - [x] `components/explorer/Explorer.tsx` (iframe vers sync.balados.app)
+- [x] Créer PlayerContext pour la gestion globale du lecteur
+- [x] Migrer vers TanStack Query
 
 ### 1.3 Gestion des proxies
 
 - [x] Créer `ProxyManager` avec fallback
-- [ ] UI Settings pour gérer les proxies
-- [ ] Gestion des erreurs et retry
+- [x] Gestion des erreurs et retry
+- [ ] UI Settings pour gérer les proxies (déplacé vers Phase 3)
 
 ### 1.4 Stockage local persistant
 
-- [ ] Migration localStorage -> IndexedDB
+- [x] Migration localStorage -> IndexedDB
 - [x] Schema Dexie pour toutes les entités
-- [ ] Tests de persistence
+- [x] Sauvegarde/restauration des positions de lecture
+- [ ] Tests de persistence (déplacé vers Phase 2)
 
 ### 1.5 Tests
 
@@ -64,19 +68,19 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 2.1 Setup PWA
 
-- [ ] Créer `manifest.json`
-- [ ] Générer les icônes (192, 512, maskable)
-- [ ] Configurer Vite PWA plugin
-- [ ] Meta tags pour mobile
+- [x] Créer `manifest.json` (via vite-plugin-pwa)
+- [x] Générer les icônes (192, 512, maskable)
+- [x] Configurer Vite PWA plugin
+- [x] Meta tags pour mobile (iOS, theme-color, etc.)
 
 ### 2.2 Service Worker
 
-- [ ] Setup Workbox
-- [ ] Stratégies de cache:
-  - [ ] App shell (precache)
-  - [ ] Flux RSS (network-first)
-  - [ ] Images (cache-first)
-  - [ ] Audio (cache-first)
+- [x] Setup Workbox (via vite-plugin-pwa)
+- [x] Stratégies de cache:
+  - [x] App shell (precache)
+  - [x] Flux RSS (network-first, 1h cache)
+  - [x] Images (cache-first, 30 jours)
+  - [x] Audio (cache-first, 7 jours, range requests)
 - [ ] Background sync pour actions offline
 
 ### 2.3 Téléchargement d'épisodes
@@ -94,7 +98,7 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 2.5 Indicateurs UI
 
-- [ ] Statut réseau (online/offline)
+- [x] Statut réseau (online/offline) - OfflineBanner
 - [ ] Statut téléchargement par épisode
 - [ ] Espace de stockage utilisé
 
@@ -119,8 +123,8 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 3.3 UI
 
-- [ ] Sélecteur de langue dans Settings
-- [ ] Persistence du choix
+- [x] Sélecteur de langue dans Settings
+- [x] Persistence du choix (localStorage)
 - [ ] Tests multilingues
 
 ---

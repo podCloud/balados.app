@@ -5,6 +5,7 @@ import type {
   LocalEvent,
   PodcastFeed,
   AppSettings,
+  DownloadedEpisode,
 } from "../../types";
 
 // Feed cache with expiration
@@ -21,6 +22,7 @@ class BaladosDatabase extends Dexie {
   events!: EntityTable<LocalEvent, "id">;
   feedCache!: EntityTable<FeedCache, "url">;
   settings!: EntityTable<AppSettings & { id: string }, "id">;
+  downloads!: EntityTable<DownloadedEpisode, "episodeId">;
 
   constructor() {
     super("balados");
@@ -31,6 +33,15 @@ class BaladosDatabase extends Dexie {
       events: "++id, type, feedUrl, timestamp",
       feedCache: "url, cachedAt",
       settings: "id",
+    });
+
+    this.version(2).stores({
+      subscriptions: "url, addedAt",
+      playStatuses: "episodeId, feedUrl, updatedAt",
+      events: "++id, type, feedUrl, timestamp",
+      feedCache: "url, cachedAt",
+      settings: "id",
+      downloads: "episodeId, feedUrl, downloadedAt",
     });
   }
 }
