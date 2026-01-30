@@ -99,6 +99,8 @@ The `claude-review` CI check passing alone is NOT sufficient - the review conten
 
 If `claude-review` shows `skipping`, the label was NOT added - add it and wait for review.
 
+**After fixing review issues:** Re-add the `needs-claude-review` label (remove then add) to trigger a new review, then wait for the review to complete before proceeding.
+
 ## Architecture
 
 ### Target Structure
