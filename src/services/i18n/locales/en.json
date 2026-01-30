@@ -65,6 +65,14 @@
     "reload": "Reload",
     "details": "Technical details"
   },
+  "sync": {
+    "pending": "{{count}} action pending",
+    "pending_other": "{{count}} actions pending",
+    "syncing": "Syncing...",
+    "syncError": "Sync error",
+    "noServer": "No sync server configured",
+    "queueCleared": "Queue cleared"
+  },
   "downloads": {
     "storage": "Storage",
     "download": "Download",

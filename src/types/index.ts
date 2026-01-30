@@ -115,3 +115,37 @@ export interface DownloadProgress {
   status: "downloading" | "completed" | "error";
   error?: string;
 }
+
+// Offline queue types
+export type QueuedActionType =
+  | "subscribe"
+  | "unsubscribe"
+  | "updatePlayStatus";
+
+export interface QueuedAction {
+  id?: number;
+  action: QueuedActionType;
+  payload: SubscribePayload | UnsubscribePayload | PlayStatusPayload;
+  createdAt: number;
+  attempts: number;
+  lastAttemptAt?: number;
+  error?: string;
+}
+
+export interface SubscribePayload {
+  feedUrl: string;
+  title?: string;
+  image?: string;
+}
+
+export interface UnsubscribePayload {
+  feedUrl: string;
+}
+
+export interface PlayStatusPayload {
+  episodeId: string;
+  feedUrl: string;
+  position: number;
+  duration: number;
+  completed: boolean;
+}

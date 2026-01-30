@@ -1,4 +1,5 @@
-import { db } from "./index";
+import { db, getSettings } from "./index";
+import { queueAction } from "./syncQueue";
 import type { PlayStatus } from "../../types";
 
 // Generate episode ID from guid and enclosure URL
@@ -29,6 +30,18 @@ export const savePlayStatus = async (
     ...status,
     updatedAt: Date.now(),
   });
+
+  // Queue for sync if server is configured
+  const settings = await getSettings();
+  if (settings.syncServerUrl) {
+    await queueAction("updatePlayStatus", {
+      episodeId: status.episodeId,
+      feedUrl: status.feedUrl,
+      position: status.position,
+      duration: status.duration,
+      completed: status.completed,
+    });
+  }
 };
 
 export const updatePlayPosition = async (

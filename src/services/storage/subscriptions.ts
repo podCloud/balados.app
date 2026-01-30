@@ -1,4 +1,5 @@
-import { db, invalidateFeedCache } from "./index";
+import { db, invalidateFeedCache, getSettings } from "./index";
+import { queueAction } from "./syncQueue";
 import type { Subscription } from "../../types";
 
 export const getSubscriptions = async (): Promise<Subscription[]> => {
@@ -23,6 +24,13 @@ export const addSubscription = async (url: string): Promise<Subscription> => {
   };
 
   await db.subscriptions.add(subscription);
+
+  // Queue for sync if server is configured
+  const settings = await getSettings();
+  if (settings.syncServerUrl) {
+    await queueAction("subscribe", { feedUrl: url });
+  }
+
   return subscription;
 };
 
@@ -39,6 +47,12 @@ export const removeSubscription = async (url: string): Promise<void> => {
 
   // Clean up play statuses for this feed
   await db.playStatuses.where("feedUrl").equals(url).delete();
+
+  // Queue for sync if server is configured
+  const settings = await getSettings();
+  if (settings.syncServerUrl) {
+    await queueAction("unsubscribe", { feedUrl: url });
+  }
 };
 
 export const hasSubscription = async (url: string): Promise<boolean> => {
