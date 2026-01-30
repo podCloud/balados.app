@@ -116,22 +116,7 @@ export interface DownloadProgress {
   error?: string;
 }
 
-// Offline queue types
-export type QueuedActionType =
-  | "subscribe"
-  | "unsubscribe"
-  | "updatePlayStatus";
-
-export interface QueuedAction {
-  id?: number;
-  action: QueuedActionType;
-  payload: SubscribePayload | UnsubscribePayload | PlayStatusPayload;
-  createdAt: number;
-  attempts: number;
-  lastAttemptAt?: number;
-  error?: string;
-}
-
+// Offline queue types - discriminated union for type safety
 export interface SubscribePayload {
   feedUrl: string;
   title?: string;
@@ -149,3 +134,33 @@ export interface PlayStatusPayload {
   duration: number;
   completed: boolean;
 }
+
+interface BaseQueuedAction {
+  id?: number;
+  createdAt: number;
+  attempts: number;
+  lastAttemptAt?: number;
+  error?: string;
+}
+
+export interface SubscribeAction extends BaseQueuedAction {
+  action: "subscribe";
+  payload: SubscribePayload;
+}
+
+export interface UnsubscribeAction extends BaseQueuedAction {
+  action: "unsubscribe";
+  payload: UnsubscribePayload;
+}
+
+export interface UpdatePlayStatusAction extends BaseQueuedAction {
+  action: "updatePlayStatus";
+  payload: PlayStatusPayload;
+}
+
+export type QueuedAction =
+  | SubscribeAction
+  | UnsubscribeAction
+  | UpdatePlayStatusAction;
+
+export type QueuedActionType = QueuedAction["action"];

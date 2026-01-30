@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getPendingCount,
   getRetryableActions,
   removeAction,
   markAttempted,
   pruneFailedActions,
+  enforceQueueLimit,
 } from "../services/storage/syncQueue";
 import { getSettings } from "../services/storage";
 import type { QueuedAction } from "../types";
@@ -14,6 +15,9 @@ interface SyncQueueState {
   isSyncing: boolean;
   lastSyncError: string | null;
 }
+
+// Global lock to prevent concurrent queue processing across instances
+let isProcessing = false;
 
 /**
  * Hook to manage the offline sync queue
@@ -26,10 +30,14 @@ export const useSyncQueue = () => {
     lastSyncError: null,
   });
 
+  const isMounted = useRef(true);
+
   // Refresh pending count
   const refreshCount = useCallback(async () => {
     const count = await getPendingCount();
-    setState((prev) => ({ ...prev, pendingCount: count }));
+    if (isMounted.current) {
+      setState((prev) => ({ ...prev, pendingCount: count }));
+    }
   }, []);
 
   // Process a single action
@@ -49,7 +57,7 @@ export const useSyncQueue = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${settings.syncToken}`,
         },
-        body: JSON.stringify(action.payload),
+        body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
       });
 
       if (!response.ok) {
@@ -75,17 +83,26 @@ export const useSyncQueue = () => {
     switch (action.action) {
       case "subscribe":
         return { url: `${baseUrl}/api/v1/subscriptions`, method: "POST" };
-      case "unsubscribe":
-        return { url: `${baseUrl}/api/v1/subscriptions`, method: "DELETE" };
+      case "unsubscribe": {
+        // Use the correct endpoint with encoded feed URL
+        const feedId = btoa(action.payload.feedUrl);
+        return {
+          url: `${baseUrl}/api/v1/subscriptions/${encodeURIComponent(feedId)}`,
+          method: "DELETE",
+        };
+      }
       case "updatePlayStatus":
         return { url: `${baseUrl}/api/v1/play`, method: "POST" };
-      default:
-        throw new Error(`Unknown action type: ${action.action}`);
     }
   };
 
-  // Process all pending actions
+  // Process all pending actions with global lock
   const processQueue = useCallback(async () => {
+    // Prevent concurrent processing (race condition fix)
+    if (isProcessing) {
+      return;
+    }
+
     const settings = await getSettings();
 
     // Skip if no sync server configured
@@ -93,12 +110,18 @@ export const useSyncQueue = () => {
       return;
     }
 
-    setState((prev) => ({ ...prev, isSyncing: true, lastSyncError: null }));
+    isProcessing = true;
+    if (isMounted.current) {
+      setState((prev) => ({ ...prev, isSyncing: true, lastSyncError: null }));
+    }
 
     try {
       const actions = await getRetryableActions();
 
       for (const action of actions) {
+        // Check if still mounted before each action
+        if (!isMounted.current) break;
+
         const success = await processAction(action);
         if (success && action.id) {
           await removeAction(action.id);
@@ -108,33 +131,55 @@ export const useSyncQueue = () => {
       // Prune actions that exceeded max attempts
       await pruneFailedActions();
 
+      // Enforce queue size limit
+      await enforceQueueLimit();
+
       await refreshCount();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Sync failed";
-      setState((prev) => ({ ...prev, lastSyncError: errorMessage }));
+      if (isMounted.current) {
+        setState((prev) => ({ ...prev, lastSyncError: errorMessage }));
+      }
     } finally {
-      setState((prev) => ({ ...prev, isSyncing: false }));
+      isProcessing = false;
+      if (isMounted.current) {
+        setState((prev) => ({ ...prev, isSyncing: false }));
+      }
     }
   }, [refreshCount]);
 
+  // Clear the last sync error
+  const clearError = useCallback(() => {
+    setState((prev) => ({ ...prev, lastSyncError: null }));
+  }, []);
+
   // Listen for online/offline events
   useEffect(() => {
+    isMounted.current = true;
+
     const handleOnline = () => {
       processQueue();
     };
 
     window.addEventListener("online", handleOnline);
 
-    // Initial count
-    refreshCount();
+    // Initial cleanup: prune failed actions and enforce limits
+    const initQueue = async () => {
+      await pruneFailedActions();
+      await enforceQueueLimit();
+      await refreshCount();
 
-    // Process queue if already online
-    if (navigator.onLine) {
-      processQueue();
-    }
+      // Process queue if already online
+      if (navigator.onLine) {
+        processQueue();
+      }
+    };
+
+    initQueue();
 
     return () => {
+      isMounted.current = false;
       window.removeEventListener("online", handleOnline);
     };
   }, [processQueue, refreshCount]);
@@ -145,5 +190,6 @@ export const useSyncQueue = () => {
     lastSyncError: state.lastSyncError,
     processQueue,
     refreshCount,
+    clearError,
   };
 };
