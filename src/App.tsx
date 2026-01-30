@@ -7,6 +7,7 @@ import { MiniPlayer } from "./components/player/MiniPlayer";
 import { Explorer } from "./components/explorer/Explorer";
 import { Debug } from "./components/debug/Debug";
 import { TabBar } from "./components/ui/TabBar";
+import { OfflineBanner } from "./components/ui/OfflineBanner";
 import { PlayerProvider, usePlayer } from "./contexts";
 import { initDebugConsole } from "./services/debug";
 import { migrateFromLocalStorage } from "./services/storage";
@@ -76,6 +77,7 @@ const AppContent = () => {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col max-w-md mx-auto">
+      <OfflineBanner />
       <div className={`flex-1 overflow-hidden ${showMiniPlayer ? "pb-14" : ""}`}>
         {renderContent()}
       </div>

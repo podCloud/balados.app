@@ -6,7 +6,8 @@
     "cancel": "Annuler",
     "save": "Enregistrer",
     "delete": "Supprimer",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "offline": "Mode hors-ligne"
   },
   "library": {
     "title": "Podcasts",
