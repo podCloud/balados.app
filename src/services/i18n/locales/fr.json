@@ -65,6 +65,14 @@
     "reload": "Recharger",
     "details": "Détails techniques"
   },
+  "sync": {
+    "pending": "{{count}} action en attente",
+    "pending_other": "{{count}} actions en attente",
+    "syncing": "Synchronisation...",
+    "syncError": "Erreur de sync",
+    "noServer": "Aucun serveur sync configuré",
+    "queueCleared": "File d'attente vidée"
+  },
   "downloads": {
     "storage": "Stockage",
     "download": "Télécharger",
