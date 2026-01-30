@@ -80,10 +80,10 @@ gh pr checks <number>
 
 **Creating PRs with review:**
 ```bash
-gh pr create --assignee pof --label "needs-claude-review" --title "..." --body "..."
+gh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
 ```
 
-**Always assign PRs to `pof`** when creating them.
+**Always assign PRs to `pofmagicfingers`** when creating them.
 
 The `needs-claude-review` label triggers the Claude review workflow.
 
