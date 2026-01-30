@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Play, Pause } from "lucide-react";
-import { usePlayer } from "../../contexts/PlayerContext";
+import { usePlayer } from "../../contexts";
 import type { Episode } from "../../types";
 
 interface EpisodeListProps {

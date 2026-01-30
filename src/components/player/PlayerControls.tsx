@@ -6,7 +6,7 @@ import {
   SkipForward,
   Loader2,
 } from "lucide-react";
-import { usePlayer } from "../../contexts/PlayerContext";
+import { usePlayer } from "../../contexts";
 
 const formatTime = (seconds: number): string => {
   if (!seconds || !isFinite(seconds)) return "0:00";

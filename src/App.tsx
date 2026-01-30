@@ -7,7 +7,7 @@ import { MiniPlayer } from "./components/player/MiniPlayer";
 import { Explorer } from "./components/explorer/Explorer";
 import { Debug } from "./components/debug/Debug";
 import { TabBar } from "./components/ui/TabBar";
-import { PlayerProvider, usePlayer } from "./contexts/PlayerContext";
+import { PlayerProvider, usePlayer } from "./contexts";
 import { initDebugConsole } from "./services/debug";
 import { migrateFromLocalStorage } from "./services/storage";
 import type { TabId } from "./types";

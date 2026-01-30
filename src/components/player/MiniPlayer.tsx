@@ -1,5 +1,5 @@
 import { Play, Pause } from "lucide-react";
-import { usePlayer } from "../../contexts/PlayerContext";
+import { usePlayer } from "../../contexts";
 
 interface MiniPlayerProps {
   onExpand: () => void;

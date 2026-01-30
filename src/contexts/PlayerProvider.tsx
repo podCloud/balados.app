@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useState,
   useRef,
   useCallback,
@@ -12,6 +10,7 @@ import {
   getPlayStatus,
   savePlayStatus,
 } from "../services/storage/playStatus";
+import { PlayerContext } from "./playerContext";
 
 interface PlayerState {
   currentEpisode: Episode | null;
@@ -21,28 +20,6 @@ interface PlayerState {
   duration: number;
   isLoading: boolean;
 }
-
-interface PlayerContextType extends PlayerState {
-  play: (episode: Episode, feedUrl: string) => void;
-  pause: () => void;
-  resume: () => void;
-  seek: (time: number) => void;
-  skipForward: (seconds?: number) => void;
-  skipBackward: (seconds?: number) => void;
-  setPlaybackRate: (rate: number) => void;
-  playbackRate: number;
-  audioRef: React.RefObject<HTMLAudioElement | null>;
-}
-
-const PlayerContext = createContext<PlayerContextType | null>(null);
-
-export const usePlayer = () => {
-  const context = useContext(PlayerContext);
-  if (!context) {
-    throw new Error("usePlayer must be used within a PlayerProvider");
-  }
-  return context;
-};
 
 interface PlayerProviderProps {
   children: ReactNode;

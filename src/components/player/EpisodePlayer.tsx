@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
-import { usePlayer } from "../../contexts/PlayerContext";
+import { usePlayer } from "../../contexts";
 import { PlayerControls } from "./PlayerControls";
 
 export const EpisodePlayer = () => {
