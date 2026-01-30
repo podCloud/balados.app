@@ -78,12 +78,24 @@ gh pr view <number> --comments
 gh pr checks <number>
 ```
 
+**Creating PRs with review:**
+```bash
+gh pr create --label "needs-claude-review" --title "..." --body "..."
+```
+
+The `needs-claude-review` label triggers the Claude review workflow.
+
+**NEVER merge a PR without Claude review.**
+
 A PR is ready to merge only when:
-1. CI checks pass (`claude-review` shows `pass`)
-2. Review comments indicate **no critical issues** remaining
-3. If issues were raised, they must be fixed and a new review requested
+1. The `needs-claude-review` label was added to trigger the review
+2. CI checks pass (`claude-review` shows `pass`)
+3. Review comments indicate **no critical issues** remaining
+4. If issues were raised, they must be fixed and a new review requested
 
 The `claude-review` CI check passing alone is NOT sufficient - the review content must explicitly approve or show no blocking issues.
+
+If `claude-review` shows `skipping`, the label was NOT added - add it and wait for review.
 
 ## Architecture
 

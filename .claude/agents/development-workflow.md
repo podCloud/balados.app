@@ -220,10 +220,11 @@ EOF
    git push -u origin feature/issue-<number>-<slug>
    ```
 
-2. **Create PR**:
+2. **Create PR with review label**:
    ```bash
    gh pr create \
      --title "feat: description (Closes #<issue-number>)" \
+     --label "needs-claude-review" \
      --body "$(cat <<'EOF'
 ## Summary
 
