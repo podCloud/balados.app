@@ -66,6 +66,25 @@ chore: add vitest configuration
 git commit --author="Claude <noreply@anthropic.com>" -m "message"
 ```
 
+### PR Review Workflow
+
+**IMPORTANT**: When checking PR status, always read the full comments/reviews, not just the CI check status:
+
+```bash
+# Check for review comments (ALWAYS do this first)
+gh pr view <number> --comments
+
+# Then check CI status
+gh pr checks <number>
+```
+
+A PR is ready to merge only when:
+1. CI checks pass (`claude-review` shows `pass`)
+2. Review comments indicate **no critical issues** remaining
+3. If issues were raised, they must be fixed and a new review requested
+
+The `claude-review` CI check passing alone is NOT sufficient - the review content must explicitly approve or show no blocking issues.
+
 ## Architecture
 
 ### Target Structure
