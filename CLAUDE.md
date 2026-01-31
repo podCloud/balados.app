@@ -320,8 +320,45 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 **NE PAS MERGER CETTE BRANCHE POUR L'INSTANT**
 
 La synchronisation est une fonctionnalité complexe qui regroupe :
-- #12 [Phase 4.1] Client API balados.sync
-- #13 [Phase 4.2] UI de connexion et paramètres sync
-- #14 [Phase 4.3] Synchronisation et résolution de conflits
+- [x] #12 [Phase 4.1] Client API balados.sync - **DONE** (PR #22)
+- [ ] #13 [Phase 4.2] UI de connexion et paramètres sync
+- [ ] #14 [Phase 4.3] Synchronisation et résolution de conflits
 
 Cette branche sera mergée uniquement quand toute la feature sync sera complète et testée.
+
+**Pour voir la doc complète:** `git checkout feature/sync` puis lire `docs/SYNC_STATUS.md`
+
+#### État actuel (2026-01-31)
+
+**Implémenté sur `feature/sync`:**
+- `src/services/sync/client.ts` - Client API complet avec:
+  - Tous les endpoints (sync, subscriptions, play, proxy, trending)
+  - Auth JWT avec refresh automatique
+  - Retry avec backoff exponentiel
+  - Helpers d'encodage base64
+
+**À faire:**
+1. `src/components/settings/SyncSettings.tsx` - UI de connexion
+2. `src/services/sync/merger.ts` - Résolution de conflits
+3. `src/hooks/useSync.ts` - Hook React pour le sync
+4. Intégration avec `proxyManager.ts` pour utiliser le proxy serveur
+
+#### Coordination avec balados.sync
+
+**Encodage des données (convention partagée):**
+```typescript
+// Feed URL -> base64
+const rssFeed = btoa(feedUrl)
+
+// Episode ID -> base64(guid,enclosureUrl)
+const rssItem = btoa(`${guid},${enclosureUrl}`)
+// IMPORTANT: décoder avec lastIndexOf(",") car guid peut contenir des virgules
+```
+
+**Endpoints attendus sur le serveur:**
+- `GET /api/v1/health` - Health check
+- `POST /api/v1/sync` - Sync complet/incrémental
+- `GET/POST/DELETE /api/v1/subscriptions` - Abonnements
+- `POST /api/v1/play` - Position de lecture
+- `GET /api/v1/rss/proxy/{base64_feed}` - CORS proxy
+- `GET /api/v1/public/trending/podcasts` - Tendances
