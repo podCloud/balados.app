@@ -61,6 +61,8 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
       const episodeId = getEpisodeId(episode);
 
       // Prevent duplicate downloads - check via setter to avoid stale closure
+      // Note: This pattern works because React 18+ executes the functional updater
+      // synchronously, so `alreadyDownloading` is set before we check it below.
       let alreadyDownloading = false;
       setProgress((prev) => {
         if (prev.has(episodeId)) {
