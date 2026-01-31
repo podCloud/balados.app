@@ -75,6 +75,7 @@ export interface AppSettings {
   proxies: ProxyConfig[];
   syncServerUrl?: string;
   syncToken?: string;
+  lastSyncAt?: number;
 }
 
 // Navigation types

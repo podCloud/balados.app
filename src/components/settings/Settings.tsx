@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check } from "lucide-react";
 import { StorageSettings } from "./StorageSettings";
+import { SyncSettings } from "./SyncSettings";
 
 interface SettingsProps {
   onBack: () => void;
@@ -57,6 +58,9 @@ export const Settings = ({ onBack }: SettingsProps) => {
             ))}
           </div>
         </div>
+
+        {/* Sync section */}
+        <SyncSettings />
 
         {/* Storage section */}
         <StorageSettings />
