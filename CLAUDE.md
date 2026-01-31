@@ -320,8 +320,38 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 **NE PAS MERGER CETTE BRANCHE POUR L'INSTANT**
 
 La synchronisation est une fonctionnalité complexe qui regroupe :
-- #12 [Phase 4.1] Client API balados.sync
-- #13 [Phase 4.2] UI de connexion et paramètres sync
-- #14 [Phase 4.3] Synchronisation et résolution de conflits
+- [x] #12 [Phase 4.1] Client API balados.sync - **DONE** (PR #22)
+- [ ] #13 [Phase 4.2] UI de connexion et paramètres sync
+- [ ] #14 [Phase 4.3] Synchronisation et résolution de conflits
 
 Cette branche sera mergée uniquement quand toute la feature sync sera complète et testée.
+
+**Documentation détaillée:** [docs/SYNC_STATUS.md](docs/SYNC_STATUS.md)
+
+#### État actuel (2026-01-31)
+
+**Implémenté:**
+- `src/services/sync/client.ts` - Client API complet avec:
+  - Tous les endpoints (sync, subscriptions, play, proxy, trending)
+  - Auth JWT avec refresh automatique
+  - Retry avec backoff exponentiel
+  - Helpers d'encodage base64
+
+**À faire:**
+1. `src/components/settings/SyncSettings.tsx` - UI de connexion
+2. `src/services/sync/merger.ts` - Résolution de conflits
+3. `src/hooks/useSync.ts` - Hook React pour le sync
+4. Intégration avec `proxyManager.ts` pour utiliser le proxy serveur
+
+#### Coordination avec balados.sync
+
+Le serveur balados.sync doit implémenter les endpoints décrits dans [docs/SYNC_STATUS.md](docs/SYNC_STATUS.md).
+
+**Encodage des données:**
+```typescript
+// Feed URL -> base64
+const rssFeed = btoa(feedUrl)
+
+// Episode ID -> base64(guid,enclosureUrl)
+const rssItem = btoa(`${guid},${enclosureUrl}`)
+```
