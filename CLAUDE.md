@@ -18,9 +18,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### JAMAIS DE COMMIT DIRECT SUR MAIN (sauf exceptions)
 
 **Exceptions autorisées sur main:**
-- Modifications de CLAUDE.md
+- Modifications de CLAUDE.md uniquement (pas de code)
 - Modifications de config tooling (.github/, .vscode/, etc.)
-- Corrections mineures de typos dans la doc
+- Corrections mineures de typos dans la doc (README.md, docs/*)
 
 **POUR TOUT LE RESTE (code, tests, features), CRÉER UNE BRANCHE:**
 
@@ -41,14 +41,22 @@ gh pr create --assignee pofmagicfingers --label "needs-claude-review" --title ".
 # 5. ATTENDRE LA REVIEW avant de merger
 ```
 
+### RÈGLES DE MERGE
+
+- **JAMAIS de squash merge** - utiliser `gh pr merge <number> --merge --delete-branch`
+- **LIRE LES REVIEWS EN ENTIER** avant de merger
+- **APPLIQUER les suggestions** des reviews avant de merger (sauf si explicitement optionnelles)
+- Si une review demande des changements, les faire et re-demander une review
+
 ### CHECKLIST AVANT CHAQUE TÂCHE
 
 - [ ] Suis-je sur une branche feature/fix ? (`git branch --show-current`)
 - [ ] Si non, CRÉER LA BRANCHE MAINTENANT
-- [ ] Ne JAMAIS commit sur main
-- [ ] Ne JAMAIS push sur main
+- [ ] Ne JAMAIS commit sur main (sauf exceptions ci-dessus)
+- [ ] Ne JAMAIS push sur main (sauf exceptions ci-dessus)
 - [ ] TOUJOURS passer par une PR
 - [ ] TOUJOURS attendre la review Claude
+- [ ] LIRE la review en entier et appliquer les suggestions
 
 ### SI J'AI OUBLIÉ ET COMMITÉ SUR MAIN
 
