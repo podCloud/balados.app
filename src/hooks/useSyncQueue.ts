@@ -8,7 +8,7 @@ import {
   enforceQueueLimit,
 } from "../services/storage/syncQueue";
 import { getSettings } from "../services/storage";
-import type { QueuedAction } from "../types";
+import type { QueuedAction, AppSettings } from "../types";
 
 interface SyncQueueState {
   pendingCount: number;
@@ -18,6 +18,61 @@ interface SyncQueueState {
 
 // Global lock to prevent concurrent queue processing across instances
 let isProcessing = false;
+
+// Get the API endpoint for an action (extracted outside hook - no state dependencies)
+const getEndpointForAction = (
+  action: QueuedAction,
+  baseUrl: string
+): { url: string; method: string } => {
+  switch (action.action) {
+    case "subscribe":
+      return { url: `${baseUrl}/api/v1/subscriptions`, method: "POST" };
+    case "unsubscribe": {
+      const feedId = btoa(action.payload.feedUrl);
+      return {
+        url: `${baseUrl}/api/v1/subscriptions/${encodeURIComponent(feedId)}`,
+        method: "DELETE",
+      };
+    }
+    case "updatePlayStatus":
+      return { url: `${baseUrl}/api/v1/play`, method: "POST" };
+  }
+};
+
+// Process a single action (extracted outside hook - no state dependencies)
+const processAction = async (
+  action: QueuedAction,
+  settings: AppSettings
+): Promise<boolean> => {
+  if (!settings.syncServerUrl || !settings.syncToken) {
+    return false;
+  }
+
+  try {
+    const endpoint = getEndpointForAction(action, settings.syncServerUrl);
+    const response = await fetch(endpoint.url, {
+      method: endpoint.method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${settings.syncToken}`,
+      },
+      body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    if (action.id) {
+      await markAttempted(action.id, errorMessage);
+    }
+    return false;
+  }
+};
 
 /**
  * Hook to manage the offline sync queue
@@ -39,62 +94,6 @@ export const useSyncQueue = () => {
       setState((prev) => ({ ...prev, pendingCount: count }));
     }
   }, []);
-
-  // Process a single action
-  const processAction = async (action: QueuedAction): Promise<boolean> => {
-    const settings = await getSettings();
-
-    // If no sync server configured, we can't process
-    if (!settings.syncServerUrl || !settings.syncToken) {
-      return false;
-    }
-
-    try {
-      const endpoint = getEndpointForAction(action, settings.syncServerUrl);
-      const response = await fetch(endpoint.url, {
-        method: endpoint.method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${settings.syncToken}`,
-        },
-        body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      return true;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      if (action.id) {
-        await markAttempted(action.id, errorMessage);
-      }
-      return false;
-    }
-  };
-
-  // Get the API endpoint for an action
-  const getEndpointForAction = (
-    action: QueuedAction,
-    baseUrl: string
-  ): { url: string; method: string } => {
-    switch (action.action) {
-      case "subscribe":
-        return { url: `${baseUrl}/api/v1/subscriptions`, method: "POST" };
-      case "unsubscribe": {
-        // Use the correct endpoint with encoded feed URL
-        const feedId = btoa(action.payload.feedUrl);
-        return {
-          url: `${baseUrl}/api/v1/subscriptions/${encodeURIComponent(feedId)}`,
-          method: "DELETE",
-        };
-      }
-      case "updatePlayStatus":
-        return { url: `${baseUrl}/api/v1/play`, method: "POST" };
-    }
-  };
 
   // Process all pending actions with global lock
   const processQueue = useCallback(async () => {
@@ -122,7 +121,7 @@ export const useSyncQueue = () => {
         // Check if still mounted before each action
         if (!isMounted.current) break;
 
-        const success = await processAction(action);
+        const success = await processAction(action, settings);
         if (success && action.id) {
           await removeAction(action.id);
         }

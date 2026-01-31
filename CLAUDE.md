@@ -11,6 +11,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Data ownership**: User can add/remove sync without losing data
 - **Progressive enhancement**: Works standalone, better with sync server
 
+---
+
+## ⛔ RÈGLES CRITIQUES - WORKFLOW GIT ⛔
+
+### JAMAIS DE COMMIT DIRECT SUR MAIN (sauf exceptions)
+
+**Exceptions autorisées sur main:**
+- Modifications de CLAUDE.md
+- Modifications de config tooling (.github/, .vscode/, etc.)
+- Corrections mineures de typos dans la doc
+
+**POUR TOUT LE RESTE (code, tests, features), CRÉER UNE BRANCHE:**
+
+```bash
+# 1. TOUJOURS créer une branche AVANT de modifier quoi que ce soit
+git checkout -b feature/issue-<number>-<slug>
+# ou
+git checkout -b fix/issue-<number>-<slug>
+
+# 2. Faire les modifications et commits sur la branche
+
+# 3. Pusher la branche
+git push -u origin <branch-name>
+
+# 4. Créer la PR avec review obligatoire
+gh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
+
+# 5. ATTENDRE LA REVIEW avant de merger
+```
+
+### CHECKLIST AVANT CHAQUE TÂCHE
+
+- [ ] Suis-je sur une branche feature/fix ? (`git branch --show-current`)
+- [ ] Si non, CRÉER LA BRANCHE MAINTENANT
+- [ ] Ne JAMAIS commit sur main
+- [ ] Ne JAMAIS push sur main
+- [ ] TOUJOURS passer par une PR
+- [ ] TOUJOURS attendre la review Claude
+
+### SI J'AI OUBLIÉ ET COMMITÉ SUR MAIN
+
+```bash
+# 1. Revert immédiatement
+git revert --no-commit HEAD~<n>..HEAD
+git commit -m "revert: undo accidental commits to main"
+git push origin main
+
+# 2. Créer la branche et cherry-pick
+git checkout -b feature/issue-<number>-<slug>
+git cherry-pick <commit-hashes>
+
+# 3. Créer la PR normalement
+```
+
+---
+
 ## Development Commands
 
 ```bash

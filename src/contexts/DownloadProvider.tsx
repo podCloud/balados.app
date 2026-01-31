@@ -60,11 +60,13 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
     async (episode: Episode, feedUrl: string): Promise<void> => {
       const episodeId = getEpisodeId(episode);
 
-      // Prevent duplicate downloads - check if already downloading
-      if (progress.has(episodeId)) return;
-
-      // Set initial progress
+      // Prevent duplicate downloads - check via setter to avoid stale closure
+      let alreadyDownloading = false;
       setProgress((prev) => {
+        if (prev.has(episodeId)) {
+          alreadyDownloading = true;
+          return prev;
+        }
         const next = new Map(prev);
         next.set(episodeId, {
           episodeId,
@@ -73,6 +75,8 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
         });
         return next;
       });
+
+      if (alreadyDownloading) return;
 
       try {
         await downloadEpisodeService(episode, feedUrl, (percent) => {
