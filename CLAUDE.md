@@ -310,3 +310,18 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 - [docs/OFFLINE.md](docs/OFFLINE.md) - Offline-first & PWA
 - [docs/I18N.md](docs/I18N.md) - Internationalization
 - [docs/ROADMAP.md](docs/ROADMAP.md) - Development phases
+
+---
+
+## Work In Progress
+
+### Branche `feature/sync` (Issues #12, #13, #14)
+
+**NE PAS MERGER CETTE BRANCHE POUR L'INSTANT**
+
+La synchronisation est une fonctionnalité complexe qui regroupe :
+- #12 [Phase 4.1] Client API balados.sync
+- #13 [Phase 4.2] UI de connexion et paramètres sync
+- #14 [Phase 4.3] Synchronisation et résolution de conflits
+
+Cette branche sera mergée uniquement quand toute la feature sync sera complète et testée.
