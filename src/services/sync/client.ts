@@ -101,8 +101,11 @@ export const decodeRssItem = (
   encoded: string
 ): { guid: string; enclosureUrl: string } => {
   const decoded = atob(encoded);
-  // Use lastIndexOf because guid might contain commas, but URLs don't
+  // Use lastIndexOf because guid might contain commas, but URLs don't (RFC 3986)
   const commaIndex = decoded.lastIndexOf(",");
+  if (commaIndex === -1) {
+    throw new Error(`Invalid rss_source_item format: missing comma separator`);
+  }
   return {
     guid: decoded.substring(0, commaIndex),
     enclosureUrl: decoded.substring(commaIndex + 1),
@@ -120,20 +123,30 @@ export const syncToSubscription = (sync: SubscriptionSync): Subscription => ({
   addedAt: new Date(sync.subscribed_at).getTime(),
 });
 
+/**
+ * Convert local PlayStatus to sync format.
+ * Note: episodeId is already in format btoa(guid,enclosureUrl) from generateEpisodeId(),
+ * so we use it directly as rss_source_item.
+ */
 export const playStatusToSync = (status: PlayStatus): PlayStatusSync => ({
   rss_source_feed: encodeRssFeed(status.feedUrl),
-  rss_source_item: encodeRssItem(status.episodeId, status.feedUrl),
+  rss_source_item: status.episodeId, // Already encoded as btoa(guid,enclosureUrl)
   position: status.position,
   played: status.completed,
   updated_at: new Date(status.updatedAt).toISOString(),
 });
 
+/**
+ * Convert sync format to local PlayStatus.
+ * Note: duration is not included in sync data (it's episode metadata, not play state).
+ * Callers must provide duration separately when needed.
+ */
 export const syncToPlayStatus = (
   sync: PlayStatusSync
 ): Omit<PlayStatus, "duration"> => {
-  const { guid } = decodeRssItem(sync.rss_source_item);
+  // rss_source_item is already in btoa(guid,enclosureUrl) format, use as episodeId directly
   return {
-    episodeId: guid,
+    episodeId: sync.rss_source_item,
     feedUrl: decodeRssFeed(sync.rss_source_feed),
     position: sync.position,
     completed: sync.played,
@@ -390,7 +403,9 @@ export class SyncClient {
   }
 
   /**
-   * Get play status for an episode
+   * Get play status for an episode.
+   * @param feedUrl - The feed URL
+   * @param episodeId - The episode ID (already in btoa(guid,enclosureUrl) format)
    */
   async getPlayStatus(
     feedUrl: string,
@@ -398,9 +413,9 @@ export class SyncClient {
   ): Promise<PlayStatusSync | null> {
     try {
       const encodedFeed = encodeRssFeed(feedUrl);
-      const encodedItem = encodeRssItem(episodeId, feedUrl);
+      // episodeId is already encoded as btoa(guid,enclosureUrl), use directly
       return await this.request<PlayStatusSync>(
-        `/api/v1/play/${encodedFeed}/${encodedItem}`,
+        `/api/v1/play/${encodedFeed}/${episodeId}`,
         { method: "GET" }
       );
     } catch (error) {
@@ -425,7 +440,7 @@ export class SyncClient {
 
     if (!response.ok) {
       throw new SyncApiError(
-        `Proxy fetch failed: ${response.status}`,
+        `Proxy fetch failed for ${feedUrl}: ${response.status}`,
         response.status,
         RETRYABLE_STATUS_CODES.includes(response.status)
       );
@@ -444,12 +459,29 @@ export class SyncClient {
   }
 
   /**
-   * Get user's aggregated RSS feed URL
+   * Get user's aggregated RSS feed URL.
+   *
+   * Note: This uses the play token (user_token), not the JWT auth token.
+   * Play tokens are designed to be public/shareable - they only grant access
+   * to RSS feeds and play gateway, not to account API.
+   *
+   * @param playToken - The user's play token (obtained from server)
+   * @returns The aggregated RSS feed URL, or null if no token provided
    */
-  getAggregatedFeedUrl(): string | null {
-    if (!this.token) return null;
-    // Extract user ID from JWT (simplified - in production, decode properly)
-    return `${this.serverUrl}/api/v1/rss/user/${this.token}/subscriptions`;
+  getAggregatedFeedUrl(playToken?: string): string | null {
+    const token = playToken ?? this.playToken;
+    if (!token) return null;
+    return `${this.serverUrl}/api/v1/rss/user/${token}/subscriptions`;
+  }
+
+  private playToken: string | null = null;
+
+  /**
+   * Set the play token for aggregated feeds access.
+   * Play tokens are separate from JWT auth tokens and are safe to use in URLs.
+   */
+  setPlayToken(playToken: string): void {
+    this.playToken = playToken;
   }
 }
 

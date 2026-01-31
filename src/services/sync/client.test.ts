@@ -65,6 +65,13 @@ describe("Encoding helpers", () => {
       expect(decoded.guid).toBe(guid);
       expect(decoded.enclosureUrl).toBe(enclosureUrl);
     });
+
+    it("should throw on invalid format (no comma)", () => {
+      const invalidEncoded = btoa("no-comma-here");
+      expect(() => decodeRssItem(invalidEncoded)).toThrow(
+        "Invalid rss_source_item format: missing comma separator"
+      );
+    });
   });
 });
 
@@ -98,8 +105,10 @@ describe("Type converters", () => {
 
   describe("playStatusToSync / syncToPlayStatus", () => {
     it("should convert play status to sync format", () => {
+      // episodeId is already in btoa(guid,enclosureUrl) format from generateEpisodeId()
+      const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const status: PlayStatus = {
-        episodeId: "episode-123",
+        episodeId: encodedEpisodeId,
         feedUrl: "https://example.com/feed.xml",
         position: 300,
         duration: 3600,
@@ -110,18 +119,17 @@ describe("Type converters", () => {
       const sync = playStatusToSync(status);
 
       expect(sync.rss_source_feed).toBe(encodeRssFeed(status.feedUrl));
+      expect(sync.rss_source_item).toBe(encodedEpisodeId); // Used directly, not re-encoded
       expect(sync.position).toBe(300);
       expect(sync.played).toBe(false);
       expect(sync.updated_at).toBe("2024-01-15T10:00:00.000Z");
     });
 
     it("should convert sync format back to play status", () => {
+      const encodedItem = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const sync = {
         rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
-        rss_source_item: encodeRssItem(
-          "episode-123",
-          "https://example.com/feed.xml"
-        ),
+        rss_source_item: encodedItem,
         position: 300,
         played: true,
         updated_at: "2024-01-15T10:00:00.000Z",
@@ -129,7 +137,8 @@ describe("Type converters", () => {
 
       const status = syncToPlayStatus(sync);
 
-      expect(status.episodeId).toBe("episode-123");
+      // episodeId is rss_source_item directly (already encoded)
+      expect(status.episodeId).toBe(encodedItem);
       expect(status.feedUrl).toBe("https://example.com/feed.xml");
       expect(status.position).toBe(300);
       expect(status.completed).toBe(true);
@@ -314,8 +323,10 @@ describe("SyncClient", () => {
         json: () => Promise.resolve({}),
       });
 
+      // episodeId is already encoded as btoa(guid,enclosureUrl)
+      const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const status: PlayStatus = {
-        episodeId: "episode-123",
+        episodeId: encodedEpisodeId,
         feedUrl: "https://example.com/feed.xml",
         position: 300,
         duration: 3600,
@@ -332,12 +343,11 @@ describe("SyncClient", () => {
     });
 
     it("should get play status", async () => {
+      // episodeId is already encoded
+      const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const mockStatus = {
         rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
-        rss_source_item: encodeRssItem(
-          "episode-123",
-          "https://example.com/feed.xml"
-        ),
+        rss_source_item: encodedEpisodeId,
         position: 300,
         played: false,
         updated_at: "2024-01-15T10:00:00Z",
@@ -351,7 +361,7 @@ describe("SyncClient", () => {
 
       const result = await client.getPlayStatus(
         "https://example.com/feed.xml",
-        "episode-123"
+        encodedEpisodeId
       );
 
       expect(result).toEqual(mockStatus);
@@ -364,9 +374,10 @@ describe("SyncClient", () => {
         text: () => Promise.resolve("Not found"),
       });
 
+      const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const result = await client.getPlayStatus(
         "https://example.com/feed.xml",
-        "episode-123"
+        encodedEpisodeId
       );
 
       expect(result).toBeNull();
