@@ -4,7 +4,7 @@
 
 ```
 Phase 1: Fondations          ████████████████████  100% ✓
-Phase 2: PWA & Offline       ████████████████████  100% ✓
+Phase 2: PWA & Offline       ████████████░░░░░░░░  60%
 Phase 3: Internationalisation████████████████████  100% ✓
 Phase 4: Synchronisation     ░░░░░░░░░░░░░░░░░░░░
 Phase 5: Tendances           ░░░░░░░░░░░░░░░░░░░░
@@ -81,26 +81,26 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
   - [x] Flux RSS (network-first, 1h cache)
   - [x] Images (cache-first, 30 jours)
   - [x] Audio (cache-first, 7 jours, range requests)
-- [x] Background sync pour actions offline
+- [ ] Background sync pour actions offline
 
 ### 2.3 Téléchargement d'épisodes
 
-- [x] Bouton téléchargement par épisode
-- [x] Progress indicator
-- [x] Gestion du cache audio
-- [x] Suppression sélective
+- [ ] Bouton téléchargement par épisode
+- [ ] Progress indicator
+- [ ] Gestion du cache audio
+- [ ] Suppression sélective
 
 ### 2.4 Queue offline
 
-- [x] Stockage des actions en attente
-- [x] Traitement automatique au retour online
-- [x] UI indicateur d'actions en attente
+- [ ] Stockage des actions en attente
+- [ ] Traitement automatique au retour online
+- [ ] UI indicateur d'actions en attente
 
 ### 2.5 Indicateurs UI
 
 - [x] Statut réseau (online/offline) - OfflineBanner
-- [x] Statut téléchargement par épisode
-- [x] Espace de stockage utilisé
+- [ ] Statut téléchargement par épisode
+- [ ] Espace de stockage utilisé
 
 ---
 
