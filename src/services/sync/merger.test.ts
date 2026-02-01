@@ -456,4 +456,123 @@ describe("playStatusesToSync", () => {
     expect(result[0].played).toBe(true);
     expect(result[0].updated_at).toBe("2024-01-01T00:00:00.000Z");
   });
+
+  it("should not double-encode episode IDs when converting to sync format", () => {
+    // This test verifies the fix for the critical encoding bug
+    // episodeId is already in btoa(guid,enclosureUrl) format
+    const episodeId = btoa("test-guid,https://example.com/episode.mp3");
+
+    const result = playStatusesToSync([
+      {
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 60,
+        duration: 300,
+        completed: false,
+        updatedAt: new Date("2024-01-01").getTime(),
+      },
+    ]);
+
+    // rss_source_item should be exactly the same as episodeId (not double-encoded)
+    expect(result[0].rss_source_item).toBe(episodeId);
+    expect(result[0].rss_source_item).not.toBe(btoa(episodeId)); // Not double-encoded!
+  });
+});
+
+describe("Episode ID encoding round-trip", () => {
+  it("should correctly identify same episode after sync round-trip", () => {
+    // This integration test simulates:
+    // 1. Device A creates a play status
+    // 2. Converts to sync format and sends to server
+    // 3. Device B receives it and merges with local data
+    // 4. The episode should be correctly identified
+
+    const guid = "episode-123";
+    const enclosureUrl = "https://example.com/episode.mp3";
+    const feedUrl = "https://example.com/feed.xml";
+
+    // Device A: Create local play status with encoded episodeId
+    const deviceAEpisodeId = btoa(`${guid},${enclosureUrl}`);
+    const deviceAStatus: PlayStatus = {
+      episodeId: deviceAEpisodeId,
+      feedUrl,
+      position: 300,
+      duration: 600,
+      completed: false,
+      updatedAt: new Date("2024-01-01T12:00:00Z").getTime(),
+    };
+
+    // Device A: Convert to sync format
+    const syncFormat = playStatusesToSync([deviceAStatus]);
+    expect(syncFormat[0].rss_source_item).toBe(deviceAEpisodeId);
+
+    // Simulate server response (server returns same format)
+    const serverResponse: PlayStatusSync[] = [
+      {
+        rss_source_feed: btoa(feedUrl),
+        rss_source_item: syncFormat[0].rss_source_item,
+        position: 300,
+        played: false,
+        updated_at: "2024-01-01T12:00:00.000Z",
+      },
+    ];
+
+    // Device B: Has the same episode locally (maybe at different position)
+    const deviceBStatus: PlayStatus = {
+      episodeId: deviceAEpisodeId, // Same encoded ID
+      feedUrl,
+      position: 100, // Different position
+      duration: 600,
+      completed: false,
+      updatedAt: new Date("2024-01-01T10:00:00Z").getTime(), // Older
+    };
+
+    // Device B: Merge remote with local
+    const mergeResult = mergePlayStatuses([deviceBStatus], serverResponse);
+
+    // Should recognize as same episode and use remote (newer, higher position)
+    expect(mergeResult.merged).toHaveLength(1);
+    expect(mergeResult.merged[0].episodeId).toBe(deviceAEpisodeId);
+    expect(mergeResult.merged[0].position).toBe(300); // Remote position wins
+  });
+
+  it("should handle episodes with commas in guid", () => {
+    // Edge case: guid contains commas, which is valid
+    const guid = "episode,with,commas";
+    const enclosureUrl = "https://example.com/episode.mp3";
+    const feedUrl = "https://example.com/feed.xml";
+
+    const episodeId = btoa(`${guid},${enclosureUrl}`);
+
+    const localStatus: PlayStatus = {
+      episodeId,
+      feedUrl,
+      position: 0,
+      duration: 600,
+      completed: false,
+      updatedAt: new Date("2024-01-01").getTime(),
+    };
+
+    // Convert to sync format
+    const syncFormat = playStatusesToSync([localStatus]);
+
+    // Simulate receiving from server
+    const serverResponse: PlayStatusSync[] = [
+      {
+        rss_source_feed: btoa(feedUrl),
+        rss_source_item: syncFormat[0].rss_source_item,
+        position: 500,
+        played: true,
+        updated_at: "2024-01-02T00:00:00.000Z",
+      },
+    ];
+
+    // Merge should work correctly
+    const mergeResult = mergePlayStatuses([localStatus], serverResponse);
+
+    expect(mergeResult.merged).toHaveLength(1);
+    expect(mergeResult.merged[0].episodeId).toBe(episodeId);
+    expect(mergeResult.merged[0].position).toBe(500);
+    expect(mergeResult.merged[0].completed).toBe(true);
+  });
 });

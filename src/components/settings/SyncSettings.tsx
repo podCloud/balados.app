@@ -82,7 +82,13 @@ export const SyncSettings = () => {
           return;
         }
       } catch (error) {
-        console.error("Invalid server URL", error);
+        // This indicates corrupted settings - show error to user
+        console.error("Invalid server URL in settings", error);
+        setState((prev) => ({
+          ...prev,
+          status: "error",
+          error: t("syncSettings.invalidServerUrl"),
+        }));
         return;
       }
 
