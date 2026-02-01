@@ -25,6 +25,9 @@ export const Library = ({ onNavigate }: LibraryProps) => {
   );
 
   // Count in-progress episodes (excluding hidden)
+  // Note: This uses useLiveQuery which reacts to IndexedDB changes, but hidden episodes
+  // are stored in localStorage. The count won't update immediately when hiding from
+  // InProgress page until the next DB change. This is an acceptable UX tradeoff.
   const inProgressCount = useLiveQuery(
     async () => {
       const episodes = await getInProgressEpisodes();
@@ -72,9 +75,10 @@ export const Library = ({ onNavigate }: LibraryProps) => {
                 onClick={() => onNavigate("inProgress")}
                 className="relative text-gray-500 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"
                 title={t("inProgress.title")}
+                aria-label={`${t("inProgress.title")} (${inProgressCount})`}
               >
                 <Clock size={20} />
-                <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1" aria-hidden="true">
                   {inProgressCount}
                 </span>
               </button>

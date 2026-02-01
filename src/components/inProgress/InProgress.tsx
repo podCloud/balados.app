@@ -155,6 +155,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
         <button
           onClick={onBack}
           className="p-1 -ml-1 hover:bg-gray-100 rounded-lg"
+          aria-label={t("settings.back")}
         >
           <ChevronLeft size={24} />
         </button>
@@ -263,6 +264,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                         onClick={(e) => handleHide(item.playStatus.episodeId, e)}
                         className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
                         title={t("inProgress.hide")}
+                        aria-label={t("inProgress.hide")}
                       >
                         <X size={18} />
                       </button>
