@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, BarChart3 } from "lucide-react";
 import { StorageSettings } from "./StorageSettings";
 import { SyncSettings } from "./SyncSettings";
 
 interface SettingsProps {
   onBack: () => void;
+  onNavigate?: (view: string) => void;
 }
 
 const LANGUAGES = [
@@ -12,7 +13,7 @@ const LANGUAGES = [
   { code: "en", name: "English" },
 ];
 
-export const Settings = ({ onBack }: SettingsProps) => {
+export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
   const { t, i18n } = useTranslation();
 
   const handleLanguageChange = (langCode: string) => {
@@ -64,6 +65,22 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         {/* Storage section */}
         <StorageSettings />
+
+        {/* Stats section */}
+        <div className="mt-6">
+          <h2 className="px-4 text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
+            {t("stats.title")}
+          </h2>
+          <div className="bg-white">
+            <button
+              onClick={() => onNavigate?.("stats")}
+              className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50"
+            >
+              <BarChart3 size={20} className="text-blue-500" />
+              <span className="text-gray-900">{t("stats.title")}</span>
+            </button>
+          </div>
+        </div>
 
         {/* About section */}
         <div className="mt-6">

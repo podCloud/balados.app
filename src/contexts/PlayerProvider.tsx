@@ -11,6 +11,7 @@ import {
   savePlayStatus,
 } from "../services/storage/playStatus";
 import { getCachedAudioUrl } from "../services/storage/downloads";
+import { logEvent } from "../services/storage/events";
 import { PlayerContext } from "./playerContext";
 
 interface PlayerState {
@@ -66,6 +67,10 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
 
     // Save current position before switching
     await savePosition();
+
+    // Log play_started event for stats
+    const episodeId = episode.guid || episode.enclosureUrl;
+    await logEvent("play_started", { feedUrl, episodeId });
 
     // Revoke previous blob URL to prevent memory leak
     const prevSrc = audioRef.current.src;
@@ -147,7 +152,16 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     if (!audio) return;
 
     const handlePlay = () => setState((prev) => ({ ...prev, isPlaying: true, isLoading: false }));
-    const handlePause = () => setState((prev) => ({ ...prev, isPlaying: false }));
+    const handlePause = () => {
+      setState((prev) => {
+        // Log pause event for stats (only if we have episode info)
+        if (prev.currentEpisode && prev.feedUrl) {
+          const episodeId = prev.currentEpisode.guid || prev.currentEpisode.enclosureUrl;
+          logEvent("play_paused", { feedUrl: prev.feedUrl, episodeId });
+        }
+        return { ...prev, isPlaying: false };
+      });
+    };
     const handleTimeUpdate = () => {
       setState((prev) => ({ ...prev, currentTime: audio.currentTime }));
     };
@@ -157,7 +171,14 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     const handleLoadStart = () => setState((prev) => ({ ...prev, isLoading: true }));
     const handleCanPlay = () => setState((prev) => ({ ...prev, isLoading: false }));
     const handleEnded = () => {
-      setState((prev) => ({ ...prev, isPlaying: false }));
+      setState((prev) => {
+        // Log play_completed event for stats
+        if (prev.currentEpisode && prev.feedUrl) {
+          const episodeId = prev.currentEpisode.guid || prev.currentEpisode.enclosureUrl;
+          logEvent("play_completed", { feedUrl: prev.feedUrl, episodeId });
+        }
+        return { ...prev, isPlaying: false };
+      });
       savePosition();
     };
 

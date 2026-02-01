@@ -7,6 +7,7 @@ import { MiniPlayer } from "./components/player/MiniPlayer";
 import { Explorer } from "./components/explorer/Explorer";
 import { Debug } from "./components/debug/Debug";
 import { Settings } from "./components/settings/Settings";
+import { Stats } from "./components/stats/Stats";
 import { TabBar } from "./components/ui/TabBar";
 import { OfflineBanner } from "./components/ui/OfflineBanner";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
@@ -55,7 +56,11 @@ const AppContent = () => {
 
   const renderContent = () => {
     if (currentView === "settings") {
-      return <Settings onBack={() => handleNavigate("library")} />;
+      return <Settings onBack={() => handleNavigate("library")} onNavigate={handleNavigate} />;
+    }
+
+    if (currentView === "stats") {
+      return <Stats onBack={() => handleNavigate("settings")} />;
     }
 
     if (currentView === "podcast" && selectedFeedUrl) {
