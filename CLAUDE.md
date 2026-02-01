@@ -315,43 +315,38 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 
 ## Work In Progress
 
-### Branche `feature/sync` (Issues #12, #13, #14)
+### Synchronisation (Phase 4) - COMPLÈTE
 
-**NE PAS MERGER CETTE BRANCHE POUR L'INSTANT**
-
-La synchronisation est une fonctionnalité complexe qui regroupe :
-- [x] #12 [Phase 4.1] Client API balados.sync - **DONE** (PR #22)
-- [ ] #13 [Phase 4.2] UI de connexion et paramètres sync
-- [ ] #14 [Phase 4.3] Synchronisation et résolution de conflits
-
-Cette branche sera mergée uniquement quand toute la feature sync sera complète et testée.
+La fonctionnalité sync est maintenant implémentée :
+- [x] #12 Client API balados.sync (PR #22)
+- [x] #23 SyncSettings UI
+- [x] #24 Conflict resolution merger
+- [x] #25 useSync React hook
 
 **Documentation détaillée:** [docs/SYNC_STATUS.md](docs/SYNC_STATUS.md)
 
-#### État actuel (2026-01-31)
+#### Fichiers implémentés
 
-**Implémenté:**
-- `src/services/sync/client.ts` - Client API complet avec:
-  - Tous les endpoints (sync, subscriptions, play, proxy, trending)
-  - Auth JWT avec refresh automatique
-  - Retry avec backoff exponentiel
-  - Helpers d'encodage base64
+- `src/services/sync/client.ts` - Client API complet
+- `src/services/sync/merger.ts` - Résolution de conflits
+- `src/components/settings/SyncSettings.tsx` - UI de connexion
+- `src/hooks/useSync.ts` - Hook React pour le sync
 
-**À faire:**
-1. `src/components/settings/SyncSettings.tsx` - UI de connexion
-2. `src/services/sync/merger.ts` - Résolution de conflits
-3. `src/hooks/useSync.ts` - Hook React pour le sync
-4. Intégration avec `proxyManager.ts` pour utiliser le proxy serveur
+#### Encodage des données (convention partagée)
 
-#### Coordination avec balados.sync
-
-Le serveur balados.sync doit implémenter les endpoints décrits dans [docs/SYNC_STATUS.md](docs/SYNC_STATUS.md).
-
-**Encodage des données:**
 ```typescript
 // Feed URL -> base64
 const rssFeed = btoa(feedUrl)
 
 // Episode ID -> base64(guid,enclosureUrl)
 const rssItem = btoa(`${guid},${enclosureUrl}`)
+// IMPORTANT: décoder avec lastIndexOf(",") car guid peut contenir des virgules
 ```
+
+**Endpoints serveur:**
+- `GET /api/v1/health` - Health check
+- `POST /api/v1/sync` - Sync complet/incrémental
+- `GET/POST/DELETE /api/v1/subscriptions` - Abonnements
+- `POST /api/v1/play` - Position de lecture
+- `GET /api/v1/rss/proxy/{base64_feed}` - CORS proxy
+- `GET /api/v1/public/trending/podcasts` - Tendances
