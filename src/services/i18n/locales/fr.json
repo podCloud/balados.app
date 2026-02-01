@@ -98,6 +98,7 @@
     "connectionError": "Erreur de connexion",
     "connectionFailed": "Connexion échouée",
     "invalidToken": "Token invalide",
+    "invalidServerUrl": "URL du serveur invalide dans les paramètres",
     "manualToken": "Entrer un token manuellement",
     "hideToken": "Masquer",
     "tokenPlaceholder": "Token JWT"

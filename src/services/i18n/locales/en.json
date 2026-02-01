@@ -98,6 +98,7 @@
     "connectionError": "Connection error",
     "connectionFailed": "Connection failed",
     "invalidToken": "Invalid token",
+    "invalidServerUrl": "Invalid server URL in settings",
     "manualToken": "Enter token manually",
     "hideToken": "Hide",
     "tokenPlaceholder": "JWT token"
