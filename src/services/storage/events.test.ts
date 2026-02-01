@@ -178,8 +178,11 @@ describe("events", () => {
       await logEvent("play_paused", { feedUrl: "feed1" });
       await logEvent("subscription_added", { feedUrl: "feed2" });
 
-      // Prune all events older than 0ms (everything)
-      await pruneNonEssentialEvents(0);
+      // Wait a bit so events are older than cutoff
+      await new Promise((r) => setTimeout(r, 50));
+
+      // Prune events older than 10ms (all of them)
+      await pruneNonEssentialEvents(10);
 
       const events = await db.events.toArray();
       // Only play_started and play_completed should remain

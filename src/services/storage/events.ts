@@ -1,5 +1,5 @@
 import { db } from "./index";
-import type { LocalEvent, EventType } from "../../types";
+import type { LocalEvent, EventType, StatsSnapshot, PodcastStats } from "../../types";
 
 export const logEvent = async (
   type: EventType,
@@ -49,6 +49,87 @@ export const getEvents = async (
   return results;
 };
 
+/**
+ * Get the latest stats snapshot.
+ */
+export const getLatestSnapshot = async (): Promise<StatsSnapshot | null> => {
+  const snapshots = await db.statsSnapshots
+    .orderBy("createdAt")
+    .reverse()
+    .limit(1)
+    .toArray();
+  return snapshots[0] || null;
+};
+
+/**
+ * Create a new stats snapshot from current events.
+ * This aggregates all play events into a snapshot for efficient storage.
+ */
+export const createSnapshot = async (): Promise<StatsSnapshot> => {
+  // Get all play events (no time filter - we want everything)
+  const playEvents = await db.events
+    .where("type")
+    .anyOf(["play_started", "play_completed"])
+    .toArray();
+
+  const playStarted = playEvents.filter((e) => e.type === "play_started");
+  const playCompleted = playEvents.filter((e) => e.type === "play_completed");
+
+  // Aggregate by podcast
+  const podcastMap = new Map<string, { plays: number; completed: number }>();
+
+  for (const event of playStarted) {
+    if (event.feedUrl) {
+      const current = podcastMap.get(event.feedUrl) || { plays: 0, completed: 0 };
+      current.plays++;
+      podcastMap.set(event.feedUrl, current);
+    }
+  }
+
+  for (const event of playCompleted) {
+    if (event.feedUrl) {
+      const current = podcastMap.get(event.feedUrl) || { plays: 0, completed: 0 };
+      current.completed++;
+      podcastMap.set(event.feedUrl, current);
+    }
+  }
+
+  const podcastStats: PodcastStats[] = Array.from(podcastMap.entries()).map(
+    ([feedUrl, stats]) => ({ feedUrl, ...stats })
+  );
+
+  const snapshot: StatsSnapshot = {
+    createdAt: Date.now(),
+    totalPlays: playStarted.length,
+    completedPlays: playCompleted.length,
+    podcastStats,
+  };
+
+  const id = await db.statsSnapshots.add(snapshot);
+  return { ...snapshot, id };
+};
+
+/**
+ * Create a snapshot and prune old play events.
+ * This is the main function for long-term storage management.
+ */
+export const createSnapshotAndPrune = async (): Promise<{
+  snapshot: StatsSnapshot;
+  prunedCount: number;
+}> => {
+  const snapshot = await createSnapshot();
+
+  // Delete all play events before the snapshot
+  // (they're now aggregated in the snapshot)
+  const prunedCount = await db.events
+    .where("type")
+    .anyOf(["play_started", "play_completed"])
+    .and((e) => e.timestamp < snapshot.createdAt)
+    .delete();
+
+  return { snapshot, prunedCount };
+};
+
 export const getListeningStats = async (
   since?: number,
 ): Promise<{
@@ -56,8 +137,14 @@ export const getListeningStats = async (
   completedPlays: number;
   topPodcasts: { feedUrl: string; count: number }[];
 }> => {
-  const startTime = since || 0;
+  // If requesting all-time stats (since=0 or undefined), use snapshot + recent events
+  const useSnapshot = !since || since === 0;
+  const snapshot = useSnapshot ? await getLatestSnapshot() : null;
 
+  // Determine the starting point for event query
+  const startTime = snapshot ? snapshot.createdAt : (since || 0);
+
+  // Get events since snapshot (or since requested time)
   const playEvents = await db.events
     .where("type")
     .anyOf(["play_started", "play_completed"])
@@ -67,8 +154,22 @@ export const getListeningStats = async (
   const playStarted = playEvents.filter((e) => e.type === "play_started");
   const playCompleted = playEvents.filter((e) => e.type === "play_completed");
 
-  // Count plays per podcast
+  // Start with snapshot data if available
+  let totalPlays = snapshot?.totalPlays || 0;
+  let completedPlays = snapshot?.completedPlays || 0;
   const podcastCounts = new Map<string, number>();
+
+  // Load snapshot podcast stats
+  if (snapshot) {
+    for (const ps of snapshot.podcastStats) {
+      podcastCounts.set(ps.feedUrl, ps.plays);
+    }
+  }
+
+  // Add recent events
+  totalPlays += playStarted.length;
+  completedPlays += playCompleted.length;
+
   for (const event of playStarted) {
     if (event.feedUrl) {
       podcastCounts.set(
@@ -84,8 +185,8 @@ export const getListeningStats = async (
     .slice(0, 10);
 
   return {
-    totalPlays: playStarted.length,
-    completedPlays: playCompleted.length,
+    totalPlays,
+    completedPlays,
     topPodcasts,
   };
 };
@@ -118,7 +219,7 @@ export const pruneNonEssentialEvents = async (
 
   // Only prune non-essential event types (pause, subscription changes)
   // Keep play_started and play_completed for accurate stats
-  const deleted = await db.events
+  const toDelete = await db.events
     .where("timestamp")
     .below(cutoff)
     .filter((e) =>
@@ -127,7 +228,12 @@ export const pruneNonEssentialEvents = async (
       e.type === "subscription_removed" ||
       e.type === "episode_downloaded"
     )
-    .delete();
+    .toArray();
 
-  return deleted;
+  const ids = toDelete.map((e) => e.id).filter((id): id is number => id !== undefined);
+  if (ids.length > 0) {
+    await db.events.bulkDelete(ids);
+  }
+
+  return ids.length;
 };
