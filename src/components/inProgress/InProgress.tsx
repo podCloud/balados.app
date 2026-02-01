@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, X, Play, Pause, Clock, EyeOff } from "lucide-react";
 import { getCachedFeed } from "../../services/storage";
-import { getInProgressEpisodes } from "../../services/storage/playStatus";
+import { getInProgressEpisodes, generateEpisodeId } from "../../services/storage/playStatus";
+import { getHiddenEpisodes, hideEpisode } from "../../services/storage/hiddenEpisodes";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { usePlayer } from "../../contexts";
 import { DownloadButton } from "../ui/DownloadButton";
@@ -21,24 +22,6 @@ interface EnrichedEpisode {
   feedImage: string;
   playStatus: PlayStatus;
 }
-
-// Store hidden episodes in localStorage
-const HIDDEN_KEY = "hidden_in_progress_episodes";
-
-const getHiddenEpisodes = (): Set<string> => {
-  try {
-    const stored = localStorage.getItem(HIDDEN_KEY);
-    return stored ? new Set(JSON.parse(stored)) : new Set();
-  } catch {
-    return new Set();
-  }
-};
-
-const hideEpisode = (episodeId: string): void => {
-  const hidden = getHiddenEpisodes();
-  hidden.add(episodeId);
-  localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hidden]));
-};
 
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -62,15 +45,18 @@ export const InProgress = ({ onBack }: InProgressProps) => {
     []
   );
 
-  // Get unique feed URLs
+  // Get unique feed URLs (sorted for stable query key)
   const feedUrls = useMemo(() => {
     if (!playStatuses) return [];
-    return [...new Set(playStatuses.map((s) => s.feedUrl))];
+    return [...new Set(playStatuses.map((s) => s.feedUrl))].sort();
   }, [playStatuses]);
+
+  // Stable key for React Query (arrays are compared by reference)
+  const feedUrlsKey = useMemo(() => feedUrls.join(","), [feedUrls]);
 
   // Fetch feeds for all unique URLs
   const feedQueries = useQuery({
-    queryKey: ["in-progress-feeds", feedUrls],
+    queryKey: ["in-progress-feeds", feedUrlsKey],
     queryFn: async () => {
       const feeds: Map<string, PodcastFeed> = new Map();
 
@@ -114,9 +100,9 @@ export const InProgress = ({ onBack }: InProgressProps) => {
       const feed = feedQueries.data.get(status.feedUrl);
       if (!feed) continue;
 
-      // Find matching episode by ID
+      // Find matching episode by ID using the same generation logic
       const episode = feed.items.find((ep) => {
-        const epId = btoa(`${ep.guid || ep.enclosureUrl},${ep.enclosureUrl}`);
+        const epId = generateEpisodeId(ep.guid, ep.enclosureUrl);
         return epId === status.episodeId;
       });
 

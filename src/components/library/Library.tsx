@@ -5,6 +5,7 @@ import { Plus, X, Headphones, Settings, Clock } from "lucide-react";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
 import { getInProgressEpisodes } from "../../services/storage/playStatus";
+import { getHiddenEpisodes } from "../../services/storage/hiddenEpisodes";
 import { SubscriptionItem } from "./SubscriptionItem";
 
 interface LibraryProps {
@@ -23,13 +24,11 @@ export const Library = ({ onNavigate }: LibraryProps) => {
     []
   );
 
-  // Count in-progress episodes
+  // Count in-progress episodes (excluding hidden)
   const inProgressCount = useLiveQuery(
     async () => {
       const episodes = await getInProgressEpisodes();
-      // Filter out hidden episodes
-      const hiddenKey = "hidden_in_progress_episodes";
-      const hidden = new Set(JSON.parse(localStorage.getItem(hiddenKey) || "[]"));
+      const hidden = getHiddenEpisodes();
       return episodes.filter((e) => !hidden.has(e.episodeId)).length;
     },
     []
