@@ -193,8 +193,11 @@ describe("mergePlayStatuses", () => {
   const hourAgo = now - 60 * 60 * 1000;
   const twoMinutesAgo = now - 2 * 60 * 1000;
 
+  // episodeId format: btoa(guid,enclosureUrl) - same as rss_source_item
+  const defaultEpisodeId = btoa("episode-guid-1,https://example.com/episode.mp3");
+
   const createLocalStatus = (overrides: Partial<PlayStatus> = {}): PlayStatus => ({
-    episodeId: "episode-1",
+    episodeId: defaultEpisodeId,
     feedUrl: "https://example.com/feed.xml",
     position: 100,
     duration: 1000,
@@ -207,7 +210,7 @@ describe("mergePlayStatuses", () => {
     overrides: Partial<PlayStatusSync> = {}
   ): PlayStatusSync => ({
     rss_source_feed: btoa("https://example.com/feed.xml"),
-    rss_source_item: btoa("episode-1,https://example.com/feed.xml"),
+    rss_source_item: defaultEpisodeId, // Same format as local episodeId
     position: 100,
     played: false,
     updated_at: new Date(now).toISOString(),
@@ -221,7 +224,7 @@ describe("mergePlayStatuses", () => {
     const result = mergePlayStatuses(local, remote);
 
     expect(result.merged).toHaveLength(1);
-    expect(result.merged[0].episodeId).toBe("episode-1");
+    expect(result.merged[0].episodeId).toBe(defaultEpisodeId);
     expect(result.conflicts).toHaveLength(0);
   });
 
@@ -378,17 +381,22 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should merge multiple play statuses correctly", () => {
+    // Create encoded episode IDs in btoa(guid,enclosureUrl) format
+    const ep1Id = btoa("ep1-guid,https://example.com/ep1.mp3");
+    const ep2Id = btoa("ep2-guid,https://example.com/ep2.mp3");
+    const ep3Id = btoa("ep3-guid,https://example.com/ep3.mp3");
+
     const local: PlayStatus[] = [
-      createLocalStatus({ episodeId: "ep1", position: 100 }),
-      createLocalStatus({ episodeId: "ep2", position: 200 }),
+      createLocalStatus({ episodeId: ep1Id, position: 100 }),
+      createLocalStatus({ episodeId: ep2Id, position: 200 }),
     ];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
-        rss_source_item: btoa("ep2,https://example.com/feed.xml"),
+        rss_source_item: ep2Id,
         position: 300,
       }),
       createRemoteStatus({
-        rss_source_item: btoa("ep3,https://example.com/feed.xml"),
+        rss_source_item: ep3Id,
         position: 50,
       }),
     ];
@@ -399,9 +407,9 @@ describe("mergePlayStatuses", () => {
     const byId = Object.fromEntries(
       result.merged.map((s) => [s.episodeId, s])
     );
-    expect(byId["ep1"].position).toBe(100);
-    expect(byId["ep2"].position).toBe(300); // Remote higher, close timestamps
-    expect(byId["ep3"].position).toBe(50);
+    expect(byId[ep1Id].position).toBe(100);
+    expect(byId[ep2Id].position).toBe(300); // Remote higher, close timestamps
+    expect(byId[ep3Id].position).toBe(50);
   });
 });
 
@@ -424,9 +432,12 @@ describe("subscriptionsToSync", () => {
 
 describe("playStatusesToSync", () => {
   it("should convert play statuses to sync format", () => {
+    // episodeId is already in btoa(guid,enclosureUrl) format
+    const encodedEpisodeId = btoa("episode-guid-1,https://example.com/episode.mp3");
+
     const statuses: PlayStatus[] = [
       {
-        episodeId: "episode-1",
+        episodeId: encodedEpisodeId,
         feedUrl: "https://example.com/feed.xml",
         position: 120,
         duration: 1000,
@@ -439,9 +450,8 @@ describe("playStatusesToSync", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].rss_source_feed).toBe(btoa("https://example.com/feed.xml"));
-    expect(result[0].rss_source_item).toBe(
-      btoa("episode-1,https://example.com/feed.xml")
-    );
+    // rss_source_item should be the same as episodeId (already encoded)
+    expect(result[0].rss_source_item).toBe(encodedEpisodeId);
     expect(result[0].position).toBe(120);
     expect(result[0].played).toBe(true);
     expect(result[0].updated_at).toBe("2024-01-01T00:00:00.000Z");

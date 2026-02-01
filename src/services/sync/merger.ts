@@ -198,6 +198,7 @@ export function mergePlayStatuses(
   const conflicts: MergeResult<PlayStatus>["conflicts"] = [];
 
   // Create maps for quick lookup
+  // Note: episodeId is already in btoa(guid,enclosureUrl) format, same as rss_source_item
   const localMap = new Map<string, PlayStatus>();
   for (const status of local) {
     localMap.set(status.episodeId, status);
@@ -205,8 +206,8 @@ export function mergePlayStatuses(
 
   const remoteMap = new Map<string, PlayStatusSync>();
   for (const status of remote) {
-    const { guid } = decodeRssItem(status.rss_source_item);
-    remoteMap.set(guid, status);
+    // Use rss_source_item directly as key (already encoded)
+    remoteMap.set(status.rss_source_item, status);
   }
 
   // Get all unique episode IDs
@@ -224,9 +225,9 @@ export function mergePlayStatuses(
 
     // Only remote exists
     if (!localStatus && remoteStatus) {
-      const { guid } = decodeRssItem(remoteStatus.rss_source_item);
+      // Use rss_source_item directly as episodeId (already in btoa(guid,enclosureUrl) format)
       merged.push({
-        episodeId: guid,
+        episodeId: remoteStatus.rss_source_item,
         feedUrl: decodeRssFeed(remoteStatus.rss_source_feed),
         position: remoteStatus.position,
         duration: 0, // Will be filled when episode is loaded
@@ -317,7 +318,8 @@ export function subscriptionsToSync(
 export function playStatusesToSync(statuses: PlayStatus[]): PlayStatusSync[] {
   return statuses.map((status) => ({
     rss_source_feed: encodeRssFeed(status.feedUrl),
-    rss_source_item: btoa(`${status.episodeId},${status.feedUrl}`),
+    // episodeId is already in btoa(guid,enclosureUrl) format, use directly
+    rss_source_item: status.episodeId,
     position: status.position,
     played: status.completed,
     updated_at: new Date(status.updatedAt).toISOString(),
