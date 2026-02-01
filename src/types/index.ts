@@ -80,7 +80,7 @@ export interface AppSettings {
 
 // Navigation types
 export type TabId = "library" | "player" | "explorer" | "debug";
-export type ViewId = TabId | "podcast" | "settings";
+export type ViewId = TabId | "podcast" | "settings" | "stats";
 
 // Sync types (for future use with balados.sync)
 export interface SyncPayload {

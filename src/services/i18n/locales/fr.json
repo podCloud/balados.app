@@ -117,5 +117,28 @@
     "episodeCount_other": "{{count}} épisodes",
     "error": "Erreur de téléchargement",
     "noDownloads": "Aucun épisode téléchargé"
+  },
+  "stats": {
+    "title": "Statistiques",
+    "period": "Période",
+    "today": "Aujourd'hui",
+    "week": "Cette semaine",
+    "month": "Ce mois",
+    "allTime": "Tout le temps",
+    "listeningTime": "Temps d'écoute",
+    "totalPlays": "Lectures",
+    "completed": "Terminées",
+    "topPodcasts": "Top podcasts",
+    "recentActivity": "Activité récente",
+    "noActivity": "Aucune activité",
+    "noData": "Pas encore de données",
+    "plays": "{{count}} lecture",
+    "plays_other": "{{count}} lectures",
+    "subscriptions": "Abonnements",
+    "added": "Ajouté",
+    "removed": "Retiré",
+    "playStarted": "Lecture démarrée",
+    "playCompleted": "Épisode terminé",
+    "playPaused": "Lecture en pause"
   }
 }

@@ -26,29 +26,25 @@ export const getEvents = async (
     limit?: number;
   },
 ): Promise<LocalEvent[]> => {
-  let collection = db.events.orderBy("timestamp").reverse();
+  // Start with timestamp-ordered collection
+  let collection = db.events.orderBy("timestamp");
 
+  // Filter by type at DB level if specified
   if (options?.type) {
-    collection = db.events
-      .where("type")
-      .equals(options.type)
-      .reverse();
+    collection = db.events.where("type").equals(options.type);
   }
 
-  let results = await collection.toArray();
-
-  if (options?.feedUrl) {
-    results = results.filter((e) => e.feedUrl === options.feedUrl);
-  }
-
-  if (options?.since) {
-    const since = options.since;
-    results = results.filter((e) => e.timestamp >= since);
-  }
-
-  if (options?.limit) {
-    results = results.slice(0, options.limit);
-  }
+  // Apply timestamp filter at DB level using .filter() before loading
+  // and apply feedUrl filter (not indexed, but filtered before full load)
+  const results = await collection
+    .filter((e) => {
+      if (options?.since && e.timestamp < options.since) return false;
+      if (options?.feedUrl && e.feedUrl !== options.feedUrl) return false;
+      return true;
+    })
+    .reverse()
+    .limit(options?.limit || Infinity)
+    .toArray();
 
   return results;
 };
@@ -100,4 +96,38 @@ export const clearEvents = async (before?: number): Promise<void> => {
   } else {
     await db.events.clear();
   }
+};
+
+/**
+ * Get event count for storage management.
+ */
+export const getEventCount = async (): Promise<number> => {
+  return db.events.count();
+};
+
+/**
+ * Prune non-essential events to save storage.
+ * IMPORTANT: Preserves play_started and play_completed events
+ * to maintain listening statistics accuracy.
+ * Only removes pause events and subscription events older than cutoff.
+ */
+export const pruneNonEssentialEvents = async (
+  olderThanMs: number,
+): Promise<number> => {
+  const cutoff = Date.now() - olderThanMs;
+
+  // Only prune non-essential event types (pause, subscription changes)
+  // Keep play_started and play_completed for accurate stats
+  const deleted = await db.events
+    .where("timestamp")
+    .below(cutoff)
+    .filter((e) =>
+      e.type === "play_paused" ||
+      e.type === "subscription_added" ||
+      e.type === "subscription_removed" ||
+      e.type === "episode_downloaded"
+    )
+    .delete();
+
+  return deleted;
 };

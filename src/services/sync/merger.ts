@@ -3,7 +3,6 @@ import {
   type SubscriptionSync,
   type PlayStatusSync,
   decodeRssFeed,
-  decodeRssItem,
   encodeRssFeed,
 } from "./client";
 

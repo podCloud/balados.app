@@ -117,5 +117,28 @@
     "episodeCount_other": "{{count}} episodes",
     "error": "Download error",
     "noDownloads": "No downloaded episodes"
+  },
+  "stats": {
+    "title": "Statistics",
+    "period": "Period",
+    "today": "Today",
+    "week": "This week",
+    "month": "This month",
+    "allTime": "All time",
+    "listeningTime": "Listening time",
+    "totalPlays": "Plays",
+    "completed": "Completed",
+    "topPodcasts": "Top podcasts",
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity",
+    "noData": "No data yet",
+    "plays": "{{count}} play",
+    "plays_other": "{{count}} plays",
+    "subscriptions": "Subscriptions",
+    "added": "Added",
+    "removed": "Removed",
+    "playStarted": "Play started",
+    "playCompleted": "Episode finished",
+    "playPaused": "Play paused"
   }
 }
