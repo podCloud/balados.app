@@ -126,7 +126,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
   const handleHide = (episodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     hideEpisode(episodeId);
-    setHiddenEpisodes(new Set(getHiddenEpisodes()));
+    setHiddenEpisodes(getHiddenEpisodes());
   };
 
   const handleClick = (item: EnrichedEpisode) => {
@@ -196,9 +196,16 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                       <img
                         src={item.episode.image || item.feedImage}
                         alt=""
-                        className="w-14 h-14 rounded-lg object-cover"
+                        className="w-14 h-14 rounded-lg object-cover bg-gray-200"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = item.feedImage || "";
+                          const img = e.target as HTMLImageElement;
+                          // Only fallback if we haven't tried feedImage yet
+                          if (item.feedImage && img.src !== item.feedImage) {
+                            img.src = item.feedImage;
+                          } else {
+                            // Hide broken image and show placeholder bg
+                            img.style.visibility = "hidden";
+                          }
                         }}
                       />
                       <div
