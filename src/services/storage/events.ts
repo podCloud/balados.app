@@ -72,26 +72,24 @@ export const createSnapshot = async (): Promise<StatsSnapshot> => {
     .anyOf(["play_started", "play_completed"])
     .toArray();
 
-  const playStarted = playEvents.filter((e) => e.type === "play_started");
-  const playCompleted = playEvents.filter((e) => e.type === "play_completed");
+  // Only count events WITH feedUrl for consistency
+  // Events without feedUrl are ignored (shouldn't happen in practice)
+  const playStarted = playEvents.filter((e) => e.type === "play_started" && e.feedUrl);
+  const playCompleted = playEvents.filter((e) => e.type === "play_completed" && e.feedUrl);
 
   // Aggregate by podcast
   const podcastMap = new Map<string, { plays: number; completed: number }>();
 
   for (const event of playStarted) {
-    if (event.feedUrl) {
-      const current = podcastMap.get(event.feedUrl) || { plays: 0, completed: 0 };
-      current.plays++;
-      podcastMap.set(event.feedUrl, current);
-    }
+    const current = podcastMap.get(event.feedUrl!) || { plays: 0, completed: 0 };
+    current.plays++;
+    podcastMap.set(event.feedUrl!, current);
   }
 
   for (const event of playCompleted) {
-    if (event.feedUrl) {
-      const current = podcastMap.get(event.feedUrl) || { plays: 0, completed: 0 };
-      current.completed++;
-      podcastMap.set(event.feedUrl, current);
-    }
+    const current = podcastMap.get(event.feedUrl!) || { plays: 0, completed: 0 };
+    current.completed++;
+    podcastMap.set(event.feedUrl!, current);
   }
 
   const podcastStats: PodcastStats[] = Array.from(podcastMap.entries()).map(
@@ -211,6 +209,10 @@ export const getEventCount = async (): Promise<number> => {
  * IMPORTANT: Preserves play_started and play_completed events
  * to maintain listening statistics accuracy.
  * Only removes pause events and subscription events older than cutoff.
+ *
+ * Note: We use toArray() + bulkDelete() because Dexie's .filter().delete()
+ * chain doesn't work correctly. The .delete() method only works directly
+ * after .where() without intermediate .filter() calls.
  */
 export const pruneNonEssentialEvents = async (
   olderThanMs: number,
