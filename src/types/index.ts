@@ -61,6 +61,21 @@ export interface LocalEvent {
   metadata?: Record<string, unknown>;
 }
 
+// Stats snapshot for efficient long-term storage (CQRS-inspired)
+export interface PodcastStats {
+  feedUrl: string;
+  plays: number;
+  completed: number;
+}
+
+export interface StatsSnapshot {
+  id?: number;
+  createdAt: number;
+  totalPlays: number;
+  completedPlays: number;
+  podcastStats: PodcastStats[];
+}
+
 // Proxy configuration
 export interface ProxyConfig {
   url: string;
