@@ -8,6 +8,16 @@ import {
 } from "./client";
 
 /**
+ * Episode ID Format Convention:
+ * - episodeId is ALWAYS in btoa(guid,enclosureUrl) format
+ * - This is the SAME format as rss_source_item from the server
+ * - Never decode/re-encode episodeId - use it directly
+ *
+ * This convention is shared between balados.app and balados.sync.
+ * See also: generateEpisodeId() in storage/playStatus.ts
+ */
+
+/**
  * Result of a merge operation
  */
 export interface MergeResult<T> {
