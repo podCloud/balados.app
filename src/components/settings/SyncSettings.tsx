@@ -68,8 +68,21 @@ export const SyncSettings = () => {
   // Handle OAuth callback via postMessage
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
+      // Require server URL to be configured first
+      if (!state.serverUrl) {
+        console.warn("OAuth callback received but no server configured");
+        return;
+      }
+
       // Validate origin matches our server
-      if (state.serverUrl && event.origin !== new URL(state.serverUrl).origin) {
+      try {
+        const expectedOrigin = new URL(state.serverUrl).origin;
+        if (event.origin !== expectedOrigin) {
+          console.warn(`Rejected OAuth from unexpected origin: ${event.origin}`);
+          return;
+        }
+      } catch (error) {
+        console.error("Invalid server URL", error);
         return;
       }
 

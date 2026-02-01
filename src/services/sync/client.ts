@@ -329,7 +329,8 @@ export class SyncClient {
       this.setToken(data.access_token, data.refresh_token, data.expires_in);
       await this.saveCredentials();
       return true;
-    } catch {
+    } catch (error) {
+      console.error("Token refresh failed:", error);
       return false;
     }
   }

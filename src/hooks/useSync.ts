@@ -78,7 +78,10 @@ export function useSync(): UseSyncReturn {
     isMounted.current = true;
 
     const loadState = async () => {
+      if (!isMounted.current) return;
+
       const settings = await getSettings();
+      if (!isMounted.current) return;
 
       if (settings.syncServerUrl && settings.syncToken) {
         // Create client and test connection
@@ -87,6 +90,8 @@ export function useSync(): UseSyncReturn {
           settings.syncToken
         );
         clientRef.current = client;
+
+        if (!isMounted.current) return;
 
         const isConnected = await client.testConnection();
 
