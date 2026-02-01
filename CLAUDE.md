@@ -315,37 +315,25 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 
 ## Work In Progress
 
-### Branche `feature/sync` (Issues #12, #13, #14)
+### Synchronisation (Phase 4) - COMPLÈTE
 
-**NE PAS MERGER CETTE BRANCHE POUR L'INSTANT**
+La fonctionnalité sync est maintenant implémentée :
+- [x] #12 Client API balados.sync (PR #22)
+- [x] #23 SyncSettings UI
+- [x] #24 Conflict resolution merger
+- [x] #25 useSync React hook
 
-La synchronisation est une fonctionnalité complexe qui regroupe :
-- [x] #12 [Phase 4.1] Client API balados.sync - **DONE** (PR #22)
-- [ ] #13 [Phase 4.2] UI de connexion et paramètres sync
-- [ ] #14 [Phase 4.3] Synchronisation et résolution de conflits
+**Documentation détaillée:** [docs/SYNC_STATUS.md](docs/SYNC_STATUS.md)
 
-Cette branche sera mergée uniquement quand toute la feature sync sera complète et testée.
+#### Fichiers implémentés
 
-**Pour voir la doc complète:** `git checkout feature/sync` puis lire `docs/SYNC_STATUS.md`
+- `src/services/sync/client.ts` - Client API complet
+- `src/services/sync/merger.ts` - Résolution de conflits
+- `src/components/settings/SyncSettings.tsx` - UI de connexion
+- `src/hooks/useSync.ts` - Hook React pour le sync
 
-#### État actuel (2026-01-31)
+#### Encodage des données (convention partagée)
 
-**Implémenté sur `feature/sync`:**
-- `src/services/sync/client.ts` - Client API complet avec:
-  - Tous les endpoints (sync, subscriptions, play, proxy, trending)
-  - Auth JWT avec refresh automatique
-  - Retry avec backoff exponentiel
-  - Helpers d'encodage base64
-
-**À faire:**
-1. `src/components/settings/SyncSettings.tsx` - UI de connexion
-2. `src/services/sync/merger.ts` - Résolution de conflits
-3. `src/hooks/useSync.ts` - Hook React pour le sync
-4. Intégration avec `proxyManager.ts` pour utiliser le proxy serveur
-
-#### Coordination avec balados.sync
-
-**Encodage des données (convention partagée):**
 ```typescript
 // Feed URL -> base64
 const rssFeed = btoa(feedUrl)
@@ -355,7 +343,7 @@ const rssItem = btoa(`${guid},${enclosureUrl}`)
 // IMPORTANT: décoder avec lastIndexOf(",") car guid peut contenir des virgules
 ```
 
-**Endpoints attendus sur le serveur:**
+**Endpoints serveur:**
 - `GET /api/v1/health` - Health check
 - `POST /api/v1/sync` - Sync complet/incrémental
 - `GET/POST/DELETE /api/v1/subscriptions` - Abonnements

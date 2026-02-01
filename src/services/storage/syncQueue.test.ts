@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { db } from "./index";
 import {
   queueSubscribe,
@@ -81,7 +81,7 @@ describe("syncQueue", () => {
 
       const action = await db.syncQueue.get(id);
       expect(action?.action).toBe("updatePlayStatus");
-      expect(action?.payload.episodeId).toBe("ep1");
+      expect((action?.payload as { episodeId: string }).episodeId).toBe("ep1");
     });
 
     it("keeps only latest play status for same episode", async () => {
@@ -102,7 +102,7 @@ describe("syncQueue", () => {
 
       const actions = await db.syncQueue.toArray();
       expect(actions).toHaveLength(1);
-      expect(actions[0].payload.position).toBe(500);
+      expect((actions[0].payload as { position: number }).position).toBe(500);
     });
   });
 
