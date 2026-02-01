@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Play, CheckCircle, Radio, Clock } from "lucide-react";
+import { ArrowLeft, Play, CheckCircle, Radio, Clock, AlertCircle } from "lucide-react";
 import { getListeningStats, getEvents } from "../../services/storage/events";
 import { getSubscription } from "../../services/storage/subscriptions";
 import type { LocalEvent } from "../../types";
@@ -14,8 +14,17 @@ interface StatsProps {
 interface PodcastInfo {
   feedUrl: string;
   title: string;
-  count: number;
+  playCount: number;
 }
+
+// Safe URL hostname extraction
+const getFallbackTitle = (feedUrl: string): string => {
+  try {
+    return new URL(feedUrl).hostname;
+  } catch {
+    return feedUrl.length > 50 ? feedUrl.slice(0, 50) + "..." : feedUrl;
+  }
+};
 
 const getPeriodStart = (period: Period): number => {
   const now = Date.now();
@@ -54,40 +63,57 @@ export const Stats = ({ onBack }: StatsProps) => {
   }>({ totalPlays: 0, completedPlays: 0, topPodcasts: [] });
   const [recentEvents, setRecentEvents] = useState<LocalEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStats = async () => {
       setLoading(true);
-      const since = getPeriodStart(period);
+      setError(null);
 
-      const rawStats = await getListeningStats(since);
+      try {
+        const since = getPeriodStart(period);
+        const rawStats = await getListeningStats(since);
 
-      // Enrich top podcasts with titles
-      const enrichedPodcasts: PodcastInfo[] = await Promise.all(
-        rawStats.topPodcasts.map(async (p) => {
-          const sub = await getSubscription(p.feedUrl);
-          return {
-            feedUrl: p.feedUrl,
-            title: sub?.title || new URL(p.feedUrl).hostname,
-            count: p.count,
-          };
-        })
-      );
+        // Enrich top podcasts with titles (with individual error handling)
+        const enrichedPodcasts: PodcastInfo[] = await Promise.all(
+          rawStats.topPodcasts.map(async (p) => {
+            try {
+              const sub = await getSubscription(p.feedUrl);
+              return {
+                feedUrl: p.feedUrl,
+                title: sub?.title || getFallbackTitle(p.feedUrl),
+                playCount: p.count,
+              };
+            } catch {
+              return {
+                feedUrl: p.feedUrl,
+                title: getFallbackTitle(p.feedUrl),
+                playCount: p.count,
+              };
+            }
+          })
+        );
 
-      setStats({
-        ...rawStats,
-        topPodcasts: enrichedPodcasts,
-      });
+        setStats({
+          ...rawStats,
+          topPodcasts: enrichedPodcasts,
+        });
 
-      // Load recent events
-      const events = await getEvents({ since, limit: 20 });
-      setRecentEvents(events);
-
-      setLoading(false);
+        // Load recent events
+        const events = await getEvents({ since, limit: 20 });
+        setRecentEvents(events);
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+        setError(t("common.error"));
+        setStats({ totalPlays: 0, completedPlays: 0, topPodcasts: [] });
+        setRecentEvents([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadStats();
-  }, [period]);
+  }, [period, t]);
 
   const getEventIcon = (type: string) => {
     switch (type) {
@@ -122,12 +148,12 @@ export const Stats = ({ onBack }: StatsProps) => {
     }
   };
 
-  const periods: { id: Period; label: string }[] = [
-    { id: "today", label: t("stats.today") },
-    { id: "week", label: t("stats.week") },
-    { id: "month", label: t("stats.month") },
-    { id: "allTime", label: t("stats.allTime") },
-  ];
+  const periods = useMemo(() => [
+    { id: "today" as const, label: t("stats.today") },
+    { id: "week" as const, label: t("stats.week") },
+    { id: "month" as const, label: t("stats.month") },
+    { id: "allTime" as const, label: t("stats.allTime") },
+  ], [t]);
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -165,6 +191,11 @@ export const Stats = ({ onBack }: StatsProps) => {
         {loading ? (
           <div className="p-4 text-center text-gray-500">
             {t("common.loading")}
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <AlertCircle size={48} className="mx-auto text-red-400 mb-2" />
+            <p className="text-red-500">{error}</p>
           </div>
         ) : (
           <>
@@ -211,7 +242,7 @@ export const Stats = ({ onBack }: StatsProps) => {
                         </div>
                       </div>
                       <span className="text-sm text-gray-500">
-                        {t("stats.plays", { count: podcast.count })}
+                        {t("stats.plays", { count: podcast.playCount })}
                       </span>
                     </div>
                   ))}

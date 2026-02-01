@@ -68,9 +68,11 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     // Save current position before switching
     await savePosition();
 
-    // Log play_started event for stats
+    // Log play_started event for stats (best-effort, don't block playback)
     const episodeId = episode.guid || episode.enclosureUrl;
-    await logEvent("play_started", { feedUrl, episodeId });
+    logEvent("play_started", { feedUrl, episodeId }).catch((err) =>
+      console.error("Failed to log play event:", err)
+    );
 
     // Revoke previous blob URL to prevent memory leak
     const prevSrc = audioRef.current.src;
@@ -153,14 +155,17 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
 
     const handlePlay = () => setState((prev) => ({ ...prev, isPlaying: true, isLoading: false }));
     const handlePause = () => {
-      setState((prev) => {
-        // Log pause event for stats (only if we have episode info)
-        if (prev.currentEpisode && prev.feedUrl) {
-          const episodeId = prev.currentEpisode.guid || prev.currentEpisode.enclosureUrl;
-          logEvent("play_paused", { feedUrl: prev.feedUrl, episodeId });
-        }
-        return { ...prev, isPlaying: false };
-      });
+      // Capture state before updating to avoid race condition
+      const { currentEpisode, feedUrl } = state;
+      setState((prev) => ({ ...prev, isPlaying: false }));
+
+      // Log pause event outside setState (fire-and-forget with error handling)
+      if (currentEpisode && feedUrl) {
+        const episodeId = currentEpisode.guid || currentEpisode.enclosureUrl;
+        logEvent("play_paused", { feedUrl, episodeId }).catch((err) =>
+          console.error("Failed to log pause event:", err)
+        );
+      }
     };
     const handleTimeUpdate = () => {
       setState((prev) => ({ ...prev, currentTime: audio.currentTime }));
@@ -171,15 +176,18 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     const handleLoadStart = () => setState((prev) => ({ ...prev, isLoading: true }));
     const handleCanPlay = () => setState((prev) => ({ ...prev, isLoading: false }));
     const handleEnded = () => {
-      setState((prev) => {
-        // Log play_completed event for stats
-        if (prev.currentEpisode && prev.feedUrl) {
-          const episodeId = prev.currentEpisode.guid || prev.currentEpisode.enclosureUrl;
-          logEvent("play_completed", { feedUrl: prev.feedUrl, episodeId });
-        }
-        return { ...prev, isPlaying: false };
-      });
+      // Capture state before updating to avoid race condition
+      const { currentEpisode, feedUrl } = state;
+      setState((prev) => ({ ...prev, isPlaying: false }));
       savePosition();
+
+      // Log completed event outside setState (fire-and-forget with error handling)
+      if (currentEpisode && feedUrl) {
+        const episodeId = currentEpisode.guid || currentEpisode.enclosureUrl;
+        logEvent("play_completed", { feedUrl, episodeId }).catch((err) =>
+          console.error("Failed to log completed event:", err)
+        );
+      }
     };
 
     audio.addEventListener("play", handlePlay);
