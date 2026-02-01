@@ -8,6 +8,7 @@ import { Explorer } from "./components/explorer/Explorer";
 import { Debug } from "./components/debug/Debug";
 import { Settings } from "./components/settings/Settings";
 import { Stats } from "./components/stats/Stats";
+import { InProgress } from "./components/inProgress/InProgress";
 import { TabBar } from "./components/ui/TabBar";
 import { OfflineBanner } from "./components/ui/OfflineBanner";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
@@ -61,6 +62,10 @@ const AppContent = () => {
 
     if (currentView === "stats") {
       return <Stats onBack={() => handleNavigate("settings")} />;
+    }
+
+    if (currentView === "inProgress") {
+      return <InProgress onBack={() => handleNavigate("library")} />;
     }
 
     if (currentView === "podcast" && selectedFeedUrl) {

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useTranslation } from "react-i18next";
-import { Plus, X, Headphones, Settings } from "lucide-react";
+import { Plus, X, Headphones, Settings, Clock } from "lucide-react";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
+import { getInProgressEpisodes } from "../../services/storage/playStatus";
 import { SubscriptionItem } from "./SubscriptionItem";
 
 interface LibraryProps {
@@ -19,6 +20,18 @@ export const Library = ({ onNavigate }: LibraryProps) => {
 
   const subscriptions = useLiveQuery(
     () => db.subscriptions.orderBy("addedAt").reverse().toArray(),
+    []
+  );
+
+  // Count in-progress episodes
+  const inProgressCount = useLiveQuery(
+    async () => {
+      const episodes = await getInProgressEpisodes();
+      // Filter out hidden episodes
+      const hiddenKey = "hidden_in_progress_episodes";
+      const hidden = new Set(JSON.parse(localStorage.getItem(hiddenKey) || "[]"));
+      return episodes.filter((e) => !hidden.has(e.episodeId)).length;
+    },
     []
   );
 
@@ -54,12 +67,26 @@ export const Library = ({ onNavigate }: LibraryProps) => {
           <h2 className="text-base font-semibold text-gray-900">
             {t("library.title")}
           </h2>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="text-blue-500 w-8 h-8 flex items-center justify-center"
-          >
-            {showAddForm ? <X size={24} /> : <Plus size={24} />}
-          </button>
+          <div className="flex items-center gap-1">
+            {(inProgressCount ?? 0) > 0 && (
+              <button
+                onClick={() => onNavigate("inProgress")}
+                className="relative text-gray-500 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"
+                title={t("inProgress.title")}
+              >
+                <Clock size={20} />
+                <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                  {inProgressCount}
+                </span>
+              </button>
+            )}
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="text-blue-500 w-8 h-8 flex items-center justify-center"
+            >
+              {showAddForm ? <X size={24} /> : <Plus size={24} />}
+            </button>
+          </div>
         </div>
 
         {showAddForm && (

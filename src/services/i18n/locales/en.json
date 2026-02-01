@@ -118,6 +118,12 @@
     "error": "Download error",
     "noDownloads": "No downloaded episodes"
   },
+  "inProgress": {
+    "title": "In Progress",
+    "empty": "No episodes in progress",
+    "hide": "Hide this episode",
+    "resume": "Resume listening"
+  },
   "stats": {
     "title": "Statistics",
     "period": "Period",
