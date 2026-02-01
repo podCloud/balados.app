@@ -64,13 +64,17 @@ export const getLatestSnapshot = async (): Promise<StatsSnapshot | null> => {
 /**
  * Create a new stats snapshot from current events.
  * This aggregates all play events into a snapshot for efficient storage.
+ *
+ * @param beforeTimestamp - Only include events before this timestamp.
+ *   Used by createSnapshotAndPrune() to avoid race conditions.
  */
-export const createSnapshot = async (): Promise<StatsSnapshot> => {
-  // Get all play events (no time filter - we want everything)
-  const playEvents = await db.events
-    .where("type")
-    .anyOf(["play_started", "play_completed"])
-    .toArray();
+export const createSnapshot = async (beforeTimestamp?: number): Promise<StatsSnapshot> => {
+  // Capture cutoff time BEFORE reading events to avoid race conditions
+  const cutoff = beforeTimestamp ?? Date.now();
+
+  // Get play events up to the cutoff time
+  let query = db.events.where("type").anyOf(["play_started", "play_completed"]);
+  const playEvents = await query.filter((e) => e.timestamp < cutoff).toArray();
 
   // Only count events WITH feedUrl for consistency
   // Events without feedUrl are ignored (shouldn't happen in practice)
@@ -97,7 +101,7 @@ export const createSnapshot = async (): Promise<StatsSnapshot> => {
   );
 
   const snapshot: StatsSnapshot = {
-    createdAt: Date.now(),
+    createdAt: cutoff,
     totalPlays: playStarted.length,
     completedPlays: playCompleted.length,
     podcastStats,
@@ -109,20 +113,30 @@ export const createSnapshot = async (): Promise<StatsSnapshot> => {
 
 /**
  * Create a snapshot and prune old play events.
+ *
+ * **Recommended usage:**
+ * - Call periodically (e.g., weekly) via a background job
+ * - Call when event count exceeds a threshold (e.g., 10,000 events)
+ * - Call before sync to minimize data transfer
+ *
  * This is the main function for long-term storage management.
  */
 export const createSnapshotAndPrune = async (): Promise<{
   snapshot: StatsSnapshot;
   prunedCount: number;
 }> => {
-  const snapshot = await createSnapshot();
+  // Capture cutoff BEFORE any async operations to prevent race conditions
+  // where new events arrive between snapshot creation and pruning
+  const cutoff = Date.now();
+
+  const snapshot = await createSnapshot(cutoff);
 
   // Delete all play events before the snapshot
   // (they're now aggregated in the snapshot)
   const prunedCount = await db.events
     .where("type")
     .anyOf(["play_started", "play_completed"])
-    .and((e) => e.timestamp < snapshot.createdAt)
+    .and((e) => e.timestamp < cutoff)
     .delete();
 
   return { snapshot, prunedCount };

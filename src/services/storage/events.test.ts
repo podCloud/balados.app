@@ -212,6 +212,8 @@ describe("events", () => {
       await logEvent("play_started", { feedUrl: "feed1" });
       await logEvent("play_completed", { feedUrl: "feed1" });
 
+      // Wait to ensure events have earlier timestamp than snapshot cutoff
+      await new Promise((r) => setTimeout(r, 10));
       const snapshot = await createSnapshot();
 
       expect(snapshot.totalPlays).toBe(1);
@@ -229,6 +231,8 @@ describe("events", () => {
       await logEvent("play_completed", { feedUrl: "feed1" });
       await logEvent("play_started", { feedUrl: "feed2" });
 
+      // Wait to ensure events have earlier timestamp than snapshot cutoff
+      await new Promise((r) => setTimeout(r, 10));
       const snapshot = await createSnapshot();
 
       expect(snapshot.totalPlays).toBe(3);
@@ -248,6 +252,8 @@ describe("events", () => {
       await logEvent("play_started", { feedUrl: "feed1" });
       await logEvent("play_started"); // No feedUrl
 
+      // Wait to ensure events have earlier timestamp than snapshot cutoff
+      await new Promise((r) => setTimeout(r, 10));
       const snapshot = await createSnapshot();
 
       expect(snapshot.totalPlays).toBe(1);
@@ -263,11 +269,15 @@ describe("events", () => {
 
     it("should return the most recent snapshot", async () => {
       await logEvent("play_started", { feedUrl: "feed1" });
+      // Wait to ensure event has earlier timestamp than snapshot cutoff
+      await new Promise((r) => setTimeout(r, 10));
       await createSnapshot();
 
       await new Promise((r) => setTimeout(r, 10));
 
       await logEvent("play_started", { feedUrl: "feed2" });
+      // Wait to ensure event has earlier timestamp than snapshot cutoff
+      await new Promise((r) => setTimeout(r, 10));
       const second = await createSnapshot();
 
       const latest = await getLatestSnapshot();
