@@ -118,6 +118,12 @@
     "error": "Erreur de téléchargement",
     "noDownloads": "Aucun épisode téléchargé"
   },
+  "inProgress": {
+    "title": "En cours",
+    "empty": "Aucun épisode en cours",
+    "hide": "Masquer cet épisode",
+    "resume": "Continuer l'écoute"
+  },
   "stats": {
     "title": "Statistiques",
     "period": "Période",
