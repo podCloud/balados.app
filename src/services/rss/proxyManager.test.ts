@@ -77,7 +77,7 @@ describe("fetchWithProxy", () => {
 
     await fetchWithProxy(FEED_URL);
 
-    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${btoa(FEED_URL)}`;
+    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${encodeURIComponent(btoa(FEED_URL))}`;
     expect(mockFetch).toHaveBeenCalledWith(expectedUrl, {
       headers: { Authorization: "Bearer test-jwt-token" },
     });
@@ -168,7 +168,7 @@ describe("fetchWithProxy", () => {
 
     await fetchWithProxy(FEED_URL);
 
-    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${btoa(FEED_URL)}`;
+    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${encodeURIComponent(btoa(FEED_URL))}`;
     expect(mockFetch).toHaveBeenCalledWith(expectedUrl, expect.any(Object));
   });
 
