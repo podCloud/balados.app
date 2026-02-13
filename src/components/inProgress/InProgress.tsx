@@ -157,10 +157,10 @@ export const InProgress = ({ onBack }: InProgressProps) => {
           className="p-1 -ml-1 hover:bg-gray-100 rounded-lg"
           aria-label={t("settings.back")}
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={24} aria-hidden="true" />
         </button>
         <h1 className="text-lg font-semibold flex-1">{t("inProgress.title")}</h1>
-        <Clock size={20} className="text-gray-400" />
+        <Clock size={20} className="text-gray-400" aria-hidden="true" />
       </div>
 
       {/* Content */}
@@ -171,7 +171,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
           </div>
         ) : enrichedEpisodes.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            <EyeOff size={48} className="mx-auto mb-4 text-gray-300" />
+            <EyeOff size={48} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
             <p>{t("inProgress.empty")}</p>
           </div>
         ) : (
@@ -196,7 +196,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                     <div className="relative flex-shrink-0">
                       <img
                         src={item.episode.image || item.feedImage}
-                        alt=""
+                        alt={item.episode.title}
                         className="w-14 h-14 rounded-lg object-cover bg-gray-200"
                         onError={(e) => {
                           const img = e.target as HTMLImageElement;
@@ -215,9 +215,9 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                         } transition-opacity`}
                       >
                         {isEpisodePlaying ? (
-                          <Pause size={24} className="text-white" fill="white" />
+                          <Pause size={24} className="text-white" fill="white" aria-hidden="true" />
                         ) : (
-                          <Play size={24} className="text-white ml-1" fill="white" />
+                          <Play size={24} className="text-white ml-1" fill="white" aria-hidden="true" />
                         )}
                       </div>
                     </div>
@@ -266,7 +266,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                         title={t("inProgress.hide")}
                         aria-label={t("inProgress.hide")}
                       >
-                        <X size={18} />
+                        <X size={18} aria-hidden="true" />
                       </button>
                     </div>
                   </div>

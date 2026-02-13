@@ -22,11 +22,11 @@ const getLogColor = (type: DebugLog["type"]) => {
 const getLogIcon = (type: DebugLog["type"]) => {
   switch (type) {
     case "error":
-      return <AlertCircle size={14} className="text-red-500" />;
+      return <AlertCircle size={14} className="text-red-500" aria-hidden="true" />;
     case "warn":
-      return <AlertTriangle size={14} className="text-orange-500" />;
+      return <AlertTriangle size={14} className="text-orange-500" aria-hidden="true" />;
     default:
-      return <Info size={14} className="text-blue-500" />;
+      return <Info size={14} className="text-blue-500" aria-hidden="true" />;
   }
 };
 
@@ -57,7 +57,7 @@ export const Debug = () => {
       <div className="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-xs">
         {logs.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            <Terminal size={32} className="mx-auto mb-2" />
+            <Terminal size={32} className="mx-auto mb-2" aria-hidden="true" />
             <p>{t("debug.noLogs")}</p>
           </div>
         ) : (

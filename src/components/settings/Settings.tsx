@@ -29,7 +29,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
           onClick={onBack}
           className="flex items-center text-blue-500 -ml-2 px-2 py-1"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={20} aria-hidden="true" />
           <span className="ml-1">{t("settings.back")}</span>
         </button>
         <h1 className="flex-1 text-center font-semibold text-lg pr-8">
@@ -53,7 +53,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
               >
                 <span className="text-gray-900">{lang.name}</span>
                 {i18n.language === lang.code && (
-                  <Check size={20} className="text-blue-500" />
+                  <Check size={20} className="text-blue-500" aria-hidden="true" />
                 )}
               </button>
             ))}
@@ -76,7 +76,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
               onClick={() => onNavigate?.("stats")}
               className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50"
             >
-              <BarChart3 size={20} className="text-blue-500" />
+              <BarChart3 size={20} className="text-blue-500" aria-hidden="true" />
               <span className="text-gray-900">{t("stats.title")}</span>
             </button>
           </div>

@@ -49,7 +49,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
                 {episode.image ? (
                   <img
                     src={episode.image}
-                    alt=""
+                    alt={episode.title}
                     className="w-14 h-14 rounded-lg"
                   />
                 ) : (
@@ -61,9 +61,9 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
                   } transition-opacity`}
                 >
                   {isEpisodePlaying ? (
-                    <Pause size={24} className="text-white" fill="white" />
+                    <Pause size={24} className="text-white" fill="white" aria-hidden="true" />
                   ) : (
-                    <Play size={24} className="text-white ml-1" fill="white" />
+                    <Play size={24} className="text-white ml-1" fill="white" aria-hidden="true" />
                   )}
                 </div>
               </div>
@@ -92,7 +92,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
               </div>
               <div className="flex items-center gap-1 flex-shrink-0 self-center">
                 <DownloadButton episode={episode} feedUrl={feedUrl} />
-                <ChevronRight size={20} className="text-gray-400" />
+                <ChevronRight size={20} className="text-gray-400" aria-hidden="true" />
               </div>
             </div>
           </button>

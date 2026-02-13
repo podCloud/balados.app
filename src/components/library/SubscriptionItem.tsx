@@ -38,7 +38,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
     return (
       <div className="flex items-center px-4 py-3 bg-red-50 border-b border-red-100">
         <div className="w-14 h-14 bg-red-200 rounded-lg flex items-center justify-center">
-          <AlertTriangle size={24} className="text-red-600" />
+          <AlertTriangle size={24} className="text-red-600" aria-hidden="true" />
         </div>
         <div className="ml-3 flex-1 min-w-0">
           <div className="text-sm font-medium text-red-900 truncate">
@@ -49,8 +49,9 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
         <button
           onClick={handleUnsubscribe}
           className="ml-2 text-red-500 px-2"
+          aria-label={t("library.unsubscribe")}
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
       </div>
     );
@@ -70,7 +71,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
         />
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 rounded-lg">
-            <Loader2 size={24} className="text-blue-500 animate-spin" />
+            <Loader2 size={24} className="text-blue-500 animate-spin" aria-hidden="true" />
           </div>
         )}
       </div>
@@ -87,7 +88,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
             : t("library.episodeCount", { count: episodeCount })}
         </div>
       </div>
-      {!isLoading && <ChevronRight size={20} className="text-gray-400 ml-2" />}
+      {!isLoading && <ChevronRight size={20} className="text-gray-400 ml-2" aria-hidden="true" />}
     </button>
   );
 };

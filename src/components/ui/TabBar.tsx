@@ -28,11 +28,13 @@ export const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
+              aria-label={t(tab.labelKey)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
               className={`flex-1 py-2 flex flex-col items-center gap-1 transition-colors ${
                 activeTab === tab.id ? "text-blue-500" : "text-gray-400"
               }`}
             >
-              <Icon size={24} />
+              <Icon size={24} aria-hidden="true" />
               <span className="text-xs font-medium">{t(tab.labelKey)}</span>
             </button>
           );

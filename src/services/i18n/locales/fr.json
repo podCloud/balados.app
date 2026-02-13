@@ -16,6 +16,7 @@
     "unsubscribe": "Se désabonner",
     "unsubscribeConfirm": "Se désabonner de \"{{title}}\" ?",
     "feedUrl": "URL du flux RSS",
+    "addSubscription": "Ajouter un podcast",
     "episodeCount": "{{count}} épisode",
     "episodeCount_other": "{{count}} épisodes",
     "loadingEpisodes": "Récupération des épisodes...",
@@ -32,7 +33,10 @@
     "play": "Lecture",
     "pause": "Pause",
     "skipForward": "Avancer de 30 secondes",
-    "skipBackward": "Reculer de 15 secondes"
+    "skipBackward": "Reculer de 15 secondes",
+    "progress": "Progression de lecture",
+    "playbackRate": "Vitesse de lecture : {{rate}}x",
+    "expandPlayer": "Ouvrir le lecteur"
   },
   "explorer": {
     "title": "Explorer",
@@ -70,6 +74,7 @@
     "pending_other": "{{count}} actions en attente",
     "syncing": "Synchronisation...",
     "syncError": "Erreur de sync",
+    "dismissError": "Fermer l'erreur",
     "noServer": "Aucun serveur sync configuré",
     "queueCleared": "File d'attente vidée"
   },
@@ -116,6 +121,7 @@
     "episodeCount": "{{count}} épisode",
     "episodeCount_other": "{{count}} épisodes",
     "error": "Erreur de téléchargement",
+    "retryDownload": "Réessayer le téléchargement",
     "noDownloads": "Aucun épisode téléchargé"
   },
   "inProgress": {

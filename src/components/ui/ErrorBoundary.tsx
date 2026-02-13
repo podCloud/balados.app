@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
           <div className="text-center max-w-sm">
-            <div className="text-6xl mb-4">😵</div>
+            <div className="text-6xl mb-4" role="img" aria-label={i18n.t("error.title")}>😵</div>
             <h1 className="text-xl font-bold text-gray-900 mb-2">
               {i18n.t("error.title")}
             </h1>

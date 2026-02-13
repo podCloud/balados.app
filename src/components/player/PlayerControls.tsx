@@ -53,6 +53,17 @@ export const PlayerControls = () => {
       <div
         className="h-1.5 bg-gray-200 rounded-full cursor-pointer mb-2"
         onClick={handleProgressClick}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") { e.preventDefault(); seek(Math.min(currentTime + 5, duration)); }
+          if (e.key === "ArrowLeft") { e.preventDefault(); seek(Math.max(currentTime - 5, 0)); }
+        }}
+        role="slider"
+        tabIndex={0}
+        aria-label={t("player.progress")}
+        aria-valuemin={0}
+        aria-valuemax={Math.round(duration)}
+        aria-valuenow={Math.round(currentTime)}
+        aria-valuetext={`${formatTime(currentTime)} / ${formatTime(duration)}`}
       >
         <div
           className="h-full bg-blue-500 rounded-full transition-all"
@@ -117,6 +128,7 @@ export const PlayerControls = () => {
       <div className="flex justify-center mt-4">
         <button
           onClick={handleRateChange}
+          aria-label={t("player.playbackRate", { rate: playbackRate })}
           className="px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200"
         >
           {playbackRate}x

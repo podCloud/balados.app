@@ -255,7 +255,7 @@ export const SyncSettings = () => {
           {t("syncSettings.title")}
         </h2>
         <div className="bg-white border-y border-gray-100 px-4 py-6 flex justify-center">
-          <Loader size={20} className="animate-spin text-gray-400" />
+          <Loader size={20} className="animate-spin text-gray-400" aria-hidden="true" />
         </div>
       </div>
     );
@@ -272,13 +272,13 @@ export const SyncSettings = () => {
         <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-3">
             {state.status === "connected" ? (
-              <Wifi size={20} className="text-green-500" />
+              <Wifi size={20} className="text-green-500" aria-hidden="true" />
             ) : state.status === "connecting" ? (
-              <Loader size={20} className="animate-spin text-blue-500" />
+              <Loader size={20} className="animate-spin text-blue-500" aria-hidden="true" />
             ) : state.status === "error" ? (
-              <AlertCircle size={20} className="text-red-500" />
+              <AlertCircle size={20} className="text-red-500" aria-hidden="true" />
             ) : (
-              <WifiOff size={20} className="text-gray-400" />
+              <WifiOff size={20} className="text-gray-400" aria-hidden="true" />
             )}
             <div>
               <p className="text-sm font-medium text-gray-900">
@@ -292,7 +292,7 @@ export const SyncSettings = () => {
               </p>
               {state.status === "connected" && state.serverUrl && (
                 <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Server size={12} />
+                  <Server size={12} aria-hidden="true" />
                   {new URL(state.serverUrl).hostname}
                 </p>
               )}
@@ -304,7 +304,7 @@ export const SyncSettings = () => {
               onClick={handleDisconnect}
               className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
             >
-              <LogOut size={14} />
+              <LogOut size={14} aria-hidden="true" />
               {t("syncSettings.disconnect")}
             </button>
           )}
@@ -312,14 +312,14 @@ export const SyncSettings = () => {
 
         {/* Error message */}
         {state.error && (
-          <div className="px-4 py-2 bg-red-50 border-b border-red-100">
+          <div className="px-4 py-2 bg-red-50 border-b border-red-100" role="alert">
             <p className="text-sm text-red-600">{state.error}</p>
           </div>
         )}
 
         {/* Sync error from queue */}
         {lastSyncError && (
-          <div className="px-4 py-2 bg-yellow-50 border-b border-yellow-100">
+          <div className="px-4 py-2 bg-yellow-50 border-b border-yellow-100" role="alert">
             <p className="text-sm text-yellow-700">
               {t("sync.syncError")}: {lastSyncError}
             </p>
@@ -332,7 +332,7 @@ export const SyncSettings = () => {
             {/* Last sync time */}
             <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock size={16} />
+                <Clock size={16} aria-hidden="true" />
                 <span>
                   {t("syncSettings.lastSync")}:{" "}
                   {formatLastSync(state.lastSyncAt)}
@@ -356,12 +356,12 @@ export const SyncSettings = () => {
               >
                 {isSyncing ? (
                   <>
-                    <Loader size={16} className="animate-spin" />
+                    <Loader size={16} className="animate-spin" aria-hidden="true" />
                     {t("sync.syncing")}
                   </>
                 ) : (
                   <>
-                    <RefreshCw size={16} />
+                    <RefreshCw size={16} aria-hidden="true" />
                     {t("syncSettings.syncNow")}
                   </>
                 )}
@@ -392,12 +392,12 @@ export const SyncSettings = () => {
               >
                 {state.status === "connecting" ? (
                   <>
-                    <Loader size={16} className="animate-spin" />
+                    <Loader size={16} className="animate-spin" aria-hidden="true" />
                     {t("syncSettings.connecting")}
                   </>
                 ) : (
                   <>
-                    <ExternalLink size={16} />
+                    <ExternalLink size={16} aria-hidden="true" />
                     {t("syncSettings.connect")}
                   </>
                 )}

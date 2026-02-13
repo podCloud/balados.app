@@ -15,17 +15,17 @@ export const OfflineBanner = () => {
   if (!showOffline && !showPending && !showError) return null;
 
   return (
-    <div className="text-white text-sm">
+    <div className="text-white text-sm" role="status" aria-live="polite" aria-atomic="true">
       {showError && (
-        <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2">
-          <AlertCircle size={16} />
+        <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2" role="alert" aria-live="assertive">
+          <AlertCircle size={16} aria-hidden="true" />
           <span>{t("sync.syncError")}: {lastSyncError}</span>
           <button
             onClick={clearError}
             className="ml-2 p-1 hover:bg-red-600 rounded"
-            aria-label={t("common.cancel")}
+            aria-label={t("sync.dismissError")}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
       )}
