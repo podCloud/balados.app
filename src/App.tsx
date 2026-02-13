@@ -41,7 +41,6 @@ const AppContent = () => {
   useEffect(() => {
     // Migrate data from localStorage to IndexedDB
     migrateFromLocalStorage();
-    console.log("balados.app démarré");
   }, []);
 
   const handleNavigate = (view: string, feedUrl: string | null = null) => {

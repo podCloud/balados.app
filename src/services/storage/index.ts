@@ -154,7 +154,6 @@ export const migrateFromLocalStorage = async (): Promise<void> => {
 
       if (existingCount === 0 && subs.length > 0) {
         await db.subscriptions.bulkPut(subs);
-        console.log(`Migrated ${subs.length} subscriptions from localStorage`);
       }
     } catch (e) {
       console.error("Failed to migrate localStorage data:", e);
