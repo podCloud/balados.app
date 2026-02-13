@@ -1,50 +1,24 @@
-/**
- * Utility for managing hidden in-progress episodes.
- * Hidden episodes are stored in localStorage to persist across sessions.
- */
+import { db } from "./index";
 
-const HIDDEN_KEY = "hidden_in_progress_episodes";
-
-/**
- * Get the set of hidden episode IDs from localStorage.
- */
-export const getHiddenEpisodes = (): Set<string> => {
-  try {
-    const stored = localStorage.getItem(HIDDEN_KEY);
-    return stored ? new Set(JSON.parse(stored)) : new Set();
-  } catch {
-    return new Set();
-  }
+export const getHiddenEpisodeIds = async (): Promise<Set<string>> => {
+  const all = await db.hiddenEpisodes.toArray();
+  return new Set(all.map((h) => h.episodeId));
 };
 
-/**
- * Hide an episode by adding its ID to the hidden set.
- */
-export const hideEpisode = (episodeId: string): void => {
-  const hidden = getHiddenEpisodes();
-  hidden.add(episodeId);
-  localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hidden]));
+export const hideEpisode = async (episodeId: string): Promise<void> => {
+  await db.hiddenEpisodes.put({ episodeId, hiddenAt: Date.now() });
 };
 
-/**
- * Unhide an episode by removing its ID from the hidden set.
- */
-export const unhideEpisode = (episodeId: string): void => {
-  const hidden = getHiddenEpisodes();
-  hidden.delete(episodeId);
-  localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hidden]));
+export const unhideEpisode = async (episodeId: string): Promise<void> => {
+  await db.hiddenEpisodes.delete(episodeId);
 };
 
-/**
- * Check if an episode is hidden.
- */
-export const isEpisodeHidden = (episodeId: string): boolean => {
-  return getHiddenEpisodes().has(episodeId);
+export const isEpisodeHidden = async (
+  episodeId: string,
+): Promise<boolean> => {
+  return (await db.hiddenEpisodes.get(episodeId)) !== undefined;
 };
 
-/**
- * Clear all hidden episodes.
- */
-export const clearHiddenEpisodes = (): void => {
-  localStorage.removeItem(HIDDEN_KEY);
+export const clearHiddenEpisodes = async (): Promise<void> => {
+  await db.hiddenEpisodes.clear();
 };

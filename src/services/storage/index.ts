@@ -27,6 +27,10 @@ class BaladosDatabase extends Dexie {
   downloads!: EntityTable<DownloadedEpisode, "episodeId">;
   syncQueue!: EntityTable<QueuedAction, "id">;
   statsSnapshots!: EntityTable<StatsSnapshot, "id">;
+  hiddenEpisodes!: EntityTable<
+    { episodeId: string; hiddenAt: number },
+    "episodeId"
+  >;
 
   constructor() {
     super("balados");
@@ -68,6 +72,37 @@ class BaladosDatabase extends Dexie {
       syncQueue: "++id, action, createdAt",
       statsSnapshots: "++id, createdAt",
     });
+
+    this.version(5)
+      .stores({
+        subscriptions: "url, addedAt",
+        playStatuses: "episodeId, feedUrl, updatedAt",
+        events: "++id, type, feedUrl, timestamp",
+        feedCache: "url, cachedAt",
+        settings: "id",
+        downloads: "episodeId, feedUrl, downloadedAt",
+        syncQueue: "++id, action, createdAt",
+        statsSnapshots: "++id, createdAt",
+        hiddenEpisodes: "episodeId",
+      })
+      .upgrade(async (tx) => {
+        const HIDDEN_KEY = "hidden_in_progress_episodes";
+        const stored = localStorage.getItem(HIDDEN_KEY);
+        if (stored) {
+          try {
+            const ids = JSON.parse(stored) as string[];
+            const now = Date.now();
+            await tx
+              .table("hiddenEpisodes")
+              .bulkPut(
+                ids.map((episodeId) => ({ episodeId, hiddenAt: now })),
+              );
+            localStorage.removeItem(HIDDEN_KEY);
+          } catch {
+            // Ignore malformed localStorage data
+          }
+        }
+      });
   }
 }
 
