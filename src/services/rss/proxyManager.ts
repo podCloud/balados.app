@@ -27,6 +27,24 @@ export const fetchWithProxy = async (url: string): Promise<FetchResult> => {
     console.log("Echec en direct:", error.message);
   }
 
+  // Try sync server proxy if configured
+  if (settings.syncServerUrl && settings.syncToken) {
+    try {
+      const syncProxyUrl = `${settings.syncServerUrl.replace(/\/$/, "")}/api/v1/rss/proxy/${btoa(url)}`;
+      console.log("Tentative avec Sync Server proxy");
+      const response = await fetch(syncProxyUrl, {
+        headers: { Authorization: `Bearer ${settings.syncToken}` },
+      });
+      if (response.ok) {
+        const text = await response.text();
+        console.log("Succes avec Sync Server proxy!");
+        return { text, proxyUsed: "Sync Server" };
+      }
+    } catch (e) {
+      console.log("Echec avec Sync Server proxy:", (e as Error).message);
+    }
+  }
+
   // Try each proxy in order
   for (const proxy of enabledProxies) {
     try {
