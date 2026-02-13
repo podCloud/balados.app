@@ -10,6 +10,7 @@ import {
   getRecentlyPlayed,
   getInProgressEpisodes,
 } from "./playStatus";
+import { toBase64Url } from "../../utils/rssEncoding";
 
 // Mock getSettings to avoid sync queue operations
 vi.mock("./index", async (importOriginal) => {
@@ -32,12 +33,12 @@ describe("playStatus", () => {
   describe("generateEpisodeId", () => {
     it("generates ID from guid and enclosure URL", () => {
       const id = generateEpisodeId("my-guid", "https://example.com/ep.mp3");
-      expect(id).toBe(btoa("my-guid,https://example.com/ep.mp3"));
+      expect(id).toBe(toBase64Url("my-guid,https://example.com/ep.mp3"));
     });
 
     it("uses enclosure URL when guid is undefined", () => {
       const id = generateEpisodeId(undefined, "https://example.com/ep.mp3");
-      expect(id).toBe(btoa("https://example.com/ep.mp3,https://example.com/ep.mp3"));
+      expect(id).toBe(toBase64Url("https://example.com/ep.mp3,https://example.com/ep.mp3"));
     });
   });
 

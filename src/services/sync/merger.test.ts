@@ -7,6 +7,7 @@ import {
 } from "./merger";
 import type { Subscription, PlayStatus } from "../../types";
 import type { SubscriptionSync, PlayStatusSync } from "./client";
+import { encodeRssFeed, encodeRssItem } from "../../utils/rssEncoding";
 
 describe("mergeSubscriptions", () => {
   const now = Date.now();
@@ -30,7 +31,7 @@ describe("mergeSubscriptions", () => {
     const local: Subscription[] = [];
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(now).toISOString(),
       },
     ];
@@ -48,7 +49,7 @@ describe("mergeSubscriptions", () => {
     ];
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(dayAgo).toISOString(),
       },
     ];
@@ -73,7 +74,7 @@ describe("mergeSubscriptions", () => {
     ];
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(now).toISOString(),
       },
     ];
@@ -94,7 +95,7 @@ describe("mergeSubscriptions", () => {
     ];
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(dayAgo).toISOString(),
         unsubscribed_at: new Date(now).toISOString(),
       },
@@ -113,7 +114,7 @@ describe("mergeSubscriptions", () => {
     ];
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(dayAgo - 1000).toISOString(),
         unsubscribed_at: new Date(dayAgo).toISOString(),
       },
@@ -132,7 +133,7 @@ describe("mergeSubscriptions", () => {
     const fiftyDaysAgo = now - 50 * 24 * 60 * 60 * 1000;
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(fiftyDaysAgo - 1000).toISOString(),
         unsubscribed_at: new Date(fiftyDaysAgo).toISOString(),
       },
@@ -151,7 +152,7 @@ describe("mergeSubscriptions", () => {
     const twoMinutesAgo = now - 2 * 60 * 1000;
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://example.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
         subscribed_at: new Date(twoMinutesAgo).toISOString(),
       },
     ];
@@ -169,11 +170,11 @@ describe("mergeSubscriptions", () => {
     ];
     const remote: SubscriptionSync[] = [
       {
-        rss_source_feed: btoa("https://b.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://b.com/feed.xml"),
         subscribed_at: new Date(now).toISOString(),
       },
       {
-        rss_source_feed: btoa("https://c.com/feed.xml"),
+        rss_source_feed: encodeRssFeed("https://c.com/feed.xml"),
         subscribed_at: new Date(hourAgo).toISOString(),
       },
     ];
@@ -193,8 +194,8 @@ describe("mergePlayStatuses", () => {
   const hourAgo = now - 60 * 60 * 1000;
   const twoMinutesAgo = now - 2 * 60 * 1000;
 
-  // episodeId format: btoa(guid,enclosureUrl) - same as rss_source_item
-  const defaultEpisodeId = btoa("episode-guid-1,https://example.com/episode.mp3");
+  // episodeId format: base64url(guid,enclosureUrl) - same as rss_source_item
+  const defaultEpisodeId = encodeRssItem("episode-guid-1", "https://example.com/episode.mp3");
 
   const createLocalStatus = (overrides: Partial<PlayStatus> = {}): PlayStatus => ({
     episodeId: defaultEpisodeId,
@@ -209,7 +210,7 @@ describe("mergePlayStatuses", () => {
   const createRemoteStatus = (
     overrides: Partial<PlayStatusSync> = {}
   ): PlayStatusSync => ({
-    rss_source_feed: btoa("https://example.com/feed.xml"),
+    rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
     rss_source_item: defaultEpisodeId, // Same format as local episodeId
     position: 100,
     played: false,
@@ -381,10 +382,10 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should merge multiple play statuses correctly", () => {
-    // Create encoded episode IDs in btoa(guid,enclosureUrl) format
-    const ep1Id = btoa("ep1-guid,https://example.com/ep1.mp3");
-    const ep2Id = btoa("ep2-guid,https://example.com/ep2.mp3");
-    const ep3Id = btoa("ep3-guid,https://example.com/ep3.mp3");
+    // Create encoded episode IDs in base64url(guid,enclosureUrl) format
+    const ep1Id = encodeRssItem("ep1-guid", "https://example.com/ep1.mp3");
+    const ep2Id = encodeRssItem("ep2-guid", "https://example.com/ep2.mp3");
+    const ep3Id = encodeRssItem("ep3-guid", "https://example.com/ep3.mp3");
 
     const local: PlayStatus[] = [
       createLocalStatus({ episodeId: ep1Id, position: 100 }),
@@ -425,15 +426,15 @@ describe("subscriptionsToSync", () => {
     const result = subscriptionsToSync(subscriptions);
 
     expect(result).toHaveLength(1);
-    expect(result[0].rss_source_feed).toBe(btoa("https://example.com/feed.xml"));
+    expect(result[0].rss_source_feed).toBe(encodeRssFeed("https://example.com/feed.xml"));
     expect(result[0].subscribed_at).toBe("2024-01-01T00:00:00.000Z");
   });
 });
 
 describe("playStatusesToSync", () => {
   it("should convert play statuses to sync format", () => {
-    // episodeId is already in btoa(guid,enclosureUrl) format
-    const encodedEpisodeId = btoa("episode-guid-1,https://example.com/episode.mp3");
+    // episodeId is already in base64url(guid,enclosureUrl) format
+    const encodedEpisodeId = encodeRssItem("episode-guid-1", "https://example.com/episode.mp3");
 
     const statuses: PlayStatus[] = [
       {
@@ -449,7 +450,7 @@ describe("playStatusesToSync", () => {
     const result = playStatusesToSync(statuses);
 
     expect(result).toHaveLength(1);
-    expect(result[0].rss_source_feed).toBe(btoa("https://example.com/feed.xml"));
+    expect(result[0].rss_source_feed).toBe(encodeRssFeed("https://example.com/feed.xml"));
     // rss_source_item should be the same as episodeId (already encoded)
     expect(result[0].rss_source_item).toBe(encodedEpisodeId);
     expect(result[0].position).toBe(120);
@@ -459,8 +460,8 @@ describe("playStatusesToSync", () => {
 
   it("should not double-encode episode IDs when converting to sync format", () => {
     // This test verifies the fix for the critical encoding bug
-    // episodeId is already in btoa(guid,enclosureUrl) format
-    const episodeId = btoa("test-guid,https://example.com/episode.mp3");
+    // episodeId is already in base64url(guid,enclosureUrl) format
+    const episodeId = encodeRssItem("test-guid", "https://example.com/episode.mp3");
 
     const result = playStatusesToSync([
       {
@@ -475,7 +476,6 @@ describe("playStatusesToSync", () => {
 
     // rss_source_item should be exactly the same as episodeId (not double-encoded)
     expect(result[0].rss_source_item).toBe(episodeId);
-    expect(result[0].rss_source_item).not.toBe(btoa(episodeId)); // Not double-encoded!
   });
 });
 
@@ -492,7 +492,7 @@ describe("Episode ID encoding round-trip", () => {
     const feedUrl = "https://example.com/feed.xml";
 
     // Device A: Create local play status with encoded episodeId
-    const deviceAEpisodeId = btoa(`${guid},${enclosureUrl}`);
+    const deviceAEpisodeId = encodeRssItem(guid, enclosureUrl);
     const deviceAStatus: PlayStatus = {
       episodeId: deviceAEpisodeId,
       feedUrl,
@@ -509,7 +509,7 @@ describe("Episode ID encoding round-trip", () => {
     // Simulate server response (server returns same format)
     const serverResponse: PlayStatusSync[] = [
       {
-        rss_source_feed: btoa(feedUrl),
+        rss_source_feed: encodeRssFeed(feedUrl),
         rss_source_item: syncFormat[0].rss_source_item,
         position: 300,
         played: false,
@@ -542,7 +542,7 @@ describe("Episode ID encoding round-trip", () => {
     const enclosureUrl = "https://example.com/episode.mp3";
     const feedUrl = "https://example.com/feed.xml";
 
-    const episodeId = btoa(`${guid},${enclosureUrl}`);
+    const episodeId = encodeRssItem(guid, enclosureUrl);
 
     const localStatus: PlayStatus = {
       episodeId,
@@ -559,7 +559,7 @@ describe("Episode ID encoding round-trip", () => {
     // Simulate receiving from server
     const serverResponse: PlayStatusSync[] = [
       {
-        rss_source_feed: btoa(feedUrl),
+        rss_source_feed: encodeRssFeed(feedUrl),
         rss_source_item: syncFormat[0].rss_source_item,
         position: 500,
         played: true,

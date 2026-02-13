@@ -9,6 +9,7 @@ import {
 } from "../services/storage/syncQueue";
 import { getSettings } from "../services/storage";
 import type { QueuedAction, AppSettings } from "../types";
+import { encodeRssFeed } from "../utils/rssEncoding";
 
 interface SyncQueueState {
   pendingCount: number;
@@ -28,9 +29,9 @@ const getEndpointForAction = (
     case "subscribe":
       return { url: `${baseUrl}/api/v1/subscriptions`, method: "POST" };
     case "unsubscribe": {
-      const feedId = btoa(action.payload.feedUrl);
+      const feedId = encodeRssFeed(action.payload.feedUrl);
       return {
-        url: `${baseUrl}/api/v1/subscriptions/${encodeURIComponent(feedId)}`,
+        url: `${baseUrl}/api/v1/subscriptions/${feedId}`,
         method: "DELETE",
       };
     }

@@ -34,7 +34,7 @@ describe("Encoding helpers", () => {
       const feedUrl = "https://example.com/feed.xml";
       const encoded = encodeRssFeed(feedUrl);
 
-      expect(encoded).toBe(btoa(feedUrl));
+      expect(decodeRssFeed(encoded)).toBe(feedUrl);
       expect(decodeRssFeed(encoded)).toBe(feedUrl);
     });
 
@@ -67,7 +67,7 @@ describe("Encoding helpers", () => {
     });
 
     it("should throw on invalid format (no comma)", () => {
-      const invalidEncoded = btoa("no-comma-here");
+      const invalidEncoded = encodeRssFeed("no-comma-here");
       expect(() => decodeRssItem(invalidEncoded)).toThrow(
         "Invalid rss_source_item format: missing comma separator"
       );
@@ -105,7 +105,7 @@ describe("Type converters", () => {
 
   describe("playStatusToSync / syncToPlayStatus", () => {
     it("should convert play status to sync format", () => {
-      // episodeId is already in btoa(guid,enclosureUrl) format from generateEpisodeId()
+      // episodeId is already in base64url(guid,enclosureUrl) format from generateEpisodeId()
       const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const status: PlayStatus = {
         episodeId: encodedEpisodeId,
@@ -323,7 +323,7 @@ describe("SyncClient", () => {
         json: () => Promise.resolve({}),
       });
 
-      // episodeId is already encoded as btoa(guid,enclosureUrl)
+      // episodeId is already encoded as base64url(guid,enclosureUrl)
       const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
       const status: PlayStatus = {
         episodeId: encodedEpisodeId,

@@ -245,11 +245,11 @@ When disconnected:
 
 ### 3. CORS Proxy Strategy
 
-Priority order:
-1. balados.sync proxy (if connected): `/api/v1/rss/proxy/{feed}`
-2. User-configured proxies (in settings)
-3. Fallback public proxies (allorigins, corsproxy.io)
-4. Direct fetch (may fail due to CORS)
+Priority order (implemented in `proxyManager.ts`):
+1. Direct fetch (may succeed without CORS issues)
+2. balados.sync proxy (if connected): `/api/v1/rss/proxy/{base64url_feed}`
+3. User-configured public proxies (by priority)
+4. Throw error
 
 Settings UI allows adding/removing/reordering proxies.
 
@@ -334,13 +334,20 @@ La fonctionnalité sync est maintenant implémentée :
 
 #### Encodage des données (convention partagée)
 
-```typescript
-// Feed URL -> base64
-const rssFeed = btoa(feedUrl)
+All encoding uses **URL-safe base64** (RFC 4648 §5: `-` instead of `+`, `_` instead of `/`, no `=` padding). Functions are in `src/utils/rssEncoding.ts`.
 
-// Episode ID -> base64(guid,enclosureUrl)
-const rssItem = btoa(`${guid},${enclosureUrl}`)
-// IMPORTANT: décoder avec lastIndexOf(",") car guid peut contenir des virgules
+```typescript
+import { encodeRssFeed, encodeRssItem, generateEpisodeId } from "../utils/rssEncoding";
+
+// Feed URL -> base64url
+const rssFeed = encodeRssFeed(feedUrl)
+
+// Episode ID -> base64url(guid,enclosureUrl)
+const rssItem = encodeRssItem(guid, enclosureUrl)
+// Decode uses lastIndexOf(",") because guid may contain commas
+
+// Generate episode ID (falls back to enclosureUrl when guid is missing)
+const episodeId = generateEpisodeId(guid, enclosureUrl)
 ```
 
 **Endpoints serveur:**
@@ -348,5 +355,5 @@ const rssItem = btoa(`${guid},${enclosureUrl}`)
 - `POST /api/v1/sync` - Sync complet/incrémental
 - `GET/POST/DELETE /api/v1/subscriptions` - Abonnements
 - `POST /api/v1/play` - Position de lecture
-- `GET /api/v1/rss/proxy/{base64_feed}` - CORS proxy
+- `GET /api/v1/rss/proxy/{base64url_feed}` - CORS proxy
 - `GET /api/v1/public/trending/podcasts` - Tendances

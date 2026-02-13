@@ -8,12 +8,12 @@ import {
 
 /**
  * Episode ID Format Convention:
- * - episodeId is ALWAYS in btoa(guid,enclosureUrl) format
+ * - episodeId is ALWAYS in base64url(guid,enclosureUrl) format
  * - This is the SAME format as rss_source_item from the server
  * - Never decode/re-encode episodeId - use it directly
  *
  * This convention is shared between balados.app and balados.sync.
- * See also: generateEpisodeId() in storage/playStatus.ts
+ * See also: generateEpisodeId() in utils/rssEncoding.ts
  */
 
 /**
@@ -207,7 +207,7 @@ export function mergePlayStatuses(
   const conflicts: MergeResult<PlayStatus>["conflicts"] = [];
 
   // Create maps for quick lookup
-  // Note: episodeId is already in btoa(guid,enclosureUrl) format, same as rss_source_item
+  // Note: episodeId is already in base64url(guid,enclosureUrl) format, same as rss_source_item
   const localMap = new Map<string, PlayStatus>();
   for (const status of local) {
     localMap.set(status.episodeId, status);
@@ -234,7 +234,7 @@ export function mergePlayStatuses(
 
     // Only remote exists
     if (!localStatus && remoteStatus) {
-      // Use rss_source_item directly as episodeId (already in btoa(guid,enclosureUrl) format)
+      // Use rss_source_item directly as episodeId (already in base64url(guid,enclosureUrl) format)
       merged.push({
         episodeId: remoteStatus.rss_source_item,
         feedUrl: decodeRssFeed(remoteStatus.rss_source_feed),
@@ -327,7 +327,7 @@ export function subscriptionsToSync(
 export function playStatusesToSync(statuses: PlayStatus[]): PlayStatusSync[] {
   return statuses.map((status) => ({
     rss_source_feed: encodeRssFeed(status.feedUrl),
-    // episodeId is already in btoa(guid,enclosureUrl) format, use directly
+    // episodeId is already in base64url(guid,enclosureUrl) format, use directly
     rss_source_item: status.episodeId,
     position: status.position,
     played: status.completed,
