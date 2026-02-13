@@ -78,8 +78,7 @@ describe("Stats", () => {
   it("calls onBack when back button is clicked", () => {
     render(<Stats onBack={onBack} />);
 
-    const backButton = screen.getByRole("button", { name: "" });
-    // The back button is the first button
+    const backButton = screen.getByRole("button", { name: "settings.back" });
     fireEvent.click(backButton);
     expect(onBack).toHaveBeenCalled();
   });

@@ -15,9 +15,9 @@ export const OfflineBanner = () => {
   if (!showOffline && !showPending && !showError) return null;
 
   return (
-    <div className="text-white text-sm" role="status" aria-live="polite" aria-atomic="true">
+    <div className="text-white text-sm">
       {showError && (
-        <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2" role="alert" aria-live="assertive">
+        <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2" role="alert">
           <AlertCircle size={16} aria-hidden="true" />
           <span>{t("sync.syncError")}: {lastSyncError}</span>
           <button
@@ -33,16 +33,16 @@ export const OfflineBanner = () => {
         <div className="bg-amber-500 py-2 px-4 flex items-center justify-center gap-4">
           {showOffline && (
             <div className="flex items-center gap-2">
-              <WifiOff size={16} />
+              <WifiOff size={16} aria-hidden="true" />
               <span>{t("common.offline")}</span>
             </div>
           )}
           {showPending && (
             <div className="flex items-center gap-2">
               {isSyncing ? (
-                <RefreshCw size={16} className="animate-spin" />
+                <RefreshCw size={16} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Clock size={16} />
+                <Clock size={16} aria-hidden="true" />
               )}
               <span>
                 {isSyncing
