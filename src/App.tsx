@@ -20,8 +20,10 @@ import type { TabId } from "./types";
 // Initialize services
 import "./services/i18n";
 
-// Initialize debug console
-initDebugConsole();
+// Initialize debug console (dev only)
+if (import.meta.env.DEV) {
+  initDebugConsole();
+}
 
 // Create QueryClient
 const queryClient = new QueryClient({
@@ -81,7 +83,7 @@ const AppContent = () => {
       case "explorer":
         return <Explorer />;
       case "debug":
-        return <Debug />;
+        return import.meta.env.DEV ? <Debug /> : <Library onNavigate={handleNavigate} />;
       default:
         return <Library onNavigate={handleNavigate} />;
     }

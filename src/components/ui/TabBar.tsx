@@ -11,7 +11,9 @@ const tabs: { id: TabId; icon: typeof Library; labelKey: string }[] = [
   { id: "library", icon: Library, labelKey: "tabs.library" },
   { id: "player", icon: Play, labelKey: "tabs.player" },
   { id: "explorer", icon: Search, labelKey: "tabs.explorer" },
-  { id: "debug", icon: Bug, labelKey: "tabs.debug" },
+  ...(import.meta.env.DEV
+    ? [{ id: "debug" as TabId, icon: Bug, labelKey: "tabs.debug" }]
+    : []),
 ];
 
 export const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
