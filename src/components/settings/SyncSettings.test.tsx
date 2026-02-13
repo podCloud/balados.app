@@ -91,6 +91,7 @@ vi.mock("react-i18next", () => ({
 describe("SyncSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
     mockGetSettings.mockResolvedValue({
       locale: "fr",
       proxies: [],
@@ -294,8 +295,6 @@ describe("SyncSettings", () => {
     });
 
     expect(mockSaveSettings).toHaveBeenCalledWith({ lastSyncAt: undefined });
-
-    vi.restoreAllMocks();
   });
 
   it("disconnect does nothing when user cancels confirmation", async () => {
@@ -317,8 +316,6 @@ describe("SyncSettings", () => {
     fireEvent.click(screen.getByText("Disconnect").closest("button")!);
 
     expect(mockClearCredentials).not.toHaveBeenCalled();
-
-    vi.restoreAllMocks();
   });
 
   it("shows manual token input toggle", async () => {

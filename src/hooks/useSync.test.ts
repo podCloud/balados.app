@@ -224,7 +224,9 @@ describe("useSync", () => {
         await result.current.connect("https://sync.example.com", "token");
       });
 
-      expect(mockRefreshCount).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockRefreshCount).toHaveBeenCalled();
+      });
     });
 
     it("handles exceptions during connect", async () => {

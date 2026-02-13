@@ -158,10 +158,6 @@ describe("PlayerProvider", () => {
     });
 
     expect(result.current.playbackRate).toBe(1.5);
-  });
-
-  it("setPlaybackRate() updates to 2x", () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
 
     act(() => {
       result.current.setPlaybackRate(2);
@@ -192,43 +188,47 @@ describe("PlayerProvider", () => {
     expect(result.current.audioRef).toBeDefined();
   });
 
-  it("seek() is callable", () => {
+  it("seek() sets currentTime on audio element", () => {
     const { result } = renderHook(() => usePlayer(), { wrapper });
 
     act(() => {
       result.current.seek(50);
     });
 
-    expect(result.current.seek).toBeInstanceOf(Function);
+    expect(result.current.audioRef.current?.currentTime).toBe(50);
   });
 
-  it("skipForward() is callable", () => {
+  it("skipForward() is provided by the context", () => {
     const { result } = renderHook(() => usePlayer(), { wrapper });
 
     // skipForward uses Math.min(currentTime + seconds, duration)
-    // In jsdom, audio.duration is NaN so we just verify the function exists
+    // In jsdom, audio.duration is NaN which makes currentTime assignment throw,
+    // so we can only verify the function is provided
     expect(result.current.skipForward).toBeInstanceOf(Function);
   });
 
-  it("skipBackward() is callable with default and custom seconds", () => {
+  it("skipBackward() clamps to zero", () => {
     const { result } = renderHook(() => usePlayer(), { wrapper });
 
     act(() => {
       result.current.skipBackward();
-      result.current.skipBackward(10);
     });
 
-    expect(result.current.skipBackward).toBeInstanceOf(Function);
+    // Math.max(0 - 15, 0) = 0
+    expect(result.current.audioRef.current?.currentTime).toBe(0);
   });
 
-  it("resume() is callable", () => {
+  it("resume() calls play on audio element", () => {
     const { result } = renderHook(() => usePlayer(), { wrapper });
+    const playSpy = vi.spyOn(result.current.audioRef.current!, "play")
+      .mockImplementation(() => Promise.resolve());
 
     act(() => {
       result.current.resume();
     });
 
-    expect(result.current.resume).toBeInstanceOf(Function);
+    expect(playSpy).toHaveBeenCalled();
+    playSpy.mockRestore();
   });
 
   it("play() saves current position before switching episodes", async () => {
