@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, X, Play, Pause, Clock, EyeOff } from "lucide-react";
 import { getCachedFeed } from "../../services/storage";
 import { getInProgressEpisodes, generateEpisodeId } from "../../services/storage/playStatus";
-import { getHiddenEpisodes, hideEpisode } from "../../services/storage/hiddenEpisodes";
+import { getHiddenEpisodeIds, hideEpisode } from "../../services/storage/hiddenEpisodes";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { usePlayer } from "../../contexts";
 import { DownloadButton } from "../ui/DownloadButton";
@@ -37,7 +37,8 @@ const formatTime = (seconds: number): string => {
 export const InProgress = ({ onBack }: InProgressProps) => {
   const { t } = useTranslation();
   const { play, pause, currentEpisode, isPlaying } = usePlayer();
-  const [hiddenEpisodes, setHiddenEpisodes] = useState<Set<string>>(() => getHiddenEpisodes());
+
+  const hiddenEpisodes = useLiveQuery(() => getHiddenEpisodeIds(), []);
 
   // Get in-progress episodes from DB (reactive)
   const playStatuses = useLiveQuery(
@@ -89,7 +90,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
 
   // Enrich play statuses with episode data
   const enrichedEpisodes = useMemo((): EnrichedEpisode[] => {
-    if (!playStatuses || !feedQueries.data) return [];
+    if (!playStatuses || !feedQueries.data || !hiddenEpisodes) return [];
 
     const result: EnrichedEpisode[] = [];
 
@@ -123,10 +124,9 @@ export const InProgress = ({ onBack }: InProgressProps) => {
     return result;
   }, [playStatuses, feedQueries.data, hiddenEpisodes]);
 
-  const handleHide = (episodeId: string, e: React.MouseEvent) => {
+  const handleHide = async (episodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    hideEpisode(episodeId);
-    setHiddenEpisodes(getHiddenEpisodes());
+    await hideEpisode(episodeId);
   };
 
   const handleClick = (item: EnrichedEpisode) => {
@@ -146,7 +146,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
     return currentId === episodeId;
   };
 
-  const isLoading = !playStatuses || feedQueries.isLoading;
+  const isLoading = !playStatuses || !hiddenEpisodes || feedQueries.isLoading;
 
   return (
     <div className="h-full flex flex-col bg-white">

@@ -5,7 +5,7 @@ import { Plus, X, Headphones, Settings, Clock } from "lucide-react";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
 import { getInProgressEpisodes } from "../../services/storage/playStatus";
-import { getHiddenEpisodes } from "../../services/storage/hiddenEpisodes";
+import { getHiddenEpisodeIds } from "../../services/storage/hiddenEpisodes";
 import { SubscriptionItem } from "./SubscriptionItem";
 
 interface LibraryProps {
@@ -24,14 +24,10 @@ export const Library = ({ onNavigate }: LibraryProps) => {
     []
   );
 
-  // Count in-progress episodes (excluding hidden)
-  // Note: This uses useLiveQuery which reacts to IndexedDB changes, but hidden episodes
-  // are stored in localStorage. The count won't update immediately when hiding from
-  // InProgress page until the next DB change. This is an acceptable UX tradeoff.
   const inProgressCount = useLiveQuery(
     async () => {
       const episodes = await getInProgressEpisodes();
-      const hidden = getHiddenEpisodes();
+      const hidden = await getHiddenEpisodeIds();
       return episodes.filter((e) => !hidden.has(e.episodeId)).length;
     },
     []
