@@ -34,12 +34,14 @@ export const subscribeToDebugLogs = (
   return () => debugListeners.delete(listener);
 };
 
-// Override console methods
+// Override console methods (dev only)
 const originalLog = console.log;
 const originalError = console.error;
 const originalWarn = console.warn;
 
 export const initDebugConsole = () => {
+  if (!import.meta.env.DEV) return;
+
   console.log = (...args: unknown[]) => {
     originalLog(...args);
     addDebugLog("log", ...args);
