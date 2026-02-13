@@ -72,7 +72,6 @@ export const fetchAndParseRSS = async (
   if (useCache) {
     const cached = await getCachedFeed(url);
     if (cached) {
-      console.log("Feed charge depuis le cache:", cached.title);
       return cached;
     }
   }
@@ -86,6 +85,5 @@ export const fetchAndParseRSS = async (
   // Cache the result
   await cacheFeed(url, feed);
 
-  console.log("Feed parse avec succes:", feed.title, feed.items.length, "episodes");
   return feed;
 };
