@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchWithProxy, createProxyConfig, DEFAULT_PROXIES } from "./proxyManager";
 import type { AppSettings } from "../../types";
+import { encodeRssFeed } from "../../utils/rssEncoding";
 
 // Mock storage module
 vi.mock("../storage", () => ({
@@ -77,7 +78,7 @@ describe("fetchWithProxy", () => {
 
     await fetchWithProxy(FEED_URL);
 
-    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${encodeURIComponent(btoa(FEED_URL))}`;
+    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${encodeRssFeed(FEED_URL)}`;
     expect(mockFetch).toHaveBeenCalledWith(expectedUrl, {
       headers: { Authorization: "Bearer test-jwt-token" },
     });
@@ -168,7 +169,7 @@ describe("fetchWithProxy", () => {
 
     await fetchWithProxy(FEED_URL);
 
-    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${encodeURIComponent(btoa(FEED_URL))}`;
+    const expectedUrl = `https://sync.example.com/api/v1/rss/proxy/${encodeRssFeed(FEED_URL)}`;
     expect(mockFetch).toHaveBeenCalledWith(expectedUrl, expect.any(Object));
   });
 

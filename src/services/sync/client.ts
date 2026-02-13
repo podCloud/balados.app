@@ -1,5 +1,6 @@
 import { getSettings, saveSettings } from "../storage";
 import type { Subscription, PlayStatus } from "../../types";
+import { encodeRssFeed, decodeRssFeed } from "../../utils/rssEncoding";
 
 // API Response types
 export interface SyncConfig {
@@ -84,33 +85,8 @@ export class SyncApiError extends Error {
   }
 }
 
-// Encoding helpers
-export const encodeRssFeed = (feedUrl: string): string => {
-  return btoa(feedUrl);
-};
-
-export const decodeRssFeed = (encoded: string): string => {
-  return atob(encoded);
-};
-
-export const encodeRssItem = (guid: string, enclosureUrl: string): string => {
-  return btoa(`${guid},${enclosureUrl}`);
-};
-
-export const decodeRssItem = (
-  encoded: string
-): { guid: string; enclosureUrl: string } => {
-  const decoded = atob(encoded);
-  // Use lastIndexOf because guid might contain commas, but URLs don't (RFC 3986)
-  const commaIndex = decoded.lastIndexOf(",");
-  if (commaIndex === -1) {
-    throw new Error(`Invalid rss_source_item format: missing comma separator`);
-  }
-  return {
-    guid: decoded.substring(0, commaIndex),
-    enclosureUrl: decoded.substring(commaIndex + 1),
-  };
-};
+// Re-export encoding helpers from shared util
+export { encodeRssFeed, decodeRssFeed, encodeRssItem, decodeRssItem } from "../../utils/rssEncoding";
 
 // Convert local types to sync format
 export const subscriptionToSync = (sub: Subscription): SubscriptionSync => ({
@@ -125,12 +101,12 @@ export const syncToSubscription = (sync: SubscriptionSync): Subscription => ({
 
 /**
  * Convert local PlayStatus to sync format.
- * Note: episodeId is already in format btoa(guid,enclosureUrl) from generateEpisodeId(),
+ * Note: episodeId is already in format base64url(guid,enclosureUrl) from generateEpisodeId(),
  * so we use it directly as rss_source_item.
  */
 export const playStatusToSync = (status: PlayStatus): PlayStatusSync => ({
   rss_source_feed: encodeRssFeed(status.feedUrl),
-  rss_source_item: status.episodeId, // Already encoded as btoa(guid,enclosureUrl)
+  rss_source_item: status.episodeId, // Already encoded as base64url(guid,enclosureUrl)
   position: status.position,
   played: status.completed,
   updated_at: new Date(status.updatedAt).toISOString(),
@@ -144,7 +120,7 @@ export const playStatusToSync = (status: PlayStatus): PlayStatusSync => ({
 export const syncToPlayStatus = (
   sync: PlayStatusSync
 ): Omit<PlayStatus, "duration"> => {
-  // rss_source_item is already in btoa(guid,enclosureUrl) format, use as episodeId directly
+  // rss_source_item is already in base64url(guid,enclosureUrl) format, use as episodeId directly
   return {
     episodeId: sync.rss_source_item,
     feedUrl: decodeRssFeed(sync.rss_source_feed),
@@ -406,7 +382,7 @@ export class SyncClient {
   /**
    * Get play status for an episode.
    * @param feedUrl - The feed URL
-   * @param episodeId - The episode ID (already in btoa(guid,enclosureUrl) format)
+   * @param episodeId - The episode ID (already in base64url(guid,enclosureUrl) format)
    */
   async getPlayStatus(
     feedUrl: string,
@@ -414,7 +390,7 @@ export class SyncClient {
   ): Promise<PlayStatusSync | null> {
     try {
       const encodedFeed = encodeRssFeed(feedUrl);
-      // episodeId is already encoded as btoa(guid,enclosureUrl), use directly
+      // episodeId is already encoded as base64url(guid,enclosureUrl), use directly
       return await this.request<PlayStatusSync>(
         `/api/v1/play/${encodedFeed}/${episodeId}`,
         { method: "GET" }

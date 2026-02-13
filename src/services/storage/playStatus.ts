@@ -1,19 +1,11 @@
 import { db, getSettings } from "./index";
 import { queuePlayStatus } from "./syncQueue";
 import type { PlayStatus } from "../../types";
+export { generateEpisodeId } from "../../utils/rssEncoding";
 
 // Throttle play position syncs to avoid queue bloat (sync at most every 30s per episode)
 const lastSyncTime = new Map<string, number>();
 const SYNC_THROTTLE_MS = 30000;
-
-// Generate episode ID from guid and enclosure URL
-export const generateEpisodeId = (
-  guid: string | undefined,
-  enclosureUrl: string,
-): string => {
-  const identifier = guid || enclosureUrl;
-  return btoa(`${identifier},${enclosureUrl}`);
-};
 
 export const getPlayStatus = async (
   episodeId: string,
