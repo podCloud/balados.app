@@ -53,6 +53,7 @@ export const SyncStatusIcon = ({ onNavigate }: SyncStatusIconProps) => {
     <button
       onClick={() => onNavigate("settings")}
       className="relative text-gray-500 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"
+      title={getAriaLabel()}
       aria-label={getAriaLabel()}
     >
       {renderIcon()}
