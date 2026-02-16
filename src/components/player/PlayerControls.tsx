@@ -56,6 +56,10 @@ export const PlayerControls = () => {
         onKeyDown={(e) => {
           if (e.key === "ArrowRight") { e.preventDefault(); seek(Math.min(currentTime + 5, duration)); }
           if (e.key === "ArrowLeft") { e.preventDefault(); seek(Math.max(currentTime - 5, 0)); }
+          if (e.key === "ArrowUp") { e.preventDefault(); seek(Math.min(currentTime + 30, duration)); }
+          if (e.key === "ArrowDown") { e.preventDefault(); seek(Math.max(currentTime - 30, 0)); }
+          if (e.key === "Home") { e.preventDefault(); seek(0); }
+          if (e.key === "End") { e.preventDefault(); seek(duration); }
         }}
         role="slider"
         tabIndex={0}

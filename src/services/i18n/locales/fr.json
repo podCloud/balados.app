@@ -152,5 +152,8 @@
     "playStarted": "Lecture démarrée",
     "playCompleted": "Épisode terminé",
     "playPaused": "Lecture en pause"
+  },
+  "a11y": {
+    "skipToContent": "Aller au contenu principal"
   }
 }
