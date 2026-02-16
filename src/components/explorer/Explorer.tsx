@@ -1,15 +1,23 @@
-const SYNC_URL = "https://sync.balados.app";
+import { useTranslation } from "react-i18next";
+import { Trending } from "./Trending";
 
-export const Explorer = () => {
+interface ExplorerProps {
+  onNavigate: (view: string, feedUrl?: string | null) => void;
+}
+
+export const Explorer = ({ onNavigate }: ExplorerProps) => {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full pb-16 bg-white">
-      <iframe
-        src={SYNC_URL}
-        title="Explorer"
-        className="w-full h-full border-0"
-        allow="clipboard-write"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      />
+      <div className="px-4 py-3 border-b border-gray-200">
+        <h2 className="text-base font-semibold text-gray-900 text-center">
+          {t("trending.title")}
+        </h2>
+      </div>
+      <div className="overflow-y-auto" style={{ height: "calc(100% - 49px)" }}>
+        <Trending onNavigate={onNavigate} />
+      </div>
     </div>
   );
 };

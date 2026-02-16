@@ -81,7 +81,7 @@ const AppContent = () => {
       case "player":
         return <EpisodePlayer />;
       case "explorer":
-        return <Explorer />;
+        return <Explorer onNavigate={handleNavigate} />;
       case "debug":
         return import.meta.env.DEV ? <Debug /> : <Library onNavigate={handleNavigate} />;
       default:
