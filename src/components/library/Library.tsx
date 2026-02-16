@@ -7,6 +7,7 @@ import { addSubscription } from "../../services/storage/subscriptions";
 import { getInProgressEpisodes } from "../../services/storage/playStatus";
 import { getHiddenEpisodeIds } from "../../services/storage/hiddenEpisodes";
 import { SubscriptionItem } from "./SubscriptionItem";
+import { SyncStatusIcon } from "./SyncStatusIcon";
 
 interface LibraryProps {
   onNavigate: (view: string, feedUrl?: string | null) => void;
@@ -67,6 +68,7 @@ export const Library = ({ onNavigate }: LibraryProps) => {
             {t("library.title")}
           </h2>
           <div className="flex items-center gap-1">
+            <SyncStatusIcon onNavigate={onNavigate} />
             {(inProgressCount ?? 0) > 0 && (
               <button
                 onClick={() => onNavigate("inProgress")}

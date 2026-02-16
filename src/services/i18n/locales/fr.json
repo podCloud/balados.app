@@ -76,7 +76,12 @@
     "syncError": "Erreur de sync",
     "dismissError": "Fermer l'erreur",
     "noServer": "Aucun serveur sync configuré",
-    "queueCleared": "File d'attente vidée"
+    "queueCleared": "File d'attente vidée",
+    "statusConnected": "Sync connecté",
+    "statusSyncing": "Synchronisation en cours",
+    "statusPending": "{{count}} action en attente de sync",
+    "statusPending_other": "{{count}} actions en attente de sync",
+    "statusError": "Erreur de sync"
   },
   "syncSettings": {
     "title": "Synchronisation",

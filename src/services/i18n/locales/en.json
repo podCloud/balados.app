@@ -76,7 +76,12 @@
     "syncError": "Sync error",
     "dismissError": "Dismiss error",
     "noServer": "No sync server configured",
-    "queueCleared": "Queue cleared"
+    "queueCleared": "Queue cleared",
+    "statusConnected": "Sync connected",
+    "statusSyncing": "Syncing in progress",
+    "statusPending": "{{count}} action pending sync",
+    "statusPending_other": "{{count}} actions pending sync",
+    "statusError": "Sync error"
   },
   "syncSettings": {
     "title": "Synchronization",
