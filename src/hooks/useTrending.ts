@@ -5,9 +5,13 @@ import type { TrendingPodcast } from "../services/sync/client";
 
 const DEFAULT_SYNC_URL = "https://sync.balados.app";
 
-async function fetchTrending(): Promise<TrendingPodcast[]> {
+async function getServerUrl(): Promise<string> {
   const settings = await getSettings();
-  const serverUrl = settings.syncServerUrl || DEFAULT_SYNC_URL;
+  return settings.syncServerUrl || DEFAULT_SYNC_URL;
+}
+
+async function fetchTrending(): Promise<TrendingPodcast[]> {
+  const serverUrl = await getServerUrl();
   const client = new SyncClient(serverUrl);
   const response = await client.getTrending();
   return response.podcasts;

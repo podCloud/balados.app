@@ -88,6 +88,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
       await addSubscription(podcast.feed_url);
     } catch {
       setSubscribeError(true);
+      setTimeout(() => setSubscribeError(false), 3000);
     } finally {
       setSubscribing(false);
     }
@@ -105,7 +106,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
         {podcast.image ? (
           <img
             src={podcast.image}
-            alt=""
+            alt={podcast.title}
             className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-gray-100"
             loading="lazy"
           />
