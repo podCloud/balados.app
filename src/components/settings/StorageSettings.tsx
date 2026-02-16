@@ -56,7 +56,7 @@ export const StorageSettings = () => {
         {/* Storage quota bar */}
         <div className="px-4 py-3">
           <div className="flex items-center gap-3 mb-2">
-            <HardDrive size={20} className="text-gray-400" />
+            <HardDrive size={20} className="text-gray-400" aria-hidden="true" />
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-700">
@@ -96,7 +96,7 @@ export const StorageSettings = () => {
               onClick={handleClearAll}
               className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
             >
-              <Trash2 size={14} />
+              <Trash2 size={14} aria-hidden="true" />
               {t("downloads.clearAll")}
             </button>
           </div>
@@ -121,8 +121,9 @@ export const StorageSettings = () => {
               <button
                 onClick={() => handleDelete(download.episodeId)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
+                aria-label={`${t("downloads.delete")} ${download.title}`}
               >
-                <Trash2 size={18} />
+                <Trash2 size={18} aria-hidden="true" />
               </button>
             </div>
           ))}

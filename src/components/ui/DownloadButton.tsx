@@ -53,6 +53,7 @@ export const DownloadButton = ({
         onClick={handleClick}
         className={`${buttonClass} bg-red-100 text-red-600 hover:bg-red-200`}
         title={progress.error || t("downloads.error")}
+        aria-label={t("downloads.retryDownload")}
       >
         <AlertCircle size={iconSize} />
         {showLabel && (
@@ -68,6 +69,7 @@ export const DownloadButton = ({
       <button
         className={`${buttonClass} bg-blue-100 text-blue-600 cursor-wait relative`}
         disabled
+        aria-label={t("downloads.downloading")}
       >
         <Loader2 size={iconSize} className="animate-spin" />
         {progress && progress.percent > 0 && (
@@ -89,6 +91,7 @@ export const DownloadButton = ({
         onClick={handleClick}
         className={`${buttonClass} bg-green-100 text-green-600 hover:bg-red-100 hover:text-red-600 group`}
         title={t("downloads.delete")}
+        aria-label={t("downloads.downloaded")}
       >
         <Check size={iconSize} className="group-hover:hidden" />
         <Trash2 size={iconSize} className="hidden group-hover:block" />
@@ -107,6 +110,7 @@ export const DownloadButton = ({
       onClick={handleClick}
       className={`${buttonClass} bg-gray-100 text-gray-600 hover:bg-blue-100 hover:text-blue-600`}
       title={t("downloads.download")}
+      aria-label={t("downloads.download")}
     >
       <Download size={iconSize} />
       {showLabel && (

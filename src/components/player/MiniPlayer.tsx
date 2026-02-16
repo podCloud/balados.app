@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Play, Pause } from "lucide-react";
 import { usePlayer } from "../../contexts";
 
@@ -6,6 +7,7 @@ interface MiniPlayerProps {
 }
 
 export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
+  const { t } = useTranslation();
   const { currentEpisode, isPlaying, isLoading, pause, resume, currentTime, duration } = usePlayer();
 
   if (!currentEpisode) return null;
@@ -24,6 +26,10 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
   return (
     <div
       onClick={onExpand}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onExpand(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label={t("player.expandPlayer")}
       className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100 safe-area-inset-bottom"
     >
       {/* Progress bar */}
@@ -56,6 +62,7 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
         <button
           onClick={handlePlayPause}
           disabled={isLoading}
+          aria-label={isPlaying ? t("player.pause") : t("player.play")}
           className="w-10 h-10 flex items-center justify-center text-blue-500 hover:text-blue-600"
         >
           {isLoading ? (

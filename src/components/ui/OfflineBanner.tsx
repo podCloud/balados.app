@@ -17,15 +17,15 @@ export const OfflineBanner = () => {
   return (
     <div className="text-white text-sm">
       {showError && (
-        <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2">
-          <AlertCircle size={16} />
+        <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2" role="alert">
+          <AlertCircle size={16} aria-hidden="true" />
           <span>{t("sync.syncError")}: {lastSyncError}</span>
           <button
             onClick={clearError}
             className="ml-2 p-1 hover:bg-red-600 rounded"
-            aria-label={t("common.cancel")}
+            aria-label={t("sync.dismissError")}
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -33,16 +33,16 @@ export const OfflineBanner = () => {
         <div className="bg-amber-500 py-2 px-4 flex items-center justify-center gap-4">
           {showOffline && (
             <div className="flex items-center gap-2">
-              <WifiOff size={16} />
+              <WifiOff size={16} aria-hidden="true" />
               <span>{t("common.offline")}</span>
             </div>
           )}
           {showPending && (
             <div className="flex items-center gap-2">
               {isSyncing ? (
-                <RefreshCw size={16} className="animate-spin" />
+                <RefreshCw size={16} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Clock size={16} />
+                <Clock size={16} aria-hidden="true" />
               )}
               <span>
                 {isSyncing

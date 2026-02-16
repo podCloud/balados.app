@@ -41,7 +41,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={48} className="mx-auto mb-4 text-blue-500 animate-spin" />
+          <Loader2 size={48} className="mx-auto mb-4 text-blue-500 animate-spin" aria-hidden="true" />
           <div className="text-gray-500 text-sm">{t("common.loading")}</div>
         </div>
       </div>
@@ -56,13 +56,13 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
             onClick={() => onNavigate("library")}
             className="text-white text-base flex items-center gap-1"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={20} aria-hidden="true" />
             <span>{t("podcast.backToLibrary")}</span>
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
-            <AlertTriangle size={48} className="mx-auto mb-4 text-orange-500" />
+            <AlertTriangle size={48} className="mx-auto mb-4 text-orange-500" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-gray-700 mb-2">
               {t("common.error")}
             </h2>
@@ -73,7 +73,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
               onClick={handleRefresh}
               className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={16} aria-hidden="true" />
               {t("common.retry")}
             </button>
           </div>
@@ -89,14 +89,14 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
           onClick={() => onNavigate("library")}
           className="text-white text-base flex items-center gap-1"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={20} aria-hidden="true" />
           <span>{t("podcast.backToLibrary")}</span>
         </button>
         <button
           onClick={handleRefresh}
           className="ml-auto text-white text-sm flex items-center gap-1"
         >
-          <RefreshCw size={14} />
+          <RefreshCw size={14} aria-hidden="true" />
           {t("podcast.refresh")}
         </button>
       </div>

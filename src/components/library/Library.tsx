@@ -58,9 +58,10 @@ export const Library = ({ onNavigate }: LibraryProps) => {
         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200">
           <button
             onClick={() => onNavigate("settings")}
+            aria-label={t("settings.title")}
             className="text-gray-500 w-8 h-8 flex items-center justify-center"
           >
-            <Settings size={22} />
+            <Settings size={22} aria-hidden="true" />
           </button>
           <h2 className="text-base font-semibold text-gray-900">
             {t("library.title")}
@@ -81,9 +82,11 @@ export const Library = ({ onNavigate }: LibraryProps) => {
             )}
             <button
               onClick={() => setShowAddForm(!showAddForm)}
+              aria-label={showAddForm ? t("common.cancel") : t("library.addSubscription")}
+              aria-expanded={showAddForm}
               className="text-blue-500 w-8 h-8 flex items-center justify-center"
             >
-              {showAddForm ? <X size={24} /> : <Plus size={24} />}
+              {showAddForm ? <X size={24} aria-hidden="true" /> : <Plus size={24} aria-hidden="true" />}
             </button>
           </div>
         </div>

@@ -118,16 +118,16 @@ export const Stats = ({ onBack }: StatsProps) => {
   const getEventIcon = (type: string) => {
     switch (type) {
       case "play_started":
-        return <Play size={16} className="text-green-500" />;
+        return <Play size={16} className="text-green-500" aria-hidden="true" />;
       case "play_completed":
-        return <CheckCircle size={16} className="text-blue-500" />;
+        return <CheckCircle size={16} className="text-blue-500" aria-hidden="true" />;
       case "play_paused":
-        return <Clock size={16} className="text-orange-500" />;
+        return <Clock size={16} className="text-orange-500" aria-hidden="true" />;
       case "subscription_added":
       case "subscription_removed":
-        return <Radio size={16} className="text-purple-500" />;
+        return <Radio size={16} className="text-purple-500" aria-hidden="true" />;
       default:
-        return <Play size={16} className="text-gray-500" />;
+        return <Play size={16} className="text-gray-500" aria-hidden="true" />;
     }
   };
 
@@ -162,8 +162,9 @@ export const Stats = ({ onBack }: StatsProps) => {
         <button
           onClick={onBack}
           className="p-1 -ml-1 text-gray-600 hover:text-gray-900"
+          aria-label={t("settings.back")}
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={24} aria-hidden="true" />
         </button>
         <h1 className="text-lg font-semibold">{t("stats.title")}</h1>
       </div>
@@ -176,6 +177,7 @@ export const Stats = ({ onBack }: StatsProps) => {
               <button
                 key={p.id}
                 onClick={() => setPeriod(p.id)}
+                aria-pressed={period === p.id}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   period === p.id
                     ? "bg-blue-500 text-white"
@@ -194,7 +196,7 @@ export const Stats = ({ onBack }: StatsProps) => {
           </div>
         ) : error ? (
           <div className="p-8 text-center">
-            <AlertCircle size={48} className="mx-auto text-red-400 mb-2" />
+            <AlertCircle size={48} className="mx-auto text-red-400 mb-2" aria-hidden="true" />
             <p className="text-red-500">{error}</p>
           </div>
         ) : (
@@ -289,7 +291,7 @@ export const Stats = ({ onBack }: StatsProps) => {
             {stats.totalPlays === 0 && recentEvents.length === 0 && (
               <div className="p-8 text-center">
                 <div className="text-gray-400 mb-2">
-                  <Play size={48} className="mx-auto" />
+                  <Play size={48} className="mx-auto" aria-hidden="true" />
                 </div>
                 <p className="text-gray-500">{t("stats.noData")}</p>
               </div>

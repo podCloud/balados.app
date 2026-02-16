@@ -24,6 +24,7 @@ vi.mock("react-i18next", () => ({
         "sync.syncing": "Synchronisation...",
         "sync.pending": `${opts?.count} action(s) en attente`,
         "sync.syncError": "Erreur de sync",
+        "sync.dismissError": "Fermer l'erreur",
       };
       return translations[key] || key;
     },
@@ -94,7 +95,7 @@ describe("OfflineBanner", () => {
     expect(screen.getByText(/Erreur de sync/)).toBeInTheDocument();
     expect(screen.getByText(/Network error/)).toBeInTheDocument();
 
-    const dismissButton = screen.getByRole("button", { name: "Annuler" });
+    const dismissButton = screen.getByRole("button", { name: "Fermer l'erreur" });
     fireEvent.click(dismissButton);
 
     expect(clearError).toHaveBeenCalledTimes(1);
