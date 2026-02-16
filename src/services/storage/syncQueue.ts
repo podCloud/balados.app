@@ -1,4 +1,5 @@
 import { db } from "./index";
+import { requestBackgroundSync } from "../sync/backgroundSync";
 import type {
   QueuedAction,
   SubscribePayload,
@@ -36,6 +37,7 @@ export const queueSubscribe = async (
       createdAt: Date.now(),
       attempts: 0,
     });
+    await requestBackgroundSync();
     return id as number;
   } catch (error) {
     console.error("Failed to queue subscribe action:", error);
@@ -69,6 +71,7 @@ export const queueUnsubscribe = async (
       createdAt: Date.now(),
       attempts: 0,
     });
+    await requestBackgroundSync();
     return id as number;
   } catch (error) {
     console.error("Failed to queue unsubscribe action:", error);
@@ -102,6 +105,7 @@ export const queuePlayStatus = async (
       createdAt: Date.now(),
       attempts: 0,
     });
+    await requestBackgroundSync();
     return id as number;
   } catch (error) {
     console.error("Failed to queue play status action:", error);

@@ -28,32 +28,39 @@ balados.app est conçu pour fonctionner parfaitement sans connexion internet. La
 
 ### Service Worker
 
+Le SW utilise la stratégie **injectManifest** de vite-plugin-pwa, ce qui permet un SW personnalisé avec support du Background Sync API.
+
 ```typescript
-// workers/sw.ts (avec Workbox)
-import { precacheAndRoute } from 'workbox-precaching'
-import { registerRoute } from 'workbox-routing'
-import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
-import { BackgroundSyncPlugin } from 'workbox-background-sync'
+// src/workers/sw.ts
+import { precacheAndRoute } from "workbox-precaching";
+import { registerRoute } from "workbox-routing";
+import { NetworkFirst, CacheFirst } from "workbox-strategies";
+import { processQueue, notifySyncComplete } from "../services/sync/queueProcessor";
 
-// Precache des assets buildés
-precacheAndRoute(self.__WB_MANIFEST)
+// Precache app shell
+precacheAndRoute(self.__WB_MANIFEST);
 
-// Stratégies de cache
-registerRoute(
-  /\/api\/.*\/rss/,
-  new NetworkFirst({ cacheName: 'rss-feeds', networkTimeoutSeconds: 10 })
-)
+// Runtime caching strategies
+registerRoute(/^https:\/\/(api\.allorigins\.win|corsproxy\.io)/, new NetworkFirst({ ... }));
+registerRoute(/\.(png|jpg|jpeg|webp|gif)$/, new CacheFirst({ ... }));
+registerRoute(/\.(mp3|m4a|ogg|wav|aac)$/, new CacheFirst({ ... }));
 
-registerRoute(
-  /\.(png|jpg|jpeg|webp|svg)$/,
-  new CacheFirst({ cacheName: 'images' })
-)
+// Background Sync - processes queue when connectivity returns
+self.addEventListener("sync", (event) => {
+  if (event.tag === "balados-sync-queue") {
+    event.waitUntil(processQueue("sw").then(notifySyncComplete));
+  }
+});
 
-registerRoute(
-  /\.(mp3|m4a|ogg|wav)$/,
-  new CacheFirst({ cacheName: 'audio' })
-)
+// Periodic Sync - processes queue every 15 min
+self.addEventListener("periodicsync", (event) => {
+  if (event.tag === "balados-periodic-sync") {
+    event.waitUntil(processQueue("sw").then(notifySyncComplete));
+  }
+});
 ```
+
+**Détails complets** : [BACKGROUND_SYNC.md](BACKGROUND_SYNC.md)
 
 ## Stockage local
 
@@ -149,34 +156,33 @@ interface QueuedAction {
 
 ### Traitement
 
+La queue est traitée par 3 mécanismes complémentaires :
+
+1. **Background Sync API** (SW) - Quand le réseau revient, même si l'app est fermée (Chrome/Edge)
+2. **Event `online`** (app) - Quand l'app est ouverte et le réseau revient (tous navigateurs)
+3. **Periodic Sync** (SW) - Toutes les 15 min (Chrome avec engagement suffisant)
+
+La coordination entre le SW et l'app utilise un **verrou IndexedDB** pour éviter le traitement concurrent.
+
 ```typescript
-// Service Worker
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-actions') {
-    event.waitUntil(processQueue())
-  }
-})
+// services/sync/queueProcessor.ts (partagé entre SW et app)
+export async function processQueue(holder: "sw" | "app"): Promise<number> {
+  const locked = await acquireSyncLock(holder);
+  if (!locked) return -1; // Autre processus en cours
 
-async function processQueue() {
-  const queue = await db.syncQueue.toArray()
-
-  for (const action of queue) {
-    try {
-      await executeAction(action)
-      await db.syncQueue.delete(action.id)
-    } catch (error) {
-      action.attempts++
-      action.lastError = error.message
-      await db.syncQueue.put(action)
-
-      if (action.attempts >= 5) {
-        // Notifier l'utilisateur
-        await notifyUser('Erreur de synchronisation', action)
-      }
+  try {
+    const actions = await getRetryableActions();
+    for (const action of actions) {
+      const success = await processAction(action, settings);
+      if (success) await removeAction(action.id);
     }
+  } finally {
+    await releaseSyncLock();
   }
 }
 ```
+
+**Détails complets** : [BACKGROUND_SYNC.md](BACKGROUND_SYNC.md)
 
 ## Téléchargement d'épisodes
 

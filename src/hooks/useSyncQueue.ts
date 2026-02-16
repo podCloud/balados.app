@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getPendingCount,
-  getRetryableActions,
-  removeAction,
-  markAttempted,
   pruneFailedActions,
   enforceQueueLimit,
 } from "../services/storage/syncQueue";
-import { getSettings } from "../services/storage";
-import type { QueuedAction, AppSettings } from "../types";
-import { encodeRssFeed } from "../utils/rssEncoding";
+import { processQueue, notifySyncComplete } from "../services/sync/queueProcessor";
 
 interface SyncQueueState {
   pendingCount: number;
@@ -17,67 +12,19 @@ interface SyncQueueState {
   lastSyncError: string | null;
 }
 
-// Global lock to prevent concurrent queue processing across instances
-let isProcessing = false;
-
-// Get the API endpoint for an action (extracted outside hook - no state dependencies)
-const getEndpointForAction = (
-  action: QueuedAction,
-  baseUrl: string
-): { url: string; method: string } => {
-  switch (action.action) {
-    case "subscribe":
-      return { url: `${baseUrl}/api/v1/subscriptions`, method: "POST" };
-    case "unsubscribe": {
-      const feedId = encodeRssFeed(action.payload.feedUrl);
-      return {
-        url: `${baseUrl}/api/v1/subscriptions/${feedId}`,
-        method: "DELETE",
-      };
-    }
-    case "updatePlayStatus":
-      return { url: `${baseUrl}/api/v1/play`, method: "POST" };
-  }
-};
-
-// Process a single action (extracted outside hook - no state dependencies)
-const processAction = async (
-  action: QueuedAction,
-  settings: AppSettings
-): Promise<boolean> => {
-  if (!settings.syncServerUrl || !settings.syncToken) {
-    return false;
-  }
-
-  try {
-    const endpoint = getEndpointForAction(action, settings.syncServerUrl);
-    const response = await fetch(endpoint.url, {
-      method: endpoint.method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${settings.syncToken}`,
-      },
-      body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    return true;
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    if (action.id) {
-      await markAttempted(action.id, errorMessage);
-    }
-    return false;
-  }
-};
-
 /**
- * Hook to manage the offline sync queue
- * Automatically processes queue when coming back online
+ * Hook to manage the offline sync queue.
+ *
+ * Processing is coordinated with the Service Worker via an IndexedDB-based
+ * lock (see queueProcessor.ts). Only one processor runs at a time.
+ *
+ * The SW handles background sync (when the app is closed), while this hook
+ * handles sync when the app is open and comes back online.
+ *
+ * Communication flow:
+ * - App queues action → requestBackgroundSync() registers SW sync event
+ * - SW processes queue → BroadcastChannel notifies app to refresh count
+ * - App comes online → this hook processes queue (if SW didn't already)
  */
 export const useSyncQueue = () => {
   const [state, setState] = useState<SyncQueueState>({
@@ -88,7 +35,6 @@ export const useSyncQueue = () => {
 
   const isMounted = useRef(true);
 
-  // Refresh pending count
   const refreshCount = useCallback(async () => {
     const count = await getPendingCount();
     if (isMounted.current) {
@@ -96,43 +42,18 @@ export const useSyncQueue = () => {
     }
   }, []);
 
-  // Process all pending actions with global lock
-  const processQueue = useCallback(async () => {
-    // Prevent concurrent processing (race condition fix)
-    if (isProcessing) {
-      return;
-    }
-
-    const settings = await getSettings();
-
-    // Skip if no sync server configured
-    if (!settings.syncServerUrl || !settings.syncToken) {
-      return;
-    }
-
-    isProcessing = true;
+  const processQueueFromApp = useCallback(async () => {
     if (isMounted.current) {
       setState((prev) => ({ ...prev, isSyncing: true, lastSyncError: null }));
     }
 
     try {
-      const actions = await getRetryableActions();
+      const result = await processQueue("app");
 
-      for (const action of actions) {
-        // Check if still mounted before each action
-        if (!isMounted.current) break;
-
-        const success = await processAction(action, settings);
-        if (success && action.id) {
-          await removeAction(action.id);
-        }
+      if (result >= 0) {
+        notifySyncComplete(result);
       }
-
-      // Prune actions that exceeded max attempts
-      await pruneFailedActions();
-
-      // Enforce queue size limit
-      await enforceQueueLimit();
+      // result === -1 means SW is already processing - that's fine
 
       await refreshCount();
     } catch (error) {
@@ -142,37 +63,47 @@ export const useSyncQueue = () => {
         setState((prev) => ({ ...prev, lastSyncError: errorMessage }));
       }
     } finally {
-      isProcessing = false;
       if (isMounted.current) {
         setState((prev) => ({ ...prev, isSyncing: false }));
       }
     }
   }, [refreshCount]);
 
-  // Clear the last sync error
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, lastSyncError: null }));
   }, []);
 
-  // Listen for online/offline events
   useEffect(() => {
     isMounted.current = true;
 
+    // Listen for online events
     const handleOnline = () => {
-      processQueue();
+      processQueueFromApp();
     };
-
     window.addEventListener("online", handleOnline);
 
-    // Initial cleanup: prune failed actions and enforce limits
+    // Listen for BroadcastChannel messages from SW
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel("balados-sync");
+      channel.addEventListener("message", (event) => {
+        if (event.data?.type === "sync-complete") {
+          refreshCount();
+        }
+      });
+    } catch {
+      // BroadcastChannel not supported - SW sync will still work,
+      // count will refresh on next user interaction
+    }
+
+    // Initial cleanup and processing
     const initQueue = async () => {
       await pruneFailedActions();
       await enforceQueueLimit();
       await refreshCount();
 
-      // Process queue if already online
       if (navigator.onLine) {
-        processQueue();
+        processQueueFromApp();
       }
     };
 
@@ -181,14 +112,15 @@ export const useSyncQueue = () => {
     return () => {
       isMounted.current = false;
       window.removeEventListener("online", handleOnline);
+      channel?.close();
     };
-  }, [processQueue, refreshCount]);
+  }, [processQueueFromApp, refreshCount]);
 
   return {
     pendingCount: state.pendingCount,
     isSyncing: state.isSyncing,
     lastSyncError: state.lastSyncError,
-    processQueue,
+    processQueue: processQueueFromApp,
     refreshCount,
     clearError,
   };

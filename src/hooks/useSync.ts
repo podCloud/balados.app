@@ -9,6 +9,10 @@ import {
   subscriptionsToSync,
   playStatusesToSync,
 } from "../services/sync/merger";
+import {
+  registerPeriodicSync,
+  unregisterPeriodicSync,
+} from "../services/sync/backgroundSync";
 import type { Subscription, PlayStatus } from "../types";
 
 export type SyncStatus =
@@ -106,6 +110,11 @@ export function useSync(): UseSyncReturn {
             isSyncing: false,
           });
         }
+
+        // Re-register periodic sync on app startup when connected
+        if (isConnected) {
+          await registerPeriodicSync();
+        }
       }
     };
 
@@ -174,6 +183,9 @@ export function useSync(): UseSyncReturn {
           });
         }
 
+        // Register periodic background sync
+        await registerPeriodicSync();
+
         // Trigger initial sync
         await refreshCount();
 
@@ -203,6 +215,7 @@ export function useSync(): UseSyncReturn {
       clientRef.current = null;
     }
 
+    await unregisterPeriodicSync();
     await saveSettings({ lastSyncAt: undefined });
 
     if (isMounted.current) {
