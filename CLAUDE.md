@@ -308,6 +308,7 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Technical architecture
 - [docs/SYNC.md](docs/SYNC.md) - Sync strategy with balados.sync
 - [docs/OFFLINE.md](docs/OFFLINE.md) - Offline-first & PWA
+- [docs/BACKGROUND_SYNC.md](docs/BACKGROUND_SYNC.md) - Background Sync via Service Worker
 - [docs/I18N.md](docs/I18N.md) - Internationalization
 - [docs/ROADMAP.md](docs/ROADMAP.md) - Development phases
 
