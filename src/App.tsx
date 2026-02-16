@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Library } from "./components/library/Library";
 import { PodcastDetail } from "./components/podcast/PodcastDetail";
@@ -92,10 +93,18 @@ const AppContent = () => {
   const { currentEpisode } = usePlayer();
   const showMiniPlayer = currentEpisode && activeTab !== "player" && currentView !== "player";
 
+  const { t } = useTranslation();
+
   return (
     <div className="h-screen bg-gray-50 flex flex-col max-w-md mx-auto">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-blue-500 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium"
+      >
+        {t("a11y.skipToContent")}
+      </a>
       <OfflineBanner />
-      <div className={`flex-1 overflow-hidden ${showMiniPlayer ? "pb-14" : ""}`}>
+      <div id="main-content" className={`flex-1 overflow-hidden ${showMiniPlayer ? "pb-14" : ""}`}>
         {renderContent()}
       </div>
       {showMiniPlayer && (

@@ -19,7 +19,7 @@ vi.mock("../services/storage/events", () => ({
   logEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { getPlayStatus, savePlayStatus } from "../services/storage/playStatus";
+import { savePlayStatus } from "../services/storage/playStatus";
 import { getCachedAudioUrl } from "../services/storage/downloads";
 import { logEvent } from "../services/storage/events";
 

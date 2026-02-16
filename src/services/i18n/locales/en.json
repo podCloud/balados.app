@@ -157,5 +157,8 @@
     "playStarted": "Play started",
     "playCompleted": "Episode finished",
     "playPaused": "Play paused"
+  },
+  "a11y": {
+    "skipToContent": "Skip to main content"
   }
 }
