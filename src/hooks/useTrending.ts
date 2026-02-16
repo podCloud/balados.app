@@ -1,26 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLiveQuery } from "dexie-react-hooks";
 import { SyncClient } from "../services/sync/client";
-import { getSettings } from "../services/storage";
+import { db } from "../services/storage";
 import type { TrendingPodcast } from "../services/sync/client";
 
-const DEFAULT_SYNC_URL = "https://sync.balados.app";
-
-async function getServerUrl(): Promise<string> {
-  const settings = await getSettings();
-  return settings.syncServerUrl || DEFAULT_SYNC_URL;
-}
-
-async function fetchTrending(): Promise<TrendingPodcast[]> {
-  const serverUrl = await getServerUrl();
-  const client = new SyncClient(serverUrl);
-  const response = await client.getTrending();
-  return response.podcasts;
-}
+export const DEFAULT_SYNC_URL = "https://sync.balados.app";
 
 export function useTrending() {
+  const settings = useLiveQuery(() => db.settings.get("app"));
+  const serverUrl = settings?.syncServerUrl || DEFAULT_SYNC_URL;
+
   return useQuery({
-    queryKey: ["trending"],
-    queryFn: fetchTrending,
+    queryKey: ["trending", serverUrl],
+    queryFn: async (): Promise<TrendingPodcast[]> => {
+      const client = new SyncClient(serverUrl);
+      const response = await client.getTrending();
+      return response.podcasts;
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLiveQuery } from "dexie-react-hooks";
 import { TrendingUp, RefreshCw, Podcast } from "lucide-react";
@@ -78,17 +78,19 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
   const { t } = useTranslation();
   const [subscribing, setSubscribing] = useState(false);
   const [subscribeError, setSubscribeError] = useState(false);
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const handleSubscribe = async (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     if (isSubscribed || subscribing) return;
+    clearTimeout(errorTimeoutRef.current);
     setSubscribing(true);
     setSubscribeError(false);
     try {
       await addSubscription(podcast.feed_url);
     } catch {
       setSubscribeError(true);
-      setTimeout(() => setSubscribeError(false), 3000);
+      errorTimeoutRef.current = setTimeout(() => setSubscribeError(false), 3000);
     } finally {
       setSubscribing(false);
     }
@@ -148,9 +150,11 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
   );
 };
 
+const SKELETON_ITEM_COUNT = 6;
+
 const TrendingLoading = () => (
   <div className="divide-y divide-gray-200">
-    {Array.from({ length: 6 }).map((_, i) => (
+    {Array.from({ length: SKELETON_ITEM_COUNT }).map((_, i) => (
       <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
         <div className="w-16 h-16 rounded-lg bg-gray-200 flex-shrink-0" />
         <div className="flex-1 min-w-0">
