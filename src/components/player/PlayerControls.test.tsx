@@ -9,12 +9,15 @@ const mockSkipForward = vi.fn();
 const mockSkipBackward = vi.fn();
 const mockSetPlaybackRate = vi.fn();
 
+let mockCurrentTime = 60;
+let mockDuration = 300;
+
 vi.mock("../../contexts", () => ({
   usePlayer: () => ({
     isPlaying: false,
     isLoading: false,
-    currentTime: 60,
-    duration: 300,
+    get currentTime() { return mockCurrentTime; },
+    get duration() { return mockDuration; },
     pause: mockPause,
     resume: mockResume,
     seek: mockSeek,
@@ -34,6 +37,8 @@ vi.mock("react-i18next", () => ({
 describe("PlayerControls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCurrentTime = 60;
+    mockDuration = 300;
   });
 
   const getSlider = () => screen.getByRole("slider");
@@ -42,25 +47,25 @@ describe("PlayerControls", () => {
     it("seeks forward 5s with ArrowRight", () => {
       render(<PlayerControls />);
       fireEvent.keyDown(getSlider(), { key: "ArrowRight" });
-      expect(mockSeek).toHaveBeenCalledWith(65); // 60 + 5
+      expect(mockSeek).toHaveBeenCalledWith(65);
     });
 
     it("seeks backward 5s with ArrowLeft", () => {
       render(<PlayerControls />);
       fireEvent.keyDown(getSlider(), { key: "ArrowLeft" });
-      expect(mockSeek).toHaveBeenCalledWith(55); // 60 - 5
+      expect(mockSeek).toHaveBeenCalledWith(55);
     });
 
     it("seeks forward 30s with ArrowUp", () => {
       render(<PlayerControls />);
       fireEvent.keyDown(getSlider(), { key: "ArrowUp" });
-      expect(mockSeek).toHaveBeenCalledWith(90); // 60 + 30
+      expect(mockSeek).toHaveBeenCalledWith(90);
     });
 
     it("seeks backward 30s with ArrowDown", () => {
       render(<PlayerControls />);
       fireEvent.keyDown(getSlider(), { key: "ArrowDown" });
-      expect(mockSeek).toHaveBeenCalledWith(30); // 60 - 30
+      expect(mockSeek).toHaveBeenCalledWith(30);
     });
 
     it("seeks to start with Home", () => {
@@ -72,24 +77,35 @@ describe("PlayerControls", () => {
     it("seeks to end with End", () => {
       render(<PlayerControls />);
       fireEvent.keyDown(getSlider(), { key: "End" });
-      expect(mockSeek).toHaveBeenCalledWith(300); // duration
+      expect(mockSeek).toHaveBeenCalledWith(300);
     });
 
-    it("clamps ArrowLeft to 0", () => {
+    it("clamps ArrowLeft to 0 near start", () => {
+      mockCurrentTime = 2;
       render(<PlayerControls />);
-      // currentTime is 60, seeking back 5 gives 55 (not clamped)
-      // But ArrowDown with 30 from 60 gives 30 (not clamped either)
-      // Let's just verify no negative values are possible
       fireEvent.keyDown(getSlider(), { key: "ArrowLeft" });
-      const seekValue = mockSeek.mock.calls[0][0];
-      expect(seekValue).toBeGreaterThanOrEqual(0);
+      expect(mockSeek).toHaveBeenCalledWith(0); // max(2-5, 0) = 0
     });
 
-    it("clamps ArrowRight to duration", () => {
+    it("clamps ArrowRight to duration near end", () => {
+      mockCurrentTime = 298;
       render(<PlayerControls />);
       fireEvent.keyDown(getSlider(), { key: "ArrowRight" });
-      const seekValue = mockSeek.mock.calls[0][0];
-      expect(seekValue).toBeLessThanOrEqual(300);
+      expect(mockSeek).toHaveBeenCalledWith(300); // min(298+5, 300) = 300
+    });
+
+    it("clamps ArrowDown to 0 near start", () => {
+      mockCurrentTime = 10;
+      render(<PlayerControls />);
+      fireEvent.keyDown(getSlider(), { key: "ArrowDown" });
+      expect(mockSeek).toHaveBeenCalledWith(0); // max(10-30, 0) = 0
+    });
+
+    it("clamps ArrowUp to duration near end", () => {
+      mockCurrentTime = 285;
+      render(<PlayerControls />);
+      fireEvent.keyDown(getSlider(), { key: "ArrowUp" });
+      expect(mockSeek).toHaveBeenCalledWith(300); // min(285+30, 300) = 300
     });
   });
 });

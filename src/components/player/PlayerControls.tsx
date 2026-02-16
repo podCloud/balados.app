@@ -62,6 +62,7 @@ export const PlayerControls = () => {
           if (e.key === "End") { e.preventDefault(); seek(duration); }
         }}
         role="slider"
+        aria-orientation="horizontal"
         tabIndex={0}
         aria-label={t("player.progress")}
         aria-valuemin={0}
