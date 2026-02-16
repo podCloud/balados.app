@@ -15,6 +15,14 @@ export const Trending = ({ onNavigate }: TrendingProps) => {
   const { t } = useTranslation();
   const { data: podcasts, isLoading, error, refetch } = useTrending();
 
+  const subscribedUrls = useLiveQuery(
+    async () => {
+      const subs = await db.subscriptions.toArray();
+      return new Set(subs.map((s) => s.url));
+    },
+    []
+  );
+
   if (isLoading) {
     return <TrendingLoading />;
   }
@@ -52,6 +60,7 @@ export const Trending = ({ onNavigate }: TrendingProps) => {
         <TrendingItem
           key={podcast.feed_url}
           podcast={podcast}
+          isSubscribed={subscribedUrls?.has(podcast.feed_url) ?? false}
           onNavigate={onNavigate}
         />
       ))}
@@ -61,73 +70,80 @@ export const Trending = ({ onNavigate }: TrendingProps) => {
 
 interface TrendingItemProps {
   podcast: TrendingPodcast;
+  isSubscribed: boolean;
   onNavigate: (view: string, feedUrl?: string | null) => void;
 }
 
-const TrendingItem = ({ podcast, onNavigate }: TrendingItemProps) => {
+const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) => {
   const { t } = useTranslation();
   const [subscribing, setSubscribing] = useState(false);
+  const [subscribeError, setSubscribeError] = useState(false);
 
-  const isSubscribed = useLiveQuery(
-    () => db.subscriptions.get(podcast.feed_url).then((s) => !!s),
-    [podcast.feed_url]
-  );
-
-  const handleSubscribe = async (e: React.MouseEvent) => {
+  const handleSubscribe = async (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     if (isSubscribed || subscribing) return;
     setSubscribing(true);
+    setSubscribeError(false);
     try {
       await addSubscription(podcast.feed_url);
+    } catch {
+      setSubscribeError(true);
     } finally {
       setSubscribing(false);
     }
   };
 
   return (
-    <button
-      onClick={() => onNavigate("podcast", podcast.feed_url)}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left"
-    >
-      {podcast.image ? (
-        <img
-          src={podcast.image}
-          alt=""
-          className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-gray-100"
-          loading="lazy"
-        />
-      ) : (
-        <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <Podcast size={24} className="text-gray-400" aria-hidden="true" />
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">
-          {podcast.title}
-        </p>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {t("trending.subscribers", { count: podcast.subscriber_count })}
-        </p>
-      </div>
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
       <div
-        onClick={handleSubscribe}
-        role="button"
+        className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer"
+        onClick={() => onNavigate("podcast", podcast.feed_url)}
+        role="link"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSubscribe(e as unknown as React.MouseEvent); } }}
+        onKeyDown={(e) => { if (e.key === "Enter") onNavigate("podcast", podcast.feed_url); }}
+      >
+        {podcast.image ? (
+          <img
+            src={podcast.image}
+            alt=""
+            className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <Podcast size={24} className="text-gray-400" aria-hidden="true" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {podcast.title}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t("trending.subscribers", { count: podcast.subscriber_count })}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={handleSubscribe}
+        disabled={isSubscribed || subscribing}
         className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
-          isSubscribed
-            ? "bg-gray-100 text-gray-500"
-            : "bg-blue-500 text-white hover:bg-blue-600"
+          subscribeError
+            ? "bg-red-100 text-red-600"
+            : isSubscribed
+              ? "bg-gray-100 text-gray-500"
+              : "bg-blue-500 text-white hover:bg-blue-600"
         }`}
         aria-label={isSubscribed ? t("trending.subscribed") : t("trending.subscribe")}
       >
         {subscribing
           ? t("common.loading")
-          : isSubscribed
-            ? t("trending.subscribed")
-            : t("trending.subscribe")}
-      </div>
-    </button>
+          : subscribeError
+            ? t("common.error")
+            : isSubscribed
+              ? t("trending.subscribed")
+              : t("trending.subscribe")}
+      </button>
+    </div>
   );
 };
 
