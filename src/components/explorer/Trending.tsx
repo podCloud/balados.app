@@ -78,7 +78,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
   const { t } = useTranslation();
   const [subscribing, setSubscribing] = useState(false);
   const [subscribeError, setSubscribeError] = useState(false);
-  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     return () => clearTimeout(errorTimeoutRef.current);
