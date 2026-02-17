@@ -38,10 +38,6 @@
     "playbackRate": "Playback speed: {{rate}}x",
     "expandPlayer": "Open player"
   },
-  "explorer": {
-    "title": "Explore",
-    "comingSoon": "Coming soon"
-  },
   "trending": {
     "title": "Trending",
     "loadError": "Unable to load trending podcasts",
