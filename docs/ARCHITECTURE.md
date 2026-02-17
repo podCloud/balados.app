@@ -6,18 +6,21 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        balados.app                          │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │                    React UI                          │   │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐   │   │
-│  │  │ Library │ │ Player  │ │Settings │ │  Stats  │   │   │
-│  │  └────┬────┘ └────┬────┘ └────┬────┘ └────┬────┘   │   │
-│  └───────┼───────────┼───────────┼───────────┼─────────┘   │
-│          │           │           │           │              │
-│  ┌───────┴───────────┴───────────┴───────────┴─────────┐   │
-│  │                  Services Layer                      │   │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │   │
-│  │  │ Storage  │ │   RSS    │ │   Sync   │            │   │
-│  │  └────┬─────┘ └────┬─────┘ └────┬─────┘            │   │
-│  └───────┼────────────┼────────────┼───────────────────┘   │
+│  │                    React UI + Hooks                   │   │
+│  │  ┌────────┐┌────────┐┌────────┐┌──────┐┌──────────┐  │   │
+│  │  │Library ││Player  ││Settings││Stats ││Explorer  │  │   │
+│  │  └───┬────┘└───┬────┘└───┬────┘└──┬───┘└────┬─────┘  │   │
+│  │      │  ┌──────────┐┌───────────┐ │         │         │   │
+│  │      │  │InProgress││   Debug   │ │         │         │   │
+│  │      │  └────┬─────┘└─────┬─────┘ │         │         │   │
+│  └──────┼───────┼────────────┼───────┼─────────┼─────────┘   │
+│         │       │            │       │         │              │
+│  ┌──────┴───────┴────────────┴───────┴─────────┴─────────┐   │
+│  │                  Services Layer                        │   │
+│  │  ┌────────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐      │   │
+│  │  │Storage │ │ RSS  │ │ Sync │ │ i18n │ │Debug │      │   │
+│  │  └───┬────┘ └──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘      │   │
+│  └──────┼─────────┼────────┼────────┼────────┼───────────┘   │
 │          │            │            │                        │
 │  ┌───────┴────────────┴────────────┴───────────────────┐   │
 │  │              Service Worker (PWA)                    │   │
@@ -96,6 +99,13 @@ Logique métier indépendante de l'UI.
 // services/sync/index.ts - Service exports
 ```
 
+#### i18n Service
+
+```typescript
+// services/i18n/index.ts - i18next configuration and language detection
+// services/i18n/locales/ - Translation files (fr.json, en.json)
+```
+
 #### Debug Service
 
 ```typescript
@@ -114,7 +124,9 @@ Logique métier indépendante de l'UI.
 // services/storage/hiddenEpisodes.ts - Hidden episodes tracking
 ```
 
-#### Hooks
+### 3. Hooks Layer
+
+Hooks React qui connectent l'UI aux services.
 
 ```typescript
 // hooks/useSync.ts - React hook for sync state management
@@ -123,7 +135,7 @@ Logique métier indépendante de l'UI.
 // hooks/useOnline.ts - Network status detection
 ```
 
-### 3. Service Worker Layer
+### 4. Service Worker Layer
 
 PWA functionality avec Workbox.
 
