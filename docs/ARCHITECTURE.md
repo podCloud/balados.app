@@ -76,30 +76,6 @@ components/
 
 Logique métier indépendante de l'UI.
 
-#### Storage Service
-
-```typescript
-// services/storage/index.ts
-interface StorageService {
-  // Subscriptions
-  getSubscriptions(): Promise<Subscription[]>
-  addSubscription(sub: Subscription): Promise<void>
-  removeSubscription(feedUrl: string): Promise<void>
-
-  // Play status
-  getPlayStatus(episodeId: string): Promise<PlayStatus | null>
-  updatePlayStatus(status: PlayStatus): Promise<void>
-
-  // Events (for local stats)
-  logEvent(event: LocalEvent): Promise<void>
-  getEvents(filter: EventFilter): Promise<LocalEvent[]>
-
-  // Settings
-  getSettings(): Promise<Settings>
-  updateSettings(settings: Partial<Settings>): Promise<void>
-}
-```
-
 #### RSS Service
 
 ```typescript
@@ -284,11 +260,10 @@ Request feed
        │
        ▼
 ┌─────────────────────────────────────┐
-│ Try proxies in order:               │
-│ 1. balados.sync proxy (if connected)│
-│ 2. User-configured proxies          │
-│ 3. Public proxies (allorigins...)   │
-│ 4. Direct fetch                     │
+│ Try in order:                       │
+│ 1. Direct fetch (no proxy)          │
+│ 2. balados.sync proxy (if connected)│
+│ 3. User-configured public proxies   │
 └──────┬──────────────────────────────┘
        │ First successful response
        ▼
