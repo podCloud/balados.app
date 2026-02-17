@@ -38,9 +38,14 @@
     "playbackRate": "Vitesse de lecture : {{rate}}x",
     "expandPlayer": "Ouvrir le lecteur"
   },
-  "explorer": {
-    "title": "Explorer",
-    "comingSoon": "Bientôt disponible"
+  "trending": {
+    "title": "Tendances",
+    "loadError": "Impossible de charger les tendances",
+    "empty": "Aucun podcast en tendance",
+    "subscribe": "S'abonner",
+    "subscribed": "Abonné",
+    "subscribers": "{{count}} abonné",
+    "subscribers_other": "{{count}} abonnés"
   },
   "debug": {
     "title": "Console Debug",

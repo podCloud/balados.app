@@ -38,9 +38,14 @@
     "playbackRate": "Playback speed: {{rate}}x",
     "expandPlayer": "Open player"
   },
-  "explorer": {
-    "title": "Explore",
-    "comingSoon": "Coming soon"
+  "trending": {
+    "title": "Trending",
+    "loadError": "Unable to load trending podcasts",
+    "empty": "No trending podcasts",
+    "subscribe": "Subscribe",
+    "subscribed": "Subscribed",
+    "subscribers": "{{count}} subscriber",
+    "subscribers_other": "{{count}} subscribers"
   },
   "debug": {
     "title": "Debug Console",
