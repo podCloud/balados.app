@@ -6,8 +6,8 @@
 Phase 1: Fondations          ████████████████████  100% ✓
 Phase 2: PWA & Offline       ████████████████████  100% ✓
 Phase 3: Internationalisation████████████████████  100% ✓
-Phase 4: Synchronisation     ░░░░░░░░░░░░░░░░░░░░
-Phase 5: Tendances           ░░░░░░░░░░░░░░░░░░░░
+Phase 4: Synchronisation     █████████████████░░░   85% ✓ (core done)
+Phase 5: Tendances           ████████████░░░░░░░░   60%
 ```
 
 ---
@@ -135,35 +135,35 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 4.1 Client API
 
-- [ ] Créer `services/sync/client.ts`
-- [ ] Endpoints: sync, subscriptions, play
-- [ ] Gestion JWT tokens
-- [ ] Refresh token automatique
+- [x] Créer `services/sync/client.ts` (PR #22)
+- [x] Endpoints: sync, subscriptions, play
+- [x] Gestion JWT tokens
+- [x] Refresh token automatique
 
 ### 4.2 Flow de connexion
 
-- [ ] UI connexion serveur
-- [ ] Stockage sécurisé du token
-- [ ] Déconnexion propre
+- [x] UI connexion serveur (PR #23)
+- [x] Stockage sécurisé du token
+- [x] Déconnexion propre
 
 ### 4.3 Synchronisation
 
-- [ ] Sync initial complet
-- [ ] Sync incrémental (delta)
-- [ ] Résolution de conflits
-- [ ] Queue pour actions offline
+- [x] Sync initial complet (PR #25)
+- [x] Sync incrémental (delta)
+- [x] Résolution de conflits (PR #24)
+- [x] Queue pour actions offline (PR #34)
 
 ### 4.4 CORS Proxy via serveur
 
-- [ ] Utiliser proxy serveur si connecté
-- [ ] Fallback sur proxies locaux
+- [x] Utiliser proxy serveur si connecté (PR #34)
+- [x] Fallback sur proxies locaux
 
 ### 4.5 UI Sync
 
-- [ ] Settings de synchronisation
-- [ ] Indicateur de statut sync
+- [x] Settings de synchronisation (PR #23)
+- [x] Indicateur de statut sync (PR #48)
 - [ ] Historique/logs de sync
-- [ ] Gestion des erreurs
+- [x] Gestion des erreurs
 
 ---
 
@@ -173,17 +173,17 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
 
 ### 5.1 Trending (avec serveur)
 
-- [ ] Page Tendances
-- [ ] Top podcasts
+- [x] Page Tendances (PR #49)
+- [x] Top podcasts
 - [ ] Épisodes populaires
-- [ ] Refresh automatique
+- [x] Refresh automatique
 
 ### 5.2 Statistiques locales
 
-- [ ] Event logging local
-- [ ] Page Stats personnelles
-- [ ] Graphiques temps d'écoute
-- [ ] Top podcasts personnels
+- [x] Event logging local (PR #28)
+- [x] Page Stats personnelles (PR #28)
+- [x] Graphiques temps d'écoute
+- [x] Top podcasts personnels
 
 ### 5.3 Recherche améliorée
 
@@ -235,18 +235,23 @@ Phase 5: Tendances           ░░░░░░░░░░░░░░░░░
     "react-dom": "^19.0.0",
     "@tanstack/react-query": "^5.x",
     "dexie": "^4.x",
-    "dexie-react-hooks": "^1.x",
-    "react-i18next": "^14.x",
-    "i18next": "^23.x",
-    "i18next-browser-languagedetector": "^7.x"
+    "dexie-react-hooks": "^4.x",
+    "dompurify": "^3.x",
+    "i18next": "^25.x",
+    "i18next-browser-languagedetector": "^8.x",
+    "lucide-react": "^0.x",
+    "marked": "^17.x",
+    "react-i18next": "^16.x",
+    "turndown": "^7.x"
   },
   "devDependencies": {
-    "vitest": "^2.x",
-    "@testing-library/react": "^15.x",
-    "vite-plugin-pwa": "^0.19.x",
+    "vitest": "^4.x",
+    "@testing-library/react": "^16.x",
+    "vite-plugin-pwa": "^1.x",
     "workbox-precaching": "^7.x",
     "workbox-routing": "^7.x",
-    "workbox-strategies": "^7.x"
+    "workbox-strategies": "^7.x",
+    "workbox-background-sync": "^7.x"
   }
 }
 ```
