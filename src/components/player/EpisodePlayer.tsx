@@ -1,12 +1,36 @@
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play } from "lucide-react";
+import { Play, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { Marked } from "marked";
+import DOMPurify from "dompurify";
 import { usePlayer } from "../../contexts";
 import { PlayerControls } from "./PlayerControls";
 import { DownloadButton } from "../ui/DownloadButton";
 
+const markedInstance = new Marked({ breaks: true, gfm: true });
+
+// Note: DOMPurify requires a browser DOM. In jsdom test environments, sanitize()
+// may return empty strings. Component tests should mock DOMPurify if needed.
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: [
+    "p", "br", "strong", "em", "b", "i", "ul", "ol", "li",
+    "a", "img", "h1", "h2", "h3", "h4", "h5", "h6",
+    "blockquote", "code", "pre", "hr",
+  ],
+  ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "width", "height"],
+  FORCE_BODY: true,
+};
+
 export const EpisodePlayer = () => {
   const { t } = useTranslation();
   const { currentEpisode, feedUrl } = usePlayer();
+  const [showNotesOpen, setShowNotesOpen] = useState(false);
+
+  const renderedNotes = useMemo(() => {
+    if (!currentEpisode?.description) return "";
+    const rawHtml = markedInstance.parse(currentEpisode.description) as string;
+    return DOMPurify.sanitize(rawHtml, { ...PURIFY_CONFIG, RETURN_TRUSTED_TYPE: false }) as string;
+  }, [currentEpisode?.description]);
 
   if (!currentEpisode) {
     return (
@@ -22,10 +46,12 @@ export const EpisodePlayer = () => {
     );
   }
 
+  const hasShowNotes = renderedNotes.length > 0;
+
   return (
-    <div className="h-full pb-16 flex flex-col bg-white">
+    <div className="h-full pb-16 flex flex-col bg-white overflow-y-auto">
       {/* Episode artwork */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
+      <div className="flex-shrink-0 flex flex-col items-center justify-center p-8">
         <img
           src={
             currentEpisode.image ||
@@ -47,7 +73,7 @@ export const EpisodePlayer = () => {
       </div>
 
       {/* Episode info */}
-      <div className="px-6 pb-4 text-center">
+      <div className="flex-shrink-0 px-6 pb-4 text-center">
         <h2 className="font-semibold text-lg text-gray-900 line-clamp-2 mb-1">
           {currentEpisode.title}
         </h2>
@@ -60,6 +86,42 @@ export const EpisodePlayer = () => {
 
       {/* Player controls */}
       <PlayerControls />
+
+      {/* Show notes */}
+      {hasShowNotes && (
+        <div className="flex-shrink-0 border-t border-gray-200 mt-2">
+          <button
+            onClick={() => setShowNotesOpen(!showNotesOpen)}
+            className="w-full flex items-center justify-between px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            {t("player.showNotes")}
+            {showNotesOpen ? (
+              <ChevronUp size={18} className="text-gray-400" aria-hidden="true" />
+            ) : (
+              <ChevronDown size={18} className="text-gray-400" aria-hidden="true" />
+            )}
+          </button>
+          {showNotesOpen && (
+            <div className="px-6 pb-6">
+              <div
+                className="max-w-none text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_img]:rounded-lg [&_img]:max-w-full [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-0.5 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-500 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_hr]:my-3"
+                dangerouslySetInnerHTML={{ __html: renderedNotes }}
+              />
+              {currentEpisode.link && (
+                <a
+                  href={currentEpisode.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-4 text-sm text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink size={14} aria-hidden="true" />
+                  {t("player.seeOriginalPost")}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

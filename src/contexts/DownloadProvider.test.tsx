@@ -33,6 +33,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 const mockEpisode = {
   title: "Test Episode",
   description: "A test",
+  descriptionPreview: "A test",
   pubDate: "2024-01-01",
   enclosureUrl: "https://example.com/ep.mp3",
   duration: "1800",

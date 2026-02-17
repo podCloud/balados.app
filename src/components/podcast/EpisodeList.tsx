@@ -75,8 +75,8 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
                 >
                   {episode.title}
                 </div>
-                <div className="text-xs text-gray-500 line-clamp-2 mb-1">
-                  {episode.description}
+                <div className="text-xs text-gray-500 line-clamp-3 mb-1">
+                  {episode.descriptionPreview}
                 </div>
                 <div className="flex gap-3 text-xs text-gray-400">
                   {episode.duration && <span>{episode.duration}</span>}
