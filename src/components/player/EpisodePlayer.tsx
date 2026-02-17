@@ -15,7 +15,8 @@ const PURIFY_CONFIG = {
     "a", "img", "h1", "h2", "h3", "h4", "h5", "h6",
     "blockquote", "code", "pre", "hr",
   ],
-  ALLOWED_ATTR: ["href", "src", "alt", "target", "rel"],
+  ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "width", "height"],
+  FORCE_BODY: true,
 };
 
 export const EpisodePlayer = () => {
