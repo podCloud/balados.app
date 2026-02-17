@@ -3,31 +3,39 @@
 ## Vue d'ensemble
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        balados.app                          │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                    React UI + Hooks                   │   │
-│  │  ┌────────┐┌────────┐┌────────┐┌──────┐┌──────────┐  │   │
-│  │  │Library ││Player  ││Settings││Stats ││Explorer  │  │   │
-│  │  └───┬────┘└───┬────┘└───┬────┘└──┬───┘└────┬─────┘  │   │
-│  │      │  ┌──────────┐┌───────────┐ │         │         │   │
-│  │      │  │InProgress││   Debug   │ │         │         │   │
-│  │      │  └────┬─────┘└─────┬─────┘ │         │         │   │
-│  └──────┼───────┼────────────┼───────┼─────────┼─────────┘   │
-│         │       │            │       │         │              │
-│  ┌──────┴───────┴────────────┴───────┴─────────┴─────────┐   │
-│  │                  Services Layer                        │   │
-│  │  ┌────────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐      │   │
-│  │  │Storage │ │ RSS  │ │ Sync │ │ i18n │ │Debug │      │   │
-│  │  └───┬────┘ └──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘      │   │
-│  └──────┼─────────┼────────┼────────┼────────┼───────────┘   │
-│          │            │            │                        │
-│  ┌───────┴────────────┴────────────┴───────────────────┐   │
-│  │              Service Worker (PWA)                    │   │
-│  │  • Cache management  • Background sync               │   │
-│  │  • Offline queue     • Push notifications            │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                       balados.app                         │
+│                                                           │
+│  ┌─────────────────────────────────────────────────────┐  │
+│  │                  React UI + Hooks                   │  │
+│  │  ┌────────┐┌────────┐┌────────┐┌──────┐┌────────┐  │  │
+│  │  │Library ││Player  ││Settings││Stats ││Explorer│  │  │
+│  │  └───┬────┘└───┬────┘└───┬────┘└──┬───┘└───┬────┘  │  │
+│  │      │  ┌──────────┐┌───────┐     │        │        │  │
+│  │      │  │InProgress││ Debug │     │        │        │  │
+│  │      │  └────┬─────┘└───┬───┘     │        │        │  │
+│  └──────┼───────┼──────────┼─────────┼────────┼────────┘  │
+│         │       │          │         │        │           │
+│  ┌──────┴───────┴──────────┴─────────┴────────┴────────┐  │
+│  │               Contexts Layer                        │  │
+│  │  ┌────────────────┐  ┌──────────────────┐           │  │
+│  │  │ PlayerProvider │  │ DownloadProvider │           │  │
+│  │  └───────┬────────┘  └────────┬─────────┘           │  │
+│  └──────────┼────────────────────┼─────────────────────┘  │
+│             │                    │                         │
+│  ┌──────────┴────────────────────┴─────────────────────┐  │
+│  │                 Services Layer                      │  │
+│  │  ┌────────┐ ┌─────┐ ┌──────┐ ┌──────┐ ┌──────┐    │  │
+│  │  │Storage │ │ RSS │ │ Sync │ │ i18n │ │Debug │    │  │
+│  │  └───┬────┘ └──┬──┘ └──┬───┘ └──┬───┘ └──┬───┘    │  │
+│  └──────┼─────────┼───────┼────────┼────────┼─────────┘  │
+│         │         │       │        │        │             │
+│  ┌──────┴─────────┴───────┴────────┴────────┴─────────┐  │
+│  │              Service Worker (PWA)                   │  │
+│  │  • Cache management  • Background sync              │  │
+│  │  • Offline queue     • Push notifications           │  │
+│  └─────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────┘
            │                    │
            ▼                    ▼
     ┌──────────────┐    ┌──────────────┐
@@ -124,7 +132,23 @@ Logique métier indépendante de l'UI.
 // services/storage/hiddenEpisodes.ts - Hidden episodes tracking
 ```
 
-### 3. Hooks Layer
+### 3. Contexts Layer
+
+React Contexts pour l'état global partagé entre composants.
+
+```typescript
+// contexts/playerContext.ts - Context definition for audio player
+// contexts/PlayerProvider.tsx - Global audio player state & controls
+// contexts/usePlayer.ts - Hook to consume player context
+
+// contexts/downloadContext.ts - Context definition for downloads
+// contexts/DownloadProvider.tsx - Episode download management
+// contexts/useDownload.ts - Hook to consume download context
+
+// contexts/index.ts - Context exports
+```
+
+### 4. Hooks Layer
 
 Hooks React qui connectent l'UI aux services.
 
@@ -135,7 +159,7 @@ Hooks React qui connectent l'UI aux services.
 // hooks/useOnline.ts - Network status detection
 ```
 
-### 4. Service Worker Layer
+### 5. Service Worker Layer
 
 PWA functionality avec Workbox.
 
