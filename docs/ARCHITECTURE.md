@@ -41,32 +41,35 @@ Composants React avec TanStack Query pour le data fetching.
 
 ```
 components/
+├── debug/            # Outils de debug
+│   └── Debug.tsx
+├── explorer/         # Découverte & tendances
+│   ├── Explorer.tsx
+│   └── Trending.tsx
+├── inProgress/       # Épisodes en cours d'écoute
+│   └── InProgress.tsx
 ├── library/          # Gestion des abonnements
 │   ├── Library.tsx
 │   ├── SubscriptionItem.tsx
-│   └── AddPodcast.tsx
+│   └── SyncStatusIcon.tsx
 ├── player/           # Lecteur audio
 │   ├── EpisodePlayer.tsx
-│   ├── PlayerControls.tsx
-│   ├── ProgressBar.tsx
-│   └── Queue.tsx
+│   ├── MiniPlayer.tsx
+│   └── PlayerControls.tsx
 ├── podcast/          # Détails podcast
 │   ├── PodcastDetail.tsx
-│   ├── EpisodeList.tsx
-│   └── EpisodeItem.tsx
+│   └── EpisodeList.tsx
 ├── settings/         # Configuration
 │   ├── Settings.tsx
-│   ├── SyncSettings.tsx
-│   ├── ProxySettings.tsx
-│   └── LanguageSettings.tsx
+│   ├── StorageSettings.tsx
+│   └── SyncSettings.tsx
 ├── stats/            # Statistiques locales
-│   └── LocalStats.tsx
-├── trending/         # Tendances (avec serveur)
-│   └── TrendingPodcasts.tsx
+│   └── Stats.tsx
 └── ui/               # Composants partagés
-    ├── Button.tsx
-    ├── Modal.tsx
-    └── Toast.tsx
+    ├── DownloadButton.tsx
+    ├── ErrorBoundary.tsx
+    ├── OfflineBanner.tsx
+    └── TabBar.tsx
 ```
 
 ### 2. Services Layer
@@ -100,36 +103,42 @@ interface StorageService {
 #### RSS Service
 
 ```typescript
-// services/rss/index.ts
-interface RSSService {
-  fetchFeed(feedUrl: string): Promise<PodcastFeed>
-  searchPodcasts(query: string): Promise<SearchResult[]>
-}
-
-// services/rss/proxyManager.ts
-interface ProxyManager {
-  fetch(url: string): Promise<Response>
-  addProxy(proxy: ProxyConfig): void
-  removeProxy(proxyId: string): void
-  reorderProxies(order: string[]): void
-}
+// services/rss/parser.ts - RSS feed parsing (HTML → markdown via Turndown)
+// services/rss/proxyManager.ts - Multi-proxy with fallback chain:
+//   1. balados.sync proxy (if connected)
+//   2. User-configured public proxies
+//   3. Direct fetch
 ```
 
 #### Sync Service
 
 ```typescript
-// services/sync/index.ts
-interface SyncService {
-  connect(serverUrl: string, token: string): Promise<void>
-  disconnect(): Promise<void>
-  isConnected(): boolean
+// services/sync/client.ts - API client for balados.sync server
+// services/sync/merger.ts - Conflict resolution (last-write-wins)
+// services/sync/queueProcessor.ts - Process offline action queue
+// services/sync/backgroundSync.ts - Service Worker background sync
+// services/sync/index.ts - Service exports
+```
 
-  sync(): Promise<SyncResult>
-  getStatus(): SyncStatus
+#### Storage Service
 
-  // Conflict resolution
-  resolveConflict(conflict: Conflict, resolution: Resolution): Promise<void>
-}
+```typescript
+// services/storage/index.ts - Dexie.js database schema
+// services/storage/subscriptions.ts - Subscription CRUD
+// services/storage/playStatus.ts - Play position tracking
+// services/storage/events.ts - Local event logging for stats
+// services/storage/syncQueue.ts - Offline sync action queue
+// services/storage/downloads.ts - Episode download management
+// services/storage/hiddenEpisodes.ts - Hidden episodes tracking
+```
+
+#### Hooks
+
+```typescript
+// hooks/useSync.ts - React hook for sync state management
+// hooks/useSyncQueue.ts - Sync queue operations
+// hooks/useTrending.ts - Trending podcasts data
+// hooks/useOnline.ts - Network status detection
 ```
 
 ### 3. Service Worker Layer
@@ -298,6 +307,9 @@ Request feed
 | PWA | Workbox | Service Worker simplifié |
 | i18n | react-i18next | Standard React |
 | CSS | Tailwind CSS | Utility-first, rapide |
+| Icons | Lucide React | Lightweight, tree-shakeable |
+| Markdown | Turndown + marked | RSS HTML→MD→render pipeline |
+| Sanitization | DOMPurify | XSS prevention for rendered content |
 | Tests | Vitest | Compatible Vite |
 
 ## Sécurité
