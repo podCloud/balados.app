@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Mock SyncClient
+// Mock SyncClient - track constructor calls
 const mockGetTrending = vi.hoisted(() =>
   vi.fn().mockResolvedValue({
     podcasts: [
@@ -13,11 +13,14 @@ const mockGetTrending = vi.hoisted(() =>
   })
 );
 
+const mockConstructorCalls = vi.hoisted(() => [] as string[]);
+
 vi.mock("../services/sync/client", () => {
   class SyncClient {
     serverUrl: string;
     constructor(url: string) {
       this.serverUrl = url;
+      mockConstructorCalls.push(url);
     }
     getTrending = mockGetTrending;
   }
@@ -46,6 +49,7 @@ function createWrapper() {
 describe("useTrending", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockConstructorCalls.length = 0;
     mockUseLiveQuery.mockReturnValue(undefined);
   });
 
@@ -62,18 +66,14 @@ describe("useTrending", () => {
   });
 
   it("falls back to default sync URL when no settings", async () => {
-    const { SyncClient } = await import("../services/sync/client");
-    const constructorSpy = vi.spyOn(SyncClient.prototype, "constructor" as never);
     mockUseLiveQuery.mockReturnValue(undefined);
 
-    const { useTrending, DEFAULT_SYNC_URL } = await import("./useTrending");
+    const { useTrending } = await import("./useTrending");
     const { result } = renderHook(() => useTrending(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // The SyncClient should have been constructed with the default URL
-    expect(DEFAULT_SYNC_URL).toBe("https://sync.balados.app");
-    constructorSpy.mockRestore();
+    expect(mockConstructorCalls).toContain("https://sync.balados.app");
   });
 
   it("uses configured sync server URL from settings", async () => {
@@ -83,13 +83,11 @@ describe("useTrending", () => {
     const { result } = renderHook(() => useTrending(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockGetTrending).toHaveBeenCalled();
+    expect(mockConstructorCalls).toContain("https://custom.server.com");
   });
 
   it("includes serverUrl in query key for cache isolation", async () => {
     const { useTrending } = await import("./useTrending");
-    // We can't directly inspect the query key, but we verify the hook works
-    // with different server URLs producing separate cache entries
     const { result } = renderHook(() => useTrending(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

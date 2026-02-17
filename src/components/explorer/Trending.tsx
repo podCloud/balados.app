@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLiveQuery } from "dexie-react-hooks";
 import { TrendingUp, RefreshCw, Podcast } from "lucide-react";
@@ -80,7 +80,11 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
   const [subscribeError, setSubscribeError] = useState(false);
   const errorTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const handleSubscribe = async (e: React.MouseEvent | React.KeyboardEvent) => {
+  useEffect(() => {
+    return () => clearTimeout(errorTimeoutRef.current);
+  }, []);
+
+  const handleSubscribe = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isSubscribed || subscribing) return;
     clearTimeout(errorTimeoutRef.current);
@@ -88,7 +92,8 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
     setSubscribeError(false);
     try {
       await addSubscription(podcast.feed_url);
-    } catch {
+    } catch (err) {
+      console.error("Failed to subscribe:", err);
       setSubscribeError(true);
       errorTimeoutRef.current = setTimeout(() => setSubscribeError(false), 3000);
     } finally {
