@@ -1,16 +1,22 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import { marked } from "marked";
+import { Marked } from "marked";
+import DOMPurify from "dompurify";
 import { usePlayer } from "../../contexts";
 import { PlayerControls } from "./PlayerControls";
 import { DownloadButton } from "../ui/DownloadButton";
 
-// Configure marked for safe output
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-});
+const markedInstance = new Marked({ breaks: true, gfm: true });
+
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: [
+    "p", "br", "strong", "em", "b", "i", "ul", "ol", "li",
+    "a", "img", "h1", "h2", "h3", "h4", "h5", "h6",
+    "blockquote", "code", "pre", "hr",
+  ],
+  ALLOWED_ATTR: ["href", "src", "alt", "target", "rel"],
+};
 
 export const EpisodePlayer = () => {
   const { t } = useTranslation();
@@ -19,7 +25,8 @@ export const EpisodePlayer = () => {
 
   const renderedNotes = useMemo(() => {
     if (!currentEpisode?.description) return "";
-    return marked.parse(currentEpisode.description) as string;
+    const rawHtml = markedInstance.parse(currentEpisode.description) as string;
+    return DOMPurify.sanitize(rawHtml, PURIFY_CONFIG);
   }, [currentEpisode?.description]);
 
   if (!currentEpisode) {
@@ -94,7 +101,7 @@ export const EpisodePlayer = () => {
           {showNotesOpen && (
             <div className="px-6 pb-6">
               <div
-                className="prose prose-sm max-w-none text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_img]:rounded-lg [&_img]:max-w-full [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:mb-2 [&_ul]:mb-2 [&_ol]:mb-2 [&_li]:mb-0.5"
+                className="max-w-none text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_img]:rounded-lg [&_img]:max-w-full [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-0.5 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-500 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_hr]:my-3"
                 dangerouslySetInnerHTML={{ __html: renderedNotes }}
               />
               {currentEpisode.link && (

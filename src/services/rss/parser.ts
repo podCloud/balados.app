@@ -3,16 +3,22 @@ import type { PodcastFeed, Episode } from "../../types";
 import { fetchWithProxy } from "./proxyManager";
 import { getCachedFeed, cacheFeed } from "../storage";
 
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-});
+const createTurndown = () => {
+  const td = new TurndownService({
+    headingStyle: "atx",
+    codeBlockStyle: "fenced",
+  });
 
-// Remove script, style, iframe tags completely
-turndown.addRule("removeUnsafe", {
-  filter: ["script", "style", "iframe"],
-  replacement: () => "",
-});
+  // Remove script, style, iframe tags completely
+  td.addRule("removeUnsafe", {
+    filter: ["script", "style", "iframe"],
+    replacement: () => "",
+  });
+
+  return td;
+};
+
+const turndown = createTurndown();
 
 const getElementText = (parent: Element, tag: string): string => {
   const el = parent.querySelector(tag);
@@ -45,7 +51,11 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
     .replace(/\n{2,}/g, " ") // collapse newlines
     .replace(/\n/g, " ")
     .trim();
-  return plain.length > maxLength ? plain.substring(0, maxLength) + "…" : plain;
+  if (plain.length <= maxLength) return plain;
+  // Break at last word boundary to avoid mid-word truncation
+  const truncated = plain.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return (lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) : truncated) + "…";
 };
 
 const parseEpisode = (item: Element, feedImage: string): Episode => {
@@ -58,7 +68,8 @@ const parseEpisode = (item: Element, feedImage: string): Episode => {
   const guidEl = item.querySelector("guid");
   const guid = guidEl?.textContent || undefined;
 
-  // Get episode link
+  // Get episode link — querySelector is scoped to the <item> element,
+  // so it won't match <channel>-level <link> elements.
   const link = getElementText(item, "link") || undefined;
 
   // Prefer content:encoded (richer) over description

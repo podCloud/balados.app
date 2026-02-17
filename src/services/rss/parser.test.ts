@@ -198,10 +198,25 @@ describe("parseRSSText", () => {
   });
 
   it("passes plain text through unchanged", () => {
-    const feed = parseRSSText(VALID_RSS, "https://example.com/feed.xml");
+    const plainTextRss = `<?xml version="1.0" encoding="UTF-8"?>
+    <rss version="2.0">
+      <channel>
+        <title>Plain Text Test</title>
+        <description>Test</description>
+        <item>
+          <title>Plain text episode</title>
+          <description>No HTML here, just plain text with punctuation: colons, dashes - and more.</description>
+          <enclosure url="https://example.com/ep.mp3" type="audio/mpeg"/>
+        </item>
+      </channel>
+    </rss>`;
+
+    const feed = parseRSSText(plainTextRss, "https://example.com/feed.xml");
     const episode = feed.items[0];
 
-    expect(episode.description).toBe("First episode description");
+    expect(episode.description).toBe(
+      "No HTML here, just plain text with punctuation: colons, dashes - and more."
+    );
   });
 
   it("handles episodes without guid", () => {
