@@ -105,9 +105,9 @@ interface StorageService {
 ```typescript
 // services/rss/parser.ts - RSS feed parsing (HTML → markdown via Turndown)
 // services/rss/proxyManager.ts - Multi-proxy with fallback chain:
-//   1. balados.sync proxy (if connected)
-//   2. User-configured public proxies
-//   3. Direct fetch
+//   1. Direct fetch (no proxy)
+//   2. balados.sync proxy (if connected)
+//   3. User-configured public proxies
 ```
 
 #### Sync Service
@@ -118,6 +118,12 @@ interface StorageService {
 // services/sync/queueProcessor.ts - Process offline action queue
 // services/sync/backgroundSync.ts - Service Worker background sync
 // services/sync/index.ts - Service exports
+```
+
+#### Debug Service
+
+```typescript
+// services/debug/index.ts - Debug utilities and logging
 ```
 
 #### Storage Service

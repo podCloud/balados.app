@@ -7,7 +7,7 @@ Phase 1: Fondations          █████████████████
 Phase 2: PWA & Offline       ████████████████████  100% ✓
 Phase 3: Internationalisation████████████████████  100% ✓
 Phase 4: Synchronisation     █████████████████░░░   85% ✓ (core done)
-Phase 5: Tendances           ██████░░░░░░░░░░░░░░   30%
+Phase 5: Tendances           ████████████░░░░░░░░   60%
 ```
 
 ---
@@ -247,7 +247,7 @@ Phase 5: Tendances           ██████░░░░░░░░░░░
   "devDependencies": {
     "vitest": "^3.x",
     "@testing-library/react": "^16.x",
-    "vite-plugin-pwa": "^0.x",
+    "vite-plugin-pwa": "^1.x",
     "workbox-precaching": "^7.x",
     "workbox-routing": "^7.x",
     "workbox-strategies": "^7.x",
