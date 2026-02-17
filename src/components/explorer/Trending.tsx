@@ -103,12 +103,10 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
-      <div
+      <a
         className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer"
-        onClick={() => onNavigate("podcast", podcast.feed_url)}
-        role="link"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === "Enter") onNavigate("podcast", podcast.feed_url); }}
+        href="#"
+        onClick={(e) => { e.preventDefault(); onNavigate("podcast", podcast.feed_url); }}
       >
         {podcast.image ? (
           <img
@@ -130,7 +128,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
             {t("trending.subscribers", { count: podcast.subscriber_count })}
           </p>
         </div>
-      </div>
+      </a>
       <button
         onClick={handleSubscribe}
         disabled={isSubscribed || subscribing}

@@ -50,7 +50,7 @@ describe("useTrending", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockConstructorCalls.length = 0;
-    mockUseLiveQuery.mockReturnValue(undefined);
+    mockUseLiveQuery.mockReturnValue({});
   });
 
   it("fetches trending podcasts", async () => {
@@ -65,8 +65,8 @@ describe("useTrending", () => {
     expect(mockGetTrending).toHaveBeenCalledOnce();
   });
 
-  it("falls back to default sync URL when no settings", async () => {
-    mockUseLiveQuery.mockReturnValue(undefined);
+  it("falls back to default sync URL when no syncServerUrl configured", async () => {
+    mockUseLiveQuery.mockReturnValue({});
 
     const { useTrending } = await import("./useTrending");
     const { result } = renderHook(() => useTrending(), { wrapper: createWrapper() });
@@ -86,14 +86,19 @@ describe("useTrending", () => {
     expect(mockConstructorCalls).toContain("https://custom.server.com");
   });
 
-  it("includes serverUrl in query key for cache isolation", async () => {
+  it("waits for settings before fetching", async () => {
+    mockUseLiveQuery.mockReturnValue(undefined);
+
     const { useTrending } = await import("./useTrending");
     const { result } = renderHook(() => useTrending(), { wrapper: createWrapper() });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Should not fetch while settings are undefined
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(mockGetTrending).not.toHaveBeenCalled();
   });
 
   it("handles API errors gracefully", async () => {
+    mockUseLiveQuery.mockReturnValue({});
     mockGetTrending.mockRejectedValueOnce(new Error("Network error"));
 
     const { useTrending } = await import("./useTrending");

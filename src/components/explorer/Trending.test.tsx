@@ -138,7 +138,7 @@ describe("Trending", () => {
     expect(onNavigate).toHaveBeenCalledWith("podcast", "https://example.com/feed1.xml");
   });
 
-  it("navigates on keyboard Enter", () => {
+  it("renders podcast items as links", () => {
     mockUseTrending.mockReturnValue({
       data: mockPodcasts,
       isLoading: false,
@@ -148,9 +148,9 @@ describe("Trending", () => {
 
     render(<Trending onNavigate={onNavigate} />);
 
-    const podcastLink = screen.getByText("Podcast One").closest("[role='link']")!;
-    fireEvent.keyDown(podcastLink, { key: "Enter" });
-    expect(onNavigate).toHaveBeenCalledWith("podcast", "https://example.com/feed1.xml");
+    const podcastLink = screen.getByText("Podcast One").closest("a")!;
+    expect(podcastLink).toBeInTheDocument();
+    expect(podcastLink.tagName).toBe("A");
   });
 
   it("subscribes to podcast on button click", async () => {

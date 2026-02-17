@@ -9,6 +9,7 @@ export const DEFAULT_SYNC_URL =
 
 export function useTrending() {
   const settings = useLiveQuery(() => db.settings.get("app"));
+  const settingsLoaded = settings !== undefined;
   const serverUrl = settings?.syncServerUrl || DEFAULT_SYNC_URL;
 
   return useQuery({
@@ -19,5 +20,6 @@ export function useTrending() {
       return response.podcasts;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: settingsLoaded,
   });
 }
