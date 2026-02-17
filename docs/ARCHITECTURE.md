@@ -3,39 +3,39 @@
 ## Vue d'ensemble
 
 ```
-┌───────────────────────────────────────────────────────────┐
-│                       balados.app                         │
-│                                                           │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │                  React UI + Hooks                   │  │
-│  │  ┌────────┐┌────────┐┌────────┐┌──────┐┌────────┐  │  │
-│  │  │Library ││Player  ││Settings││Stats ││Explorer│  │  │
-│  │  └───┬────┘└───┬────┘└───┬────┘└──┬───┘└───┬────┘  │  │
-│  │      │  ┌──────────┐┌───────┐     │        │        │  │
-│  │      │  │InProgress││ Debug │     │        │        │  │
-│  │      │  └────┬─────┘└───┬───┘     │        │        │  │
-│  └──────┼───────┼──────────┼─────────┼────────┼────────┘  │
-│         │       │          │         │        │           │
-│  ┌──────┴───────┴──────────┴─────────┴────────┴────────┐  │
-│  │               Contexts Layer                        │  │
-│  │  ┌────────────────┐  ┌──────────────────┐           │  │
-│  │  │ PlayerProvider │  │ DownloadProvider │           │  │
-│  │  └───────┬────────┘  └────────┬─────────┘           │  │
-│  └──────────┼────────────────────┼─────────────────────┘  │
-│             │                    │                         │
-│  ┌──────────┴────────────────────┴─────────────────────┐  │
-│  │                 Services Layer                      │  │
-│  │  ┌────────┐ ┌─────┐ ┌──────┐ ┌──────┐ ┌──────┐    │  │
-│  │  │Storage │ │ RSS │ │ Sync │ │ i18n │ │Debug │    │  │
-│  │  └───┬────┘ └──┬──┘ └──┬───┘ └──┬───┘ └──┬───┘    │  │
-│  └──────┼─────────┼───────┼────────┼────────┼─────────┘  │
-│         │         │       │        │        │             │
-│  ┌──────┴─────────┴───────┴────────┴────────┴─────────┐  │
-│  │              Service Worker (PWA)                   │  │
-│  │  • Cache management  • Background sync              │  │
-│  │  • Offline queue     • Push notifications           │  │
-│  └─────────────────────────────────────────────────────┘  │
-└───────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                      balados.app                        │
+│                                                         │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │                 React UI + Hooks                  │  │
+│  │  ┌────────┐┌────────┐┌────────┐┌──────┐┌───────┐ │  │
+│  │  │Library ││Player  ││Settings││Stats ││Explore│ │  │
+│  │  └───┬────┘└───┬────┘└───┬────┘└──┬───┘└───┬───┘ │  │
+│  │      │  ┌──────────┐┌───────┐     │        │      │  │
+│  │      │  │InProgress││ Debug │     │        │      │  │
+│  │      │  └────┬─────┘└───┬───┘     │        │      │  │
+│  └──────┼───────┼──────────┼─────────┼────────┼──────┘  │
+│         │       │          │         │        │         │
+│  ┌──────┴───────┴──────────┴─────────┴────────┴──────┐  │
+│  │              Contexts Layer                       │  │
+│  │  ┌────────────────┐  ┌──────────────────┐         │  │
+│  │  │ PlayerProvider │  │ DownloadProvider │         │  │
+│  │  └───────┬────────┘  └────────┬─────────┘         │  │
+│  └──────────┼────────────────────┼───────────────────┘  │
+│             │                    │                       │
+│  ┌──────────┴────────────────────┴───────────────────┐  │
+│  │                Services Layer                     │  │
+│  │  ┌────────┐ ┌─────┐ ┌──────┐ ┌──────┐ ┌──────┐  │  │
+│  │  │Storage │ │ RSS │ │ Sync │ │ i18n │ │Debug │  │  │
+│  │  └───┬────┘ └──┬──┘ └──┬───┘ └──┬───┘ └──┬───┘  │  │
+│  └──────┼─────────┼───────┼────────┼────────┼───────┘  │
+│         │         │       │        │        │           │
+│  ┌──────┴─────────┴───────┴────────┴────────┴───────┐  │
+│  │             Service Worker (PWA)                  │  │
+│  │  • Cache management  • Background sync            │  │
+│  │  • Offline queue     • Push notifications         │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
            │                    │
            ▼                    ▼
     ┌──────────────┐    ┌──────────────┐
@@ -83,7 +83,23 @@ components/
     └── TabBar.tsx
 ```
 
-### 2. Services Layer
+### 2. Contexts Layer
+
+React Contexts fournissant l'état global (player, téléchargements) aux composants. Abstraction de haut niveau au-dessus des services.
+
+```typescript
+// contexts/playerContext.ts - Context definition for audio player
+// contexts/PlayerProvider.tsx - Global audio player state & controls
+// contexts/usePlayer.ts - Hook to consume player context
+
+// contexts/downloadContext.ts - Context definition for downloads
+// contexts/DownloadProvider.tsx - Global download state & queue management
+// contexts/useDownload.ts - Hook to consume download context
+
+// contexts/index.ts - Context exports
+```
+
+### 3. Services Layer
 
 Logique métier indépendante de l'UI.
 
@@ -128,24 +144,8 @@ Logique métier indépendante de l'UI.
 // services/storage/playStatus.ts - Play position tracking
 // services/storage/events.ts - Local event logging for stats
 // services/storage/syncQueue.ts - Offline sync action queue
-// services/storage/downloads.ts - Episode download management
+// services/storage/downloads.ts - Episode download persistence
 // services/storage/hiddenEpisodes.ts - Hidden episodes tracking
-```
-
-### 3. Contexts Layer
-
-React Contexts pour l'état global partagé entre composants.
-
-```typescript
-// contexts/playerContext.ts - Context definition for audio player
-// contexts/PlayerProvider.tsx - Global audio player state & controls
-// contexts/usePlayer.ts - Hook to consume player context
-
-// contexts/downloadContext.ts - Context definition for downloads
-// contexts/DownloadProvider.tsx - Episode download management
-// contexts/useDownload.ts - Hook to consume download context
-
-// contexts/index.ts - Context exports
 ```
 
 ### 4. Hooks Layer
