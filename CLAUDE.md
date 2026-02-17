@@ -36,14 +36,14 @@ git checkout -b fix/issue-<number>-<slug>
 git push -u origin <branch-name>
 
 # 4. Créer la PR avec review obligatoire
-gh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
+~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
 
 # 5. ATTENDRE LA REVIEW avant de merger
 ```
 
 ### RÈGLES DE MERGE
 
-- **JAMAIS de squash merge** - utiliser `gh pr merge <number> --merge --delete-branch`
+- **JAMAIS de squash merge** - utiliser `~/.config/podclaude/gh.sh pr merge <number> --merge --delete-branch`
 - **LIRE LES REVIEWS EN ENTIER** avant de merger
 - **APPLIQUER les suggestions** des reviews avant de merger (sauf si explicitement optionnelles)
 - Si une review demande des changements, les faire et re-demander une review
@@ -136,15 +136,15 @@ git commit --author="Claude <noreply@anthropic.com>" -m "message"
 
 ```bash
 # Check for review comments (ALWAYS do this first)
-gh pr view <number> --comments
+~/.config/podclaude/gh.sh pr view <number> --comments
 
 # Then check CI status
-gh pr checks <number>
+~/.config/podclaude/gh.sh pr checks <number>
 ```
 
 **Creating PRs with review:**
 ```bash
-gh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
+~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
 ```
 
 **Always assign PRs to `pofmagicfingers`** when creating them.
