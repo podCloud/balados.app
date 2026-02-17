@@ -47,6 +47,7 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1") // images → alt text
     .replace(/\[([^\]]*)\]\([^)]+\)/g, "$1") // links → text
     .replace(/#{1,6}\s+/g, "") // headings
+    .replace(/^>\s+/gm, "") // blockquote markers
     .replace(/[*_~`]+/g, "") // emphasis/code
     .replace(/\n{2,}/g, " ") // collapse newlines
     .replace(/\n/g, " ")
