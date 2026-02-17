@@ -18,6 +18,7 @@ const createTurndown = () => {
   return td;
 };
 
+// Intentional singleton — rules are set once at module load. Do not mutate after creation.
 const turndown = createTurndown();
 
 const getElementText = (parent: Element, tag: string): string => {
@@ -51,6 +52,7 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
     .replace(/[*_~`]+/g, "") // emphasis/code
     .replace(/\n{2,}/g, " ") // collapse newlines
     .replace(/\n/g, " ")
+    .replace(/\s{2,}/g, " ") // collapse multiple spaces
     .trim();
   if (plain.length <= maxLength) return plain;
   // Break at last word boundary to avoid mid-word truncation

@@ -9,6 +9,8 @@ import { DownloadButton } from "../ui/DownloadButton";
 
 const markedInstance = new Marked({ breaks: true, gfm: true });
 
+// Note: DOMPurify requires a browser DOM. In jsdom test environments, sanitize()
+// may return empty strings. Component tests should mock DOMPurify if needed.
 const PURIFY_CONFIG = {
   ALLOWED_TAGS: [
     "p", "br", "strong", "em", "b", "i", "ul", "ol", "li",
@@ -27,7 +29,7 @@ export const EpisodePlayer = () => {
   const renderedNotes = useMemo(() => {
     if (!currentEpisode?.description) return "";
     const rawHtml = markedInstance.parse(currentEpisode.description) as string;
-    return DOMPurify.sanitize(rawHtml, PURIFY_CONFIG);
+    return DOMPurify.sanitize(rawHtml, { ...PURIFY_CONFIG, RETURN_TRUSTED_TYPE: false }) as string;
   }, [currentEpisode?.description]);
 
   if (!currentEpisode) {
