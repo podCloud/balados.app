@@ -1,12 +1,26 @@
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play } from "lucide-react";
+import { Play, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { marked } from "marked";
 import { usePlayer } from "../../contexts";
 import { PlayerControls } from "./PlayerControls";
 import { DownloadButton } from "../ui/DownloadButton";
 
+// Configure marked for safe output
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
 export const EpisodePlayer = () => {
   const { t } = useTranslation();
   const { currentEpisode, feedUrl } = usePlayer();
+  const [showNotesOpen, setShowNotesOpen] = useState(false);
+
+  const renderedNotes = useMemo(() => {
+    if (!currentEpisode?.description) return "";
+    return marked.parse(currentEpisode.description) as string;
+  }, [currentEpisode?.description]);
 
   if (!currentEpisode) {
     return (
@@ -22,10 +36,12 @@ export const EpisodePlayer = () => {
     );
   }
 
+  const hasShowNotes = renderedNotes.length > 0;
+
   return (
-    <div className="h-full pb-16 flex flex-col bg-white">
+    <div className="h-full pb-16 flex flex-col bg-white overflow-y-auto">
       {/* Episode artwork */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8">
+      <div className="flex-shrink-0 flex flex-col items-center justify-center p-8">
         <img
           src={
             currentEpisode.image ||
@@ -47,7 +63,7 @@ export const EpisodePlayer = () => {
       </div>
 
       {/* Episode info */}
-      <div className="px-6 pb-4 text-center">
+      <div className="flex-shrink-0 px-6 pb-4 text-center">
         <h2 className="font-semibold text-lg text-gray-900 line-clamp-2 mb-1">
           {currentEpisode.title}
         </h2>
@@ -60,6 +76,42 @@ export const EpisodePlayer = () => {
 
       {/* Player controls */}
       <PlayerControls />
+
+      {/* Show notes */}
+      {hasShowNotes && (
+        <div className="flex-shrink-0 border-t border-gray-200 mt-2">
+          <button
+            onClick={() => setShowNotesOpen(!showNotesOpen)}
+            className="w-full flex items-center justify-between px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            {t("player.showNotes")}
+            {showNotesOpen ? (
+              <ChevronUp size={18} className="text-gray-400" aria-hidden="true" />
+            ) : (
+              <ChevronDown size={18} className="text-gray-400" aria-hidden="true" />
+            )}
+          </button>
+          {showNotesOpen && (
+            <div className="px-6 pb-6">
+              <div
+                className="prose prose-sm max-w-none text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_img]:rounded-lg [&_img]:max-w-full [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:mb-2 [&_ul]:mb-2 [&_ol]:mb-2 [&_li]:mb-0.5"
+                dangerouslySetInnerHTML={{ __html: renderedNotes }}
+              />
+              {currentEpisode.link && (
+                <a
+                  href={currentEpisode.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-4 text-sm text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink size={14} aria-hidden="true" />
+                  {t("player.seeOriginalPost")}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

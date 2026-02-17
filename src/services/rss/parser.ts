@@ -1,10 +1,51 @@
+import TurndownService from "turndown";
 import type { PodcastFeed, Episode } from "../../types";
 import { fetchWithProxy } from "./proxyManager";
 import { getCachedFeed, cacheFeed } from "../storage";
 
+const turndown = new TurndownService({
+  headingStyle: "atx",
+  codeBlockStyle: "fenced",
+});
+
+// Remove script, style, iframe tags completely
+turndown.addRule("removeUnsafe", {
+  filter: ["script", "style", "iframe"],
+  replacement: () => "",
+});
+
 const getElementText = (parent: Element, tag: string): string => {
   const el = parent.querySelector(tag);
   return el?.textContent || "";
+};
+
+const getContentEncoded = (item: Element): string | null => {
+  // content:encoded uses a namespace — try both selector forms
+  const el =
+    item.querySelector("content\\:encoded") ??
+    item.getElementsByTagName("content:encoded")[0];
+  return el?.textContent || null;
+};
+
+const htmlToMarkdown = (html: string): string => {
+  if (!html.trim()) return "";
+  // If content has no HTML tags, it's plain text — return as-is
+  if (!/<[a-z][\s\S]*>/i.test(html)) return html.trim();
+  return turndown.turndown(html).trim();
+};
+
+const makePlainPreview = (markdown: string, maxLength = 300): string => {
+  if (!markdown) return "";
+  // Strip markdown syntax for a plain-text preview
+  const plain = markdown
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1") // images → alt text
+    .replace(/\[([^\]]*)\]\([^)]+\)/g, "$1") // links → text
+    .replace(/#{1,6}\s+/g, "") // headings
+    .replace(/[*_~`]+/g, "") // emphasis/code
+    .replace(/\n{2,}/g, " ") // collapse newlines
+    .replace(/\n/g, " ")
+    .trim();
+  return plain.length > maxLength ? plain.substring(0, maxLength) + "…" : plain;
 };
 
 const parseEpisode = (item: Element, feedImage: string): Episode => {
@@ -17,19 +58,28 @@ const parseEpisode = (item: Element, feedImage: string): Episode => {
   const guidEl = item.querySelector("guid");
   const guid = guidEl?.textContent || undefined;
 
-  // Clean description from HTML tags safely using DOM parser
+  // Get episode link
+  const link = getElementText(item, "link") || undefined;
+
+  // Prefer content:encoded (richer) over description
+  const contentEncoded = getContentEncoded(item);
   const rawDescription = getElementText(item, "description");
-  const descDoc = new DOMParser().parseFromString(rawDescription, "text/html");
-  const cleanDescription = (descDoc.body.textContent || "").substring(0, 200);
+  const htmlContent = contentEncoded || rawDescription;
+
+  // Convert HTML to markdown
+  const description = htmlToMarkdown(htmlContent);
+  const descriptionPreview = makePlainPreview(description);
 
   return {
     title: getElementText(item, "title"),
-    description: cleanDescription,
+    description,
+    descriptionPreview,
     pubDate: getElementText(item, "pubDate"),
     enclosureUrl: enclosure?.getAttribute("url") || "",
     duration: duration || "",
     image: itemImage,
     guid,
+    link,
   };
 };
 

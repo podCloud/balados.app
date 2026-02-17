@@ -153,6 +153,7 @@ describe("InProgress", () => {
             {
               title: "Episode One",
               description: "First episode",
+              descriptionPreview: "First episode",
               pubDate: "2024-01-01",
               enclosureUrl: "https://example.com/ep1.mp3",
               duration: "3600",
@@ -194,6 +195,7 @@ describe("InProgress", () => {
     const episode = {
       title: "Episode One",
       description: "First episode",
+      descriptionPreview: "First episode",
       pubDate: "2024-01-01",
       enclosureUrl: "https://example.com/ep1.mp3",
       duration: "3600",
@@ -264,6 +266,7 @@ describe("InProgress", () => {
             {
               title: "Visible Episode",
               description: "Visible",
+              descriptionPreview: "Visible",
               pubDate: "2024-01-01",
               enclosureUrl: "https://example.com/ep1.mp3",
               duration: "3600",
@@ -273,6 +276,7 @@ describe("InProgress", () => {
             {
               title: "Hidden Episode",
               description: "Hidden",
+              descriptionPreview: "Hidden",
               pubDate: "2024-01-02",
               enclosureUrl: "https://example.com/ep2.mp3",
               duration: "1800",
@@ -323,6 +327,7 @@ describe("InProgress", () => {
             {
               title: "Episode One",
               description: "",
+              descriptionPreview: "",
               pubDate: "2024-01-01",
               enclosureUrl: "https://example.com/ep1.mp3",
               duration: "3600",

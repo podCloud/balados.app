@@ -36,7 +36,9 @@
     "skipBackward": "Reculer de 15 secondes",
     "progress": "Progression de lecture",
     "playbackRate": "Vitesse de lecture : {{rate}}x",
-    "expandPlayer": "Ouvrir le lecteur"
+    "expandPlayer": "Ouvrir le lecteur",
+    "showNotes": "Notes de l'épisode",
+    "seeOriginalPost": "Voir l'article original"
   },
   "trending": {
     "title": "Tendances",

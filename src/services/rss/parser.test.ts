@@ -16,6 +16,7 @@ const VALID_RSS = `<?xml version="1.0" encoding="UTF-8"?>
       <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
       <enclosure url="https://example.com/ep1.mp3" type="audio/mpeg"/>
       <guid>ep1-guid</guid>
+      <link>https://example.com/ep1</link>
     </item>
     <item>
       <title>Episode 2</title>
@@ -35,6 +36,59 @@ const RSS_WITH_HTML_DESCRIPTION = `<?xml version="1.0" encoding="UTF-8"?>
     <item>
       <title>Episode with HTML</title>
       <description>&lt;p&gt;This is &lt;strong&gt;bold&lt;/strong&gt; text&lt;/p&gt;</description>
+      <enclosure url="https://example.com/ep.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>`;
+
+const RSS_WITH_LINKS = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Links Test</title>
+    <description>Test</description>
+    <item>
+      <title>Episode with links</title>
+      <description>&lt;p&gt;Visit &lt;a href="https://example.com"&gt;our site&lt;/a&gt; for more&lt;/p&gt;</description>
+      <enclosure url="https://example.com/ep.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>`;
+
+const RSS_WITH_IMAGES = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Images Test</title>
+    <description>Test</description>
+    <item>
+      <title>Episode with images</title>
+      <description>&lt;p&gt;Look at this:&lt;/p&gt;&lt;img src="https://example.com/photo.jpg" alt="A photo"/&gt;</description>
+      <enclosure url="https://example.com/ep.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>`;
+
+const RSS_WITH_SCRIPT = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Script Test</title>
+    <description>Test</description>
+    <item>
+      <title>Episode with script</title>
+      <description>&lt;p&gt;Safe content&lt;/p&gt;&lt;script&gt;alert("xss")&lt;/script&gt;&lt;style&gt;body{display:none}&lt;/style&gt;</description>
+      <enclosure url="https://example.com/ep.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>`;
+
+const RSS_WITH_CONTENT_ENCODED = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Content Encoded Test</title>
+    <description>Test</description>
+    <item>
+      <title>Episode with content:encoded</title>
+      <description>Short plain description</description>
+      <content:encoded><![CDATA[<h2>Rich Show Notes</h2><p>This is the <strong>full</strong> content with <a href="https://example.com">links</a>.</p>]]></content:encoded>
       <enclosure url="https://example.com/ep.mp3" type="audio/mpeg"/>
     </item>
   </channel>
@@ -76,20 +130,78 @@ describe("parseRSSText", () => {
 
     expect(episode.title).toBe("Episode 1");
     expect(episode.description).toBe("First episode description");
+    expect(episode.descriptionPreview).toBe("First episode description");
     expect(episode.enclosureUrl).toBe("https://example.com/ep1.mp3");
     expect(episode.guid).toBe("ep1-guid");
     expect(episode.pubDate).toBe("Mon, 01 Jan 2024 00:00:00 GMT");
-    // Duration is optional (itunes:duration namespace)
     expect(episode.duration).toBeDefined();
   });
 
-  it("strips HTML from descriptions", () => {
+  it("extracts episode link", () => {
+    const feed = parseRSSText(VALID_RSS, "https://example.com/feed.xml");
+    expect(feed.items[0].link).toBe("https://example.com/ep1");
+    expect(feed.items[1].link).toBeUndefined();
+  });
+
+  it("converts HTML to markdown", () => {
     const feed = parseRSSText(RSS_WITH_HTML_DESCRIPTION, "https://example.com/feed.xml");
     const episode = feed.items[0];
 
-    expect(episode.description).toBe("This is bold text");
-    expect(episode.description).not.toContain("<");
-    expect(episode.description).not.toContain(">");
+    expect(episode.description).toContain("**bold**");
+    expect(episode.description).not.toContain("<p>");
+    expect(episode.description).not.toContain("<strong>");
+  });
+
+  it("converts HTML links to markdown links", () => {
+    const feed = parseRSSText(RSS_WITH_LINKS, "https://example.com/feed.xml");
+    const episode = feed.items[0];
+
+    expect(episode.description).toContain("[our site](https://example.com)");
+  });
+
+  it("converts HTML images to markdown images", () => {
+    const feed = parseRSSText(RSS_WITH_IMAGES, "https://example.com/feed.xml");
+    const episode = feed.items[0];
+
+    expect(episode.description).toContain("![A photo](https://example.com/photo.jpg)");
+  });
+
+  it("strips script and style tags", () => {
+    const feed = parseRSSText(RSS_WITH_SCRIPT, "https://example.com/feed.xml");
+    const episode = feed.items[0];
+
+    expect(episode.description).toContain("Safe content");
+    expect(episode.description).not.toContain("alert");
+    expect(episode.description).not.toContain("script");
+    expect(episode.description).not.toContain("display:none");
+  });
+
+  it("prefers content:encoded over description", () => {
+    const feed = parseRSSText(RSS_WITH_CONTENT_ENCODED, "https://example.com/feed.xml");
+    const episode = feed.items[0];
+
+    expect(episode.description).toContain("Rich Show Notes");
+    expect(episode.description).toContain("[links](https://example.com)");
+    expect(episode.description).not.toBe("Short plain description");
+  });
+
+  it("generates plain text descriptionPreview", () => {
+    const feed = parseRSSText(RSS_WITH_CONTENT_ENCODED, "https://example.com/feed.xml");
+    const episode = feed.items[0];
+
+    expect(episode.descriptionPreview).not.toContain("[");
+    expect(episode.descriptionPreview).not.toContain("](");
+    expect(episode.descriptionPreview).not.toContain("**");
+    expect(episode.descriptionPreview).not.toContain("##");
+    expect(episode.descriptionPreview).toContain("Rich Show Notes");
+    expect(episode.descriptionPreview).toContain("links");
+  });
+
+  it("passes plain text through unchanged", () => {
+    const feed = parseRSSText(VALID_RSS, "https://example.com/feed.xml");
+    const episode = feed.items[0];
+
+    expect(episode.description).toBe("First episode description");
   });
 
   it("handles episodes without guid", () => {
@@ -134,8 +246,8 @@ describe("parseRSSText", () => {
     expect(feed.items).toHaveLength(0);
   });
 
-  it("truncates long descriptions to 200 characters", () => {
-    const longDescription = "A".repeat(300);
+  it("does not truncate long descriptions", () => {
+    const longDescription = "A".repeat(500);
     const rssWithLongDesc = `<?xml version="1.0" encoding="UTF-8"?>
     <rss version="2.0">
       <channel>
@@ -150,6 +262,10 @@ describe("parseRSSText", () => {
     </rss>`;
 
     const feed = parseRSSText(rssWithLongDesc, "https://example.com/feed.xml");
-    expect(feed.items[0].description.length).toBe(200);
+    // Full markdown description is preserved (no 200-char truncation)
+    expect(feed.items[0].description.length).toBe(500);
+    // Preview is truncated with ellipsis at ~300 chars
+    expect(feed.items[0].descriptionPreview.length).toBeLessThanOrEqual(301);
+    expect(feed.items[0].descriptionPreview).toContain("…");
   });
 });

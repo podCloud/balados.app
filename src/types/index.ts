@@ -2,11 +2,13 @@
 export interface Episode {
   title: string;
   description: string;
+  descriptionPreview: string;
   pubDate: string;
   enclosureUrl: string;
   duration: string;
   image: string;
   guid?: string;
+  link?: string;
 }
 
 // Podcast feed type
