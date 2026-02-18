@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { db } from "./index";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
+  clearHiddenEpisodes,
   getHiddenEpisodeIds,
   hideEpisode,
-  unhideEpisode,
   isEpisodeHidden,
-  clearHiddenEpisodes,
+  unhideEpisode,
 } from "./hiddenEpisodes";
+import { db } from "./index";
 
 describe("hiddenEpisodes", () => {
   beforeEach(async () => {

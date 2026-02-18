@@ -81,10 +81,9 @@ export async function registerPeriodicSync(): Promise<void> {
     });
     if (status.state !== "granted") return;
 
-    await (registration as ServiceWorkerRegistration).periodicSync.register(
-      PERIODIC_SYNC_TAG,
-      { minInterval: PERIODIC_SYNC_INTERVAL },
-    );
+    await (registration as ServiceWorkerRegistration).periodicSync.register(PERIODIC_SYNC_TAG, {
+      minInterval: PERIODIC_SYNC_INTERVAL,
+    });
   } catch {
     // Periodic sync not supported or denied - fallback to app-level sync
   }
@@ -101,9 +100,7 @@ export async function unregisterPeriodicSync(): Promise<void> {
   if (!registration) return;
 
   try {
-    await (registration as ServiceWorkerRegistration).periodicSync.unregister(
-      PERIODIC_SYNC_TAG,
-    );
+    await (registration as ServiceWorkerRegistration).periodicSync.unregister(PERIODIC_SYNC_TAG);
   } catch {
     // Ignore unregister errors
   }

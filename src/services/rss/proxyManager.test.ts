@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fetchWithProxy, createProxyConfig, DEFAULT_PROXIES } from "./proxyManager";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppSettings } from "../../types";
 import { encodeRssFeed } from "../../utils/rssEncoding";
+import { createProxyConfig, DEFAULT_PROXIES, fetchWithProxy } from "./proxyManager";
 
 // Mock storage module
 vi.mock("../storage", () => ({
@@ -9,6 +9,7 @@ vi.mock("../storage", () => ({
 }));
 
 import { getSettings } from "../storage";
+
 const mockGetSettings = vi.mocked(getSettings);
 
 // Mock global fetch
@@ -34,11 +35,9 @@ const FEED_URL = "https://example.com/feed.xml";
 const okResponse = (text: string) =>
   Promise.resolve({ ok: true, text: () => Promise.resolve(text) } as Response);
 
-const failResponse = () =>
-  Promise.resolve({ ok: false, status: 500 } as Response);
+const failResponse = () => Promise.resolve({ ok: false, status: 500 } as Response);
 
-const networkError = () =>
-  Promise.reject(new Error("Network error"));
+const networkError = () => Promise.reject(new Error("Network error"));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -222,9 +221,7 @@ describe("fetchWithProxy", () => {
     mockGetSettings.mockResolvedValue(SYNC_SETTINGS);
     mockFetch.mockImplementation(networkError);
 
-    await expect(fetchWithProxy(FEED_URL)).rejects.toThrow(
-      "Impossible de recuperer le flux RSS",
-    );
+    await expect(fetchWithProxy(FEED_URL)).rejects.toThrow("Impossible de recuperer le flux RSS");
   });
 });
 

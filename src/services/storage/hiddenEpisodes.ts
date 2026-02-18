@@ -13,9 +13,7 @@ export const unhideEpisode = async (episodeId: string): Promise<void> => {
   await db.hiddenEpisodes.delete(episodeId);
 };
 
-export const isEpisodeHidden = async (
-  episodeId: string,
-): Promise<boolean> => {
+export const isEpisodeHidden = async (episodeId: string): Promise<boolean> => {
   return (await db.hiddenEpisodes.get(episodeId)) !== undefined;
 };
 

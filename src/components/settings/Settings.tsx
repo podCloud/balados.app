@@ -1,5 +1,5 @@
+import { ArrowLeft, BarChart3, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, BarChart3 } from "lucide-react";
 import { StorageSettings } from "./StorageSettings";
 import { SyncSettings } from "./SyncSettings";
 
@@ -26,15 +26,14 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b border-gray-200">
         <button
+          type="button"
           onClick={onBack}
           className="flex items-center text-blue-500 -ml-2 px-2 py-1"
         >
           <ArrowLeft size={20} aria-hidden="true" />
           <span className="ml-1">{t("settings.back")}</span>
         </button>
-        <h1 className="flex-1 text-center font-semibold text-lg pr-8">
-          {t("settings.title")}
-        </h1>
+        <h1 className="flex-1 text-center font-semibold text-lg pr-8">{t("settings.title")}</h1>
       </div>
 
       {/* Settings content */}
@@ -47,6 +46,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
           <div className="bg-white">
             {LANGUAGES.map((lang) => (
               <button
+                type="button"
                 key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
                 className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 hover:bg-gray-50"
@@ -73,6 +73,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
           </h2>
           <div className="bg-white">
             <button
+              type="button"
               onClick={() => onNavigate?.("stats")}
               className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50"
             >
@@ -91,9 +92,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
             <p className="text-sm text-gray-600">
               <strong>Balados</strong> - {t("settings.description")}
             </p>
-            <p className="text-xs text-gray-400 mt-2">
-              {t("settings.version")} 0.1.0
-            </p>
+            <p className="text-xs text-gray-400 mt-2">{t("settings.version")} 0.1.0</p>
           </div>
         </div>
       </div>

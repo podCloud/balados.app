@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Trending } from "./Trending";
 
 // Mock i18n
@@ -50,8 +50,18 @@ vi.mock("../../services/storage/subscriptions", () => ({
 }));
 
 const mockPodcasts = [
-  { feed_url: "https://example.com/feed1.xml", title: "Podcast One", image: "https://img.com/1.jpg", subscriber_count: 100 },
-  { feed_url: "https://example.com/feed2.xml", title: "Podcast Two", image: undefined, subscriber_count: 50 },
+  {
+    feed_url: "https://example.com/feed1.xml",
+    title: "Podcast One",
+    image: "https://img.com/1.jpg",
+    subscriber_count: 100,
+  },
+  {
+    feed_url: "https://example.com/feed2.xml",
+    title: "Podcast Two",
+    image: undefined,
+    subscriber_count: 50,
+  },
 ];
 
 describe("Trending", () => {
@@ -148,9 +158,9 @@ describe("Trending", () => {
 
     render(<Trending onNavigate={onNavigate} />);
 
-    const podcastLink = screen.getByText("Podcast One").closest("a")!;
-    expect(podcastLink).toBeInTheDocument();
-    expect(podcastLink.tagName).toBe("A");
+    const podcastButton = screen.getByText("Podcast One").closest("button")!;
+    expect(podcastButton).toBeInTheDocument();
+    expect(podcastButton.tagName).toBe("BUTTON");
   });
 
   it("subscribes to podcast on button click", async () => {
@@ -206,9 +216,12 @@ describe("Trending", () => {
     });
 
     // Error should auto-clear after 3 seconds
-    await waitFor(() => {
-      expect(screen.queryByText("Error")).not.toBeInTheDocument();
-    }, { timeout: 4000 });
+    await waitFor(
+      () => {
+        expect(screen.queryByText("Error")).not.toBeInTheDocument();
+      },
+      { timeout: 4000 },
+    );
   });
 
   it("shows placeholder icon when podcast has no image", () => {

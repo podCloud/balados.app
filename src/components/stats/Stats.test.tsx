@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Stats } from "./Stats";
 
 // Mock i18n
@@ -162,9 +162,7 @@ describe("Stats", () => {
     mockGetListeningStats.mockResolvedValue({
       totalPlays: 5,
       completedPlays: 2,
-      topPodcasts: [
-        { feedUrl: "https://podcast.example.com/rss", count: 5 },
-      ],
+      topPodcasts: [{ feedUrl: "https://podcast.example.com/rss", count: 5 }],
     });
 
     mockGetSubscription.mockResolvedValue(null);
@@ -230,9 +228,7 @@ describe("Stats", () => {
     render(<Stats onBack={onBack} />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Start listening to see your stats")
-      ).toBeInTheDocument();
+      expect(screen.getByText("Start listening to see your stats")).toBeInTheDocument();
     });
   });
 

@@ -1,6 +1,6 @@
-import { getSettings } from "../storage";
 import type { ProxyConfig } from "../../types";
 import { encodeRssFeed } from "../../utils/rssEncoding";
+import { getSettings } from "../storage";
 
 export interface FetchResult {
   text: string;
@@ -50,9 +50,7 @@ export const fetchWithProxy = async (url: string): Promise<FetchResult> => {
         const text = await response.text();
         return { text, proxyUsed: proxy.name };
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   throw new Error("Impossible de recuperer le flux RSS");

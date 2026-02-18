@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import {
+  AlertCircle,
+  Clock,
+  ExternalLink,
+  Loader,
+  LogOut,
+  RefreshCw,
+  Server,
   Wifi,
   WifiOff,
-  RefreshCw,
-  LogOut,
-  Server,
-  Clock,
-  AlertCircle,
-  Loader,
-  ExternalLink,
 } from "lucide-react";
-import { SyncClient } from "../../services/sync/client";
-import { getSettings, saveSettings } from "../../services/storage";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSyncQueue } from "../../hooks/useSyncQueue";
+import { getSettings, saveSettings } from "../../services/storage";
+import { SyncClient } from "../../services/sync/client";
 
 type ConnectionStatus = "disconnected" | "connected" | "connecting" | "error";
 
@@ -26,8 +26,7 @@ interface SyncSettingsState {
 
 export const SyncSettings = () => {
   const { t } = useTranslation();
-  const { pendingCount, isSyncing, lastSyncError, processQueue } =
-    useSyncQueue();
+  const { pendingCount, isSyncing, lastSyncError, processQueue } = useSyncQueue();
 
   const [state, setState] = useState<SyncSettingsState>({
     status: "disconnected",
@@ -46,10 +45,7 @@ export const SyncSettings = () => {
       const settings = await getSettings();
       if (settings.syncServerUrl && settings.syncToken) {
         // Test connection to see if still valid
-        const client = new SyncClient(
-          settings.syncServerUrl,
-          settings.syncToken
-        );
+        const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
         const isConnected = await client.testConnection();
 
         setState({
@@ -109,7 +105,7 @@ export const SyncSettings = () => {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [state.serverUrl, processQueue]);
+  }, [state.serverUrl, processQueue, t]);
 
   // Connect to server
   const handleConnect = useCallback(async () => {
@@ -242,8 +238,7 @@ export const SyncSettings = () => {
     const days = Math.floor(diff / 86400000);
 
     if (minutes < 1) return t("syncSettings.justNow");
-    if (minutes < 60)
-      return t("syncSettings.minutesAgo", { count: minutes });
+    if (minutes < 60) return t("syncSettings.minutesAgo", { count: minutes });
     if (hours < 24) return t("syncSettings.hoursAgo", { count: hours });
     return t("syncSettings.daysAgo", { count: days });
   };
@@ -301,6 +296,7 @@ export const SyncSettings = () => {
 
           {state.status === "connected" && (
             <button
+              type="button"
               onClick={handleDisconnect}
               className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
             >
@@ -334,8 +330,7 @@ export const SyncSettings = () => {
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Clock size={16} aria-hidden="true" />
                 <span>
-                  {t("syncSettings.lastSync")}:{" "}
-                  {formatLastSync(state.lastSyncAt)}
+                  {t("syncSettings.lastSync")}: {formatLastSync(state.lastSyncAt)}
                 </span>
               </div>
 
@@ -350,6 +345,7 @@ export const SyncSettings = () => {
             {/* Sync button */}
             <div className="px-4 py-3">
               <button
+                type="button"
                 onClick={handleSync}
                 disabled={isSyncing}
                 className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -373,10 +369,14 @@ export const SyncSettings = () => {
         {/* Disconnected/connecting: show connection form */}
         {state.status !== "connected" && (
           <div className="px-4 py-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="sync-server-url"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               {t("syncSettings.serverUrl")}
             </label>
             <input
+              id="sync-server-url"
               type="url"
               value={serverInput}
               onChange={(e) => setServerInput(e.target.value)}
@@ -386,6 +386,7 @@ export const SyncSettings = () => {
 
             <div className="mt-4 flex gap-2">
               <button
+                type="button"
                 onClick={handleConnect}
                 disabled={!serverInput.trim() || state.status === "connecting"}
                 className="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -407,12 +408,11 @@ export const SyncSettings = () => {
             {/* Developer: manual token entry */}
             <div className="mt-4 pt-4 border-t border-gray-100">
               <button
+                type="button"
                 onClick={() => setShowTokenInput(!showTokenInput)}
                 className="text-xs text-gray-500 hover:text-gray-700"
               >
-                {showTokenInput
-                  ? t("syncSettings.hideToken")
-                  : t("syncSettings.manualToken")}
+                {showTokenInput ? t("syncSettings.hideToken") : t("syncSettings.manualToken")}
               </button>
 
               {showTokenInput && (
@@ -425,11 +425,10 @@ export const SyncSettings = () => {
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
+                    type="button"
                     onClick={handleManualToken}
                     disabled={
-                      !serverInput.trim() ||
-                      !tokenInput.trim() ||
-                      state.status === "connecting"
+                      !serverInput.trim() || !tokenInput.trim() || state.status === "connecting"
                     }
                     className="mt-2 w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >

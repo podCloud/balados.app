@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InProgress } from "./InProgress";
 
 // Mock i18n
@@ -65,7 +65,11 @@ vi.mock("../../services/rss/parser", () => ({
 
 // Mock DownloadButton
 vi.mock("../ui/DownloadButton", () => ({
-  DownloadButton: () => <button data-testid="download-btn">Download</button>,
+  DownloadButton: () => (
+    <button type="button" data-testid="download-btn">
+      Download
+    </button>
+  ),
 }));
 
 describe("InProgress", () => {
@@ -89,15 +93,11 @@ describe("InProgress", () => {
     render(<InProgress onBack={onBack} />);
 
     expect(screen.getByText("In Progress")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Back" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
 
   it("calls onBack when back button is clicked", () => {
-    mockUseLiveQuery
-      .mockReturnValueOnce(new Set())
-      .mockReturnValueOnce([]);
+    mockUseLiveQuery.mockReturnValueOnce(new Set()).mockReturnValueOnce([]);
 
     render(<InProgress onBack={onBack} />);
 
@@ -216,9 +216,7 @@ describe("InProgress", () => {
       ],
     ]);
 
-    mockUseLiveQuery
-      .mockReturnValueOnce(new Set())
-      .mockReturnValueOnce(playStatuses);
+    mockUseLiveQuery.mockReturnValueOnce(new Set()).mockReturnValueOnce(playStatuses);
 
     mockUseQuery.mockReturnValue({
       data: feedData,
@@ -228,10 +226,7 @@ describe("InProgress", () => {
     render(<InProgress onBack={onBack} />);
 
     fireEvent.click(screen.getByText("Episode One"));
-    expect(mockPlay).toHaveBeenCalledWith(
-      episode,
-      "https://example.com/feed.xml"
-    );
+    expect(mockPlay).toHaveBeenCalledWith(episode, "https://example.com/feed.xml");
   });
 
   it("hides hidden episodes from the list", () => {
@@ -339,9 +334,7 @@ describe("InProgress", () => {
       ],
     ]);
 
-    mockUseLiveQuery
-      .mockReturnValueOnce(new Set())
-      .mockReturnValueOnce(playStatuses);
+    mockUseLiveQuery.mockReturnValueOnce(new Set()).mockReturnValueOnce(playStatuses);
 
     mockUseQuery.mockReturnValue({
       data: feedData,

@@ -1,5 +1,5 @@
+import { AlertCircle, Clock, RefreshCw, WifiOff, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { WifiOff, Clock, RefreshCw, AlertCircle, X } from "lucide-react";
 import { useOnline } from "../../hooks/useOnline";
 import { useSyncQueue } from "../../hooks/useSyncQueue";
 
@@ -19,8 +19,11 @@ export const OfflineBanner = () => {
       {showError && (
         <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2" role="alert">
           <AlertCircle size={16} aria-hidden="true" />
-          <span>{t("sync.syncError")}: {lastSyncError}</span>
+          <span>
+            {t("sync.syncError")}: {lastSyncError}
+          </span>
           <button
+            type="button"
             onClick={clearError}
             className="ml-2 p-1 hover:bg-red-600 rounded"
             aria-label={t("sync.dismissError")}
@@ -45,9 +48,7 @@ export const OfflineBanner = () => {
                 <Clock size={16} aria-hidden="true" />
               )}
               <span>
-                {isSyncing
-                  ? t("sync.syncing")
-                  : t("sync.pending", { count: pendingCount })}
+                {isSyncing ? t("sync.syncing") : t("sync.pending", { count: pendingCount })}
               </span>
             </div>
           )}

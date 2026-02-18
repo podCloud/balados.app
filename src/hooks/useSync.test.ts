@@ -1,20 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSync } from "./useSync";
 
 // Mock SyncClient - vi.hoisted ensures these are available before vi.mock hoisting
-const { mockTestConnection, mockSaveCredentials, mockClearCredentials, mockSync, mockFromSettings } =
-  vi.hoisted(() => ({
-    mockTestConnection: vi.fn().mockResolvedValue(true),
-    mockSaveCredentials: vi.fn().mockResolvedValue(undefined),
-    mockClearCredentials: vi.fn().mockResolvedValue(undefined),
-    mockSync: vi.fn().mockResolvedValue({
-      synced_at: new Date().toISOString(),
-      subscriptions: [],
-      play_statuses: [],
-    }),
-    mockFromSettings: vi.fn().mockResolvedValue(null),
-  }));
+const {
+  mockTestConnection,
+  mockSaveCredentials,
+  mockClearCredentials,
+  mockSync,
+  mockFromSettings,
+} = vi.hoisted(() => ({
+  mockTestConnection: vi.fn().mockResolvedValue(true),
+  mockSaveCredentials: vi.fn().mockResolvedValue(undefined),
+  mockClearCredentials: vi.fn().mockResolvedValue(undefined),
+  mockSync: vi.fn().mockResolvedValue({
+    synced_at: new Date().toISOString(),
+    subscriptions: [],
+    play_statuses: [],
+  }),
+  mockFromSettings: vi.fn().mockResolvedValue(null),
+}));
 
 vi.mock("../services/sync/client", () => {
   class SyncClient {
@@ -149,10 +154,7 @@ describe("useSync", () => {
 
       let success: boolean = false;
       await act(async () => {
-        success = await result.current.connect(
-          "https://sync.example.com",
-          "valid-token"
-        );
+        success = await result.current.connect("https://sync.example.com", "valid-token");
       });
 
       expect(success).toBe(true);
@@ -202,9 +204,7 @@ describe("useSync", () => {
 
       expect(success).toBe(false);
       expect(result.current.status).toBe("error");
-      expect(result.current.error).toBe(
-        "Server unreachable or invalid token"
-      );
+      expect(result.current.error).toBe("Server unreachable or invalid token");
     });
 
     it("saves credentials on successful connection", async () => {

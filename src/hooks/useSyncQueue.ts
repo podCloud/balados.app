@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  enforceQueueLimit,
   getPendingCount,
   pruneFailedActions,
-  enforceQueueLimit,
 } from "../services/storage/syncQueue";
-import { processQueue, notifySyncComplete } from "../services/sync/queueProcessor";
+import { notifySyncComplete, processQueue } from "../services/sync/queueProcessor";
 
 interface SyncQueueState {
   pendingCount: number;
@@ -57,8 +57,7 @@ export const useSyncQueue = () => {
 
       await refreshCount();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Sync failed";
+      const errorMessage = error instanceof Error ? error.message : "Sync failed";
       if (isMounted.current) {
         setState((prev) => ({ ...prev, lastSyncError: errorMessage }));
       }

@@ -1,17 +1,8 @@
-import {
-  useState,
-  useRef,
-  useCallback,
-  useEffect,
-  type ReactNode,
-} from "react";
-import type { Episode } from "../types";
-import {
-  getPlayStatus,
-  savePlayStatus,
-} from "../services/storage/playStatus";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { getCachedAudioUrl } from "../services/storage/downloads";
 import { logEvent } from "../services/storage/events";
+import { getPlayStatus, savePlayStatus } from "../services/storage/playStatus";
+import type { Episode } from "../types";
 import { PlayerContext } from "./playerContext";
 
 interface PlayerState {
@@ -49,7 +40,7 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
       feedUrl: state.feedUrl,
       position: audioRef.current.currentTime,
       duration: audioRef.current.duration || 0,
-      completed: audioRef.current.currentTime >= (audioRef.current.duration - 30),
+      completed: audioRef.current.currentTime >= audioRef.current.duration - 30,
     });
   }, [state.currentEpisode, state.feedUrl]);
 
@@ -62,51 +53,54 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     }
   }, []);
 
-  const play = useCallback(async (episode: Episode, feedUrl: string) => {
-    if (!audioRef.current) return;
+  const play = useCallback(
+    async (episode: Episode, feedUrl: string) => {
+      if (!audioRef.current) return;
 
-    // Save current position before switching
-    await savePosition();
+      // Save current position before switching
+      await savePosition();
 
-    // Log play_started event for stats (best-effort, don't block playback)
-    const episodeId = episode.guid || episode.enclosureUrl;
-    logEvent("play_started", { feedUrl, episodeId }).catch((err) =>
-      console.error("Failed to log play event:", err)
-    );
+      // Log play_started event for stats (best-effort, don't block playback)
+      const episodeId = episode.guid || episode.enclosureUrl;
+      logEvent("play_started", { feedUrl, episodeId }).catch((err) =>
+        console.error("Failed to log play event:", err),
+      );
 
-    // Revoke previous blob URL to prevent memory leak
-    const prevSrc = audioRef.current.src;
-    if (prevSrc?.startsWith('blob:')) {
-      URL.revokeObjectURL(prevSrc);
-    }
+      // Revoke previous blob URL to prevent memory leak
+      const prevSrc = audioRef.current.src;
+      if (prevSrc?.startsWith("blob:")) {
+        URL.revokeObjectURL(prevSrc);
+      }
 
-    setState((prev) => ({
-      ...prev,
-      currentEpisode: episode,
-      feedUrl,
-      isLoading: true,
-      isPlaying: false,
-    }));
+      setState((prev) => ({
+        ...prev,
+        currentEpisode: episode,
+        feedUrl,
+        isLoading: true,
+        isPlaying: false,
+      }));
 
-    // Check if episode is cached for offline playback
-    const cachedUrl = await getCachedAudioUrl(episode.enclosureUrl);
-    audioRef.current.src = cachedUrl || episode.enclosureUrl;
-    audioRef.current.load();
+      // Check if episode is cached for offline playback
+      const cachedUrl = await getCachedAudioUrl(episode.enclosureUrl);
+      audioRef.current.src = cachedUrl || episode.enclosureUrl;
+      audioRef.current.load();
 
-    // Restore position after loading
-    audioRef.current.onloadedmetadata = async () => {
-      await restorePosition(episode);
-      audioRef.current?.play();
-    };
-
-    // Clean up blob URL when switching episodes
-    if (cachedUrl) {
-      const currentCachedUrl = cachedUrl;
-      audioRef.current.onended = () => {
-        URL.revokeObjectURL(currentCachedUrl);
+      // Restore position after loading
+      audioRef.current.onloadedmetadata = async () => {
+        await restorePosition(episode);
+        audioRef.current?.play();
       };
-    }
-  }, [savePosition, restorePosition]);
+
+      // Clean up blob URL when switching episodes
+      if (cachedUrl) {
+        const currentCachedUrl = cachedUrl;
+        audioRef.current.onended = () => {
+          URL.revokeObjectURL(currentCachedUrl);
+        };
+      }
+    },
+    [savePosition, restorePosition],
+  );
 
   const pause = useCallback(() => {
     audioRef.current?.pause();
@@ -127,17 +121,14 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
     if (audioRef.current) {
       audioRef.current.currentTime = Math.min(
         audioRef.current.currentTime + seconds,
-        audioRef.current.duration
+        audioRef.current.duration,
       );
     }
   }, []);
 
   const skipBackward = useCallback((seconds = 15) => {
     if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(
-        audioRef.current.currentTime - seconds,
-        0
-      );
+      audioRef.current.currentTime = Math.max(audioRef.current.currentTime - seconds, 0);
     }
   }, []);
 
@@ -163,7 +154,7 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
         if (currentEpisode && feedUrl) {
           const episodeId = currentEpisode.guid || currentEpisode.enclosureUrl;
           logEvent("play_paused", { feedUrl, episodeId }).catch((err) =>
-            console.error("Failed to log pause event:", err)
+            console.error("Failed to log pause event:", err),
           );
         }
 
@@ -187,7 +178,7 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
         if (currentEpisode && feedUrl) {
           const episodeId = currentEpisode.guid || currentEpisode.enclosureUrl;
           logEvent("play_completed", { feedUrl, episodeId }).catch((err) =>
-            console.error("Failed to log completed event:", err)
+            console.error("Failed to log completed event:", err),
           );
         }
 
@@ -248,6 +239,7 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
         audioRef,
       }}
     >
+      {/* biome-ignore lint/a11y/useMediaCaption: podcast audio does not have captions */}
       <audio ref={audioRef} preload="metadata" />
       {children}
     </PlayerContext.Provider>

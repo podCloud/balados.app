@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { HardDrive, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2, HardDrive } from "lucide-react";
 import { useDownload } from "../../contexts";
-import { getStorageQuota, getDownloadsSize } from "../../services/storage/downloads";
+import { getDownloadsSize, getStorageQuota } from "../../services/storage/downloads";
 
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 B";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
 };
 
 export const StorageSettings = () => {
@@ -26,13 +26,11 @@ export const StorageSettings = () => {
       setDownloadsSize(size);
     };
     loadQuota();
-  }, [downloads]);
+  }, []);
 
   const downloadList = Array.from(downloads.values());
   const hasQuotaInfo = quota.total > 0;
-  const usagePercent = hasQuotaInfo
-    ? Math.round((quota.used / quota.total) * 100)
-    : 0;
+  const usagePercent = hasQuotaInfo ? Math.round((quota.used / quota.total) * 100) : 0;
 
   const handleClearAll = async () => {
     if (window.confirm(t("downloads.clearAllConfirm"))) {
@@ -59,12 +57,8 @@ export const StorageSettings = () => {
             <HardDrive size={20} className="text-gray-400" aria-hidden="true" />
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700">
-                  {t("downloads.downloaded")}
-                </span>
-                <span className="text-gray-500">
-                  {formatFileSize(downloadsSize)}
-                </span>
+                <span className="text-gray-700">{t("downloads.downloaded")}</span>
+                <span className="text-gray-500">{formatFileSize(downloadsSize)}</span>
               </div>
               {hasQuotaInfo && (
                 <>
@@ -93,6 +87,7 @@ export const StorageSettings = () => {
               {t("downloads.episodeCount", { count: downloadList.length })}
             </span>
             <button
+              type="button"
               onClick={handleClearAll}
               className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
             >
@@ -119,6 +114,7 @@ export const StorageSettings = () => {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => handleDelete(download.episodeId)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
                 aria-label={`${t("downloads.delete")} ${download.title}`}

@@ -1,5 +1,5 @@
+import type { EventType, LocalEvent, PodcastStats, StatsSnapshot } from "../../types";
 import { db } from "./index";
-import type { LocalEvent, EventType, StatsSnapshot, PodcastStats } from "../../types";
 
 export const logEvent = async (
   type: EventType,
@@ -18,14 +18,12 @@ export const logEvent = async (
   });
 };
 
-export const getEvents = async (
-  options?: {
-    type?: EventType;
-    feedUrl?: string;
-    since?: number;
-    limit?: number;
-  },
-): Promise<LocalEvent[]> => {
+export const getEvents = async (options?: {
+  type?: EventType;
+  feedUrl?: string;
+  since?: number;
+  limit?: number;
+}): Promise<LocalEvent[]> => {
   // Start with timestamp-ordered collection
   let collection = db.events.orderBy("timestamp");
 
@@ -53,11 +51,7 @@ export const getEvents = async (
  * Get the latest stats snapshot.
  */
 export const getLatestSnapshot = async (): Promise<StatsSnapshot | null> => {
-  const snapshots = await db.statsSnapshots
-    .orderBy("createdAt")
-    .reverse()
-    .limit(1)
-    .toArray();
+  const snapshots = await db.statsSnapshots.orderBy("createdAt").reverse().limit(1).toArray();
   return snapshots[0] || null;
 };
 
@@ -73,7 +67,7 @@ export const createSnapshot = async (beforeTimestamp?: number): Promise<StatsSna
   const cutoff = beforeTimestamp ?? Date.now();
 
   // Get play events up to the cutoff time
-  let query = db.events.where("type").anyOf(["play_started", "play_completed"]);
+  const query = db.events.where("type").anyOf(["play_started", "play_completed"]);
   const playEvents = await query.filter((e) => e.timestamp < cutoff).toArray();
 
   // Only count events WITH feedUrl for consistency
@@ -96,9 +90,10 @@ export const createSnapshot = async (beforeTimestamp?: number): Promise<StatsSna
     podcastMap.set(event.feedUrl!, current);
   }
 
-  const podcastStats: PodcastStats[] = Array.from(podcastMap.entries()).map(
-    ([feedUrl, stats]) => ({ feedUrl, ...stats })
-  );
+  const podcastStats: PodcastStats[] = Array.from(podcastMap.entries()).map(([feedUrl, stats]) => ({
+    feedUrl,
+    ...stats,
+  }));
 
   const snapshot: StatsSnapshot = {
     createdAt: cutoff,
@@ -154,7 +149,7 @@ export const getListeningStats = async (
   const snapshot = useSnapshot ? await getLatestSnapshot() : null;
 
   // Determine the starting point for event query
-  const startTime = snapshot ? snapshot.createdAt : (since || 0);
+  const startTime = snapshot ? snapshot.createdAt : since || 0;
 
   // Get events since snapshot (or since requested time)
   const playEvents = await db.events
@@ -184,10 +179,7 @@ export const getListeningStats = async (
 
   for (const event of playStarted) {
     if (event.feedUrl) {
-      podcastCounts.set(
-        event.feedUrl,
-        (podcastCounts.get(event.feedUrl) || 0) + 1,
-      );
+      podcastCounts.set(event.feedUrl, (podcastCounts.get(event.feedUrl) || 0) + 1);
     }
   }
 
@@ -228,9 +220,7 @@ export const getEventCount = async (): Promise<number> => {
  * chain doesn't work correctly. The .delete() method only works directly
  * after .where() without intermediate .filter() calls.
  */
-export const pruneNonEssentialEvents = async (
-  olderThanMs: number,
-): Promise<number> => {
+export const pruneNonEssentialEvents = async (olderThanMs: number): Promise<number> => {
   const cutoff = Date.now() - olderThanMs;
 
   // Only prune non-essential event types (pause, subscription changes)
@@ -238,11 +228,12 @@ export const pruneNonEssentialEvents = async (
   const toDelete = await db.events
     .where("timestamp")
     .below(cutoff)
-    .filter((e) =>
-      e.type === "play_paused" ||
-      e.type === "subscription_added" ||
-      e.type === "subscription_removed" ||
-      e.type === "episode_downloaded"
+    .filter(
+      (e) =>
+        e.type === "play_paused" ||
+        e.type === "subscription_added" ||
+        e.type === "subscription_removed" ||
+        e.type === "episode_downloaded",
     )
     .toArray();
 

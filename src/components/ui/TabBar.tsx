@@ -1,5 +1,5 @@
+import { Bug, Library, Play, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Library, Play, Search, Bug } from "lucide-react";
 import type { TabId } from "../../types";
 
 interface TabBarProps {
@@ -11,9 +11,7 @@ const tabs: { id: TabId; icon: typeof Library; labelKey: string }[] = [
   { id: "library", icon: Library, labelKey: "tabs.library" },
   { id: "player", icon: Play, labelKey: "tabs.player" },
   { id: "explorer", icon: Search, labelKey: "tabs.explorer" },
-  ...(import.meta.env.DEV
-    ? [{ id: "debug" as TabId, icon: Bug, labelKey: "tabs.debug" }]
-    : []),
+  ...(import.meta.env.DEV ? [{ id: "debug" as TabId, icon: Bug, labelKey: "tabs.debug" }] : []),
 ];
 
 export const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
@@ -26,6 +24,7 @@ export const TabBar = ({ activeTab, onTabChange }: TabBarProps) => {
           const Icon = tab.icon;
           return (
             <button
+              type="button"
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               aria-label={t(tab.labelKey)}

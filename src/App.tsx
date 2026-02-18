@@ -1,19 +1,19 @@
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Debug } from "./components/debug/Debug";
+import { Explorer } from "./components/explorer/Explorer";
+import { InProgress } from "./components/inProgress/InProgress";
 import { Library } from "./components/library/Library";
-import { PodcastDetail } from "./components/podcast/PodcastDetail";
 import { EpisodePlayer } from "./components/player/EpisodePlayer";
 import { MiniPlayer } from "./components/player/MiniPlayer";
-import { Explorer } from "./components/explorer/Explorer";
-import { Debug } from "./components/debug/Debug";
+import { PodcastDetail } from "./components/podcast/PodcastDetail";
 import { Settings } from "./components/settings/Settings";
 import { Stats } from "./components/stats/Stats";
-import { InProgress } from "./components/inProgress/InProgress";
-import { TabBar } from "./components/ui/TabBar";
-import { OfflineBanner } from "./components/ui/OfflineBanner";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
-import { PlayerProvider, usePlayer, DownloadProvider } from "./contexts";
+import { OfflineBanner } from "./components/ui/OfflineBanner";
+import { TabBar } from "./components/ui/TabBar";
+import { DownloadProvider, PlayerProvider, usePlayer } from "./contexts";
 import { initDebugConsole } from "./services/debug";
 import { migrateFromLocalStorage } from "./services/storage";
 import type { TabId } from "./types";
@@ -71,9 +71,7 @@ const AppContent = () => {
     }
 
     if (currentView === "podcast" && selectedFeedUrl) {
-      return (
-        <PodcastDetail feedUrl={selectedFeedUrl} onNavigate={handleNavigate} />
-      );
+      return <PodcastDetail feedUrl={selectedFeedUrl} onNavigate={handleNavigate} />;
     }
 
     switch (activeTab) {
@@ -107,9 +105,7 @@ const AppContent = () => {
       <div id="main-content" className={`flex-1 overflow-hidden ${showMiniPlayer ? "pb-14" : ""}`}>
         {renderContent()}
       </div>
-      {showMiniPlayer && (
-        <MiniPlayer onExpand={() => handleTabChange("player")} />
-      )}
+      {showMiniPlayer && <MiniPlayer onExpand={() => handleTabChange("player")} />}
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );

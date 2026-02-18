@@ -1,11 +1,11 @@
-import { db } from "./index";
-import { requestBackgroundSync } from "../sync/backgroundSync";
 import type {
+  PlayStatusPayload,
   QueuedAction,
   SubscribePayload,
   UnsubscribePayload,
-  PlayStatusPayload,
 } from "../../types";
+import { requestBackgroundSync } from "../sync/backgroundSync";
+import { db } from "./index";
 
 const MAX_ATTEMPTS = 5;
 const BASE_RETRY_DELAY = 1000; // 1 second
@@ -14,16 +14,14 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 /**
  * Add a subscribe action to the sync queue with deduplication
  */
-export const queueSubscribe = async (
-  payload: SubscribePayload
-): Promise<number> => {
+export const queueSubscribe = async (payload: SubscribePayload): Promise<number> => {
   try {
     // Remove any existing subscribe/unsubscribe for same feed (deduplication)
     const existing = await db.syncQueue
       .filter(
         (a) =>
           (a.action === "subscribe" || a.action === "unsubscribe") &&
-          a.payload.feedUrl === payload.feedUrl
+          a.payload.feedUrl === payload.feedUrl,
       )
       .toArray();
 
@@ -48,16 +46,14 @@ export const queueSubscribe = async (
 /**
  * Add an unsubscribe action to the sync queue with deduplication
  */
-export const queueUnsubscribe = async (
-  payload: UnsubscribePayload
-): Promise<number> => {
+export const queueUnsubscribe = async (payload: UnsubscribePayload): Promise<number> => {
   try {
     // Remove any existing subscribe/unsubscribe for same feed (deduplication)
     const existing = await db.syncQueue
       .filter(
         (a) =>
           (a.action === "subscribe" || a.action === "unsubscribe") &&
-          a.payload.feedUrl === payload.feedUrl
+          a.payload.feedUrl === payload.feedUrl,
       )
       .toArray();
 
@@ -82,17 +78,11 @@ export const queueUnsubscribe = async (
 /**
  * Add a play status update to the sync queue with deduplication
  */
-export const queuePlayStatus = async (
-  payload: PlayStatusPayload
-): Promise<number> => {
+export const queuePlayStatus = async (payload: PlayStatusPayload): Promise<number> => {
   try {
     // Remove any existing play status for same episode (keep only latest)
     const existing = await db.syncQueue
-      .filter(
-        (a) =>
-          a.action === "updatePlayStatus" &&
-          a.payload.episodeId === payload.episodeId
-      )
+      .filter((a) => a.action === "updatePlayStatus" && a.payload.episodeId === payload.episodeId)
       .toArray();
 
     for (const action of existing) {
@@ -119,7 +109,7 @@ export const queuePlayStatus = async (
  */
 export const queueAction = async (
   action: "subscribe" | "unsubscribe" | "updatePlayStatus",
-  payload: SubscribePayload | UnsubscribePayload | PlayStatusPayload
+  payload: SubscribePayload | UnsubscribePayload | PlayStatusPayload,
 ): Promise<number> => {
   switch (action) {
     case "subscribe":
@@ -158,10 +148,7 @@ export const getPendingCount = async (): Promise<number> => {
 /**
  * Mark an action as attempted (increment attempts, update lastAttemptAt)
  */
-export const markAttempted = async (
-  id: number,
-  error?: string
-): Promise<void> => {
+export const markAttempted = async (id: number, error?: string): Promise<void> => {
   try {
     const action = await db.syncQueue.get(id);
     if (!action) return;
@@ -214,7 +201,7 @@ export const getRetryableActions = async (): Promise<QueuedAction[]> => {
       if (!action.lastAttemptAt) return true;
 
       // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-      const delay = BASE_RETRY_DELAY * Math.pow(2, action.attempts);
+      const delay = BASE_RETRY_DELAY * 2 ** action.attempts;
       return now - action.lastAttemptAt >= delay;
     });
   } catch (error) {
@@ -229,9 +216,7 @@ export const getRetryableActions = async (): Promise<QueuedAction[]> => {
 export const pruneFailedActions = async (): Promise<number> => {
   try {
     const allActions = await getPendingActions();
-    const failedActions = allActions.filter(
-      (action) => action.attempts >= MAX_ATTEMPTS
-    );
+    const failedActions = allActions.filter((action) => action.attempts >= MAX_ATTEMPTS);
 
     for (const action of failedActions) {
       if (action.id) {
@@ -255,10 +240,7 @@ export const enforceQueueLimit = async (): Promise<number> => {
     if (count <= MAX_QUEUE_SIZE) return 0;
 
     const excess = count - MAX_QUEUE_SIZE;
-    const oldestActions = await db.syncQueue
-      .orderBy("createdAt")
-      .limit(excess)
-      .toArray();
+    const oldestActions = await db.syncQueue.orderBy("createdAt").limit(excess).toArray();
 
     for (const action of oldestActions) {
       if (action.id) {

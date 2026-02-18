@@ -1,5 +1,5 @@
+import { Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Play, Pause } from "lucide-react";
 import { usePlayer } from "../../contexts";
 
 interface MiniPlayerProps {
@@ -8,7 +8,8 @@ interface MiniPlayerProps {
 
 export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
   const { t } = useTranslation();
-  const { currentEpisode, isPlaying, isLoading, pause, resume, currentTime, duration } = usePlayer();
+  const { currentEpisode, isPlaying, isLoading, pause, resume, currentTime, duration } =
+    usePlayer();
 
   if (!currentEpisode) return null;
 
@@ -24,20 +25,15 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
   };
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onExpand}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onExpand(); } }}
-      role="button"
-      tabIndex={0}
       aria-label={t("player.expandPlayer")}
-      className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100 safe-area-inset-bottom"
+      className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100 safe-area-inset-bottom w-full text-left border-none p-0"
     >
       {/* Progress bar */}
       <div className="h-0.5 bg-gray-200">
-        <div
-          className="h-full bg-blue-500 transition-all"
-          style={{ width: `${progress}%` }}
-        />
+        <div className="h-full bg-blue-500 transition-all" style={{ width: `${progress}%` }} />
       </div>
 
       <div className="max-w-md mx-auto flex items-center px-4 py-2 gap-3">
@@ -53,13 +49,12 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
 
         {/* Episode title */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">
-            {currentEpisode.title}
-          </p>
+          <p className="text-sm font-medium text-gray-900 truncate">{currentEpisode.title}</p>
         </div>
 
         {/* Play/Pause button */}
         <button
+          type="button"
           onClick={handlePlayPause}
           disabled={isLoading}
           aria-label={isPlaying ? t("player.pause") : t("player.play")}
@@ -74,6 +69,6 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
           )}
         </button>
       </div>
-    </div>
+    </button>
   );
 };

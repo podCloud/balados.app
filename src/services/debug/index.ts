@@ -3,33 +3,26 @@ import type { DebugLog } from "../../types";
 const debugLogs: DebugLog[] = [];
 const debugListeners = new Set<(logs: DebugLog[]) => void>();
 
-export const addDebugLog = (
-  type: "log" | "error" | "warn",
-  ...args: Array<unknown>
-) => {
+export const addDebugLog = (type: "log" | "error" | "warn", ...args: Array<unknown>) => {
   const timestamp = new Date().toLocaleTimeString("fr-FR");
   const message = args
-    .map((arg) =>
-      typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-    )
+    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)))
     .join(" ");
 
   debugLogs.push({ type, message, timestamp });
   if (debugLogs.length > 100) debugLogs.shift();
 
-  debugListeners.forEach((listener) => listener([...debugLogs]));
+  for (const listener of debugListeners) listener([...debugLogs]);
 };
 
 export const getDebugLogs = (): DebugLog[] => [...debugLogs];
 
 export const clearDebugLogs = () => {
   debugLogs.length = 0;
-  debugListeners.forEach((listener) => listener([]));
+  for (const listener of debugListeners) listener([]);
 };
 
-export const subscribeToDebugLogs = (
-  listener: (logs: DebugLog[]) => void
-): (() => void) => {
+export const subscribeToDebugLogs = (listener: (logs: DebugLog[]) => void): (() => void) => {
   debugListeners.add(listener);
   return () => debugListeners.delete(listener);
 };

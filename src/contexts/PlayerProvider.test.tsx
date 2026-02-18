@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { useContext } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerProvider } from "./PlayerProvider";
 import { PlayerContext } from "./playerContext";
-import { useContext } from "react";
 
 // Mock storage services
 vi.mock("../services/storage/playStatus", () => ({
@@ -19,9 +19,9 @@ vi.mock("../services/storage/events", () => ({
   logEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { savePlayStatus } from "../services/storage/playStatus";
 import { getCachedAudioUrl } from "../services/storage/downloads";
 import { logEvent } from "../services/storage/events";
+import { savePlayStatus } from "../services/storage/playStatus";
 
 // Helper to use the player context from the provider
 function usePlayer() {
@@ -221,7 +221,8 @@ describe("PlayerProvider", () => {
 
   it("resume() calls play on audio element", () => {
     const { result } = renderHook(() => usePlayer(), { wrapper });
-    const playSpy = vi.spyOn(result.current.audioRef.current!, "play")
+    const playSpy = vi
+      .spyOn(result.current.audioRef.current!, "play")
       .mockImplementation(() => Promise.resolve());
 
     act(() => {

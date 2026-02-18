@@ -1,10 +1,5 @@
-import type { Subscription, PlayStatus } from "../../types";
-import {
-  type SubscriptionSync,
-  type PlayStatusSync,
-  decodeRssFeed,
-  encodeRssFeed,
-} from "./client";
+import type { PlayStatus, Subscription } from "../../types";
+import { decodeRssFeed, encodeRssFeed, type PlayStatusSync, type SubscriptionSync } from "./client";
 
 /**
  * Episode ID Format Convention:
@@ -61,7 +56,7 @@ const isWithinRetention = (unsubscribedAt: string): boolean => {
  */
 export function mergeSubscriptions(
   local: Subscription[],
-  remote: SubscriptionSync[]
+  remote: SubscriptionSync[],
 ): MergeResult<Subscription> {
   const merged: Subscription[] = [];
   const conflicts: MergeResult<Subscription>["conflicts"] = [];
@@ -201,7 +196,7 @@ export function mergeSubscriptions(
  */
 export function mergePlayStatuses(
   local: PlayStatus[],
-  remote: PlayStatusSync[]
+  remote: PlayStatusSync[],
 ): MergeResult<PlayStatus> {
   const merged: PlayStatus[] = [];
   const conflicts: MergeResult<PlayStatus>["conflicts"] = [];
@@ -312,9 +307,7 @@ export function mergePlayStatuses(
 /**
  * Convert local subscriptions to sync format for upload
  */
-export function subscriptionsToSync(
-  subscriptions: Subscription[]
-): SubscriptionSync[] {
+export function subscriptionsToSync(subscriptions: Subscription[]): SubscriptionSync[] {
   return subscriptions.map((sub) => ({
     rss_source_feed: encodeRssFeed(sub.url),
     subscribed_at: new Date(sub.addedAt).toISOString(),

@@ -1,5 +1,5 @@
+import { AlertCircle, Cloud, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Cloud, Loader2, AlertCircle } from "lucide-react";
 import { useSync } from "../../hooks/useSync";
 
 interface SyncStatusIconProps {
@@ -38,7 +38,10 @@ export const SyncStatusIcon = ({ onNavigate }: SyncStatusIconProps) => {
           <>
             <Cloud size={18} className="text-blue-500" aria-hidden="true" />
             {pendingCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1" aria-hidden="true">
+              <span
+                className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1"
+                aria-hidden="true"
+              >
                 {pendingCount}
               </span>
             )}
@@ -51,6 +54,7 @@ export const SyncStatusIcon = ({ onNavigate }: SyncStatusIconProps) => {
 
   return (
     <button
+      type="button"
       onClick={() => onNavigate("settings")}
       className="relative text-gray-500 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"
       title={getAriaLabel()}

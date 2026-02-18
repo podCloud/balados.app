@@ -8,16 +8,17 @@
  * IMPORTANT: This module must NOT import React, DOM APIs, or anything
  * that requires a browser window context, since it runs in the SW too.
  */
+
+import type { AppSettings, QueuedAction } from "../../types";
+import { encodeRssFeed } from "../../utils/rssEncoding";
 import { db, getSettings } from "../storage";
 import {
+  enforceQueueLimit,
   getRetryableActions,
-  removeAction,
   markAttempted,
   pruneFailedActions,
-  enforceQueueLimit,
+  removeAction,
 } from "../storage/syncQueue";
-import { encodeRssFeed } from "../../utils/rssEncoding";
-import type { QueuedAction, AppSettings } from "../../types";
 
 const SYNC_LOCK_KEY = "sync_lock";
 const LOCK_TTL_MS = 60_000; // 1 minute max lock duration (safety net)
@@ -92,10 +93,7 @@ export function getEndpointForAction(
  * Process a single queued action against the sync API.
  * Returns true on success, false on failure.
  */
-export async function processAction(
-  action: QueuedAction,
-  settings: AppSettings,
-): Promise<boolean> {
+export async function processAction(action: QueuedAction, settings: AppSettings): Promise<boolean> {
   if (!settings.syncServerUrl || !settings.syncToken) {
     return false;
   }
@@ -108,10 +106,7 @@ export async function processAction(
         "Content-Type": "application/json",
         Authorization: `Bearer ${settings.syncToken}`,
       },
-      body:
-        endpoint.method !== "DELETE"
-          ? JSON.stringify(action.payload)
-          : undefined,
+      body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
     });
 
     if (!response.ok) {
@@ -120,8 +115,7 @@ export async function processAction(
 
     return true;
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     if (action.id) {
       await markAttempted(action.id, errorMessage);
     }

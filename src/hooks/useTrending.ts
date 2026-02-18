@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
-import { SyncClient } from "../services/sync/client";
 import { db } from "../services/storage";
 import type { TrendingPodcast } from "../services/sync/client";
+import { SyncClient } from "../services/sync/client";
 
-export const DEFAULT_SYNC_URL =
-  import.meta.env.VITE_DEFAULT_SYNC_URL || "https://sync.balados.app";
+export const DEFAULT_SYNC_URL = import.meta.env.VITE_DEFAULT_SYNC_URL || "https://sync.balados.app";
 
 export function useTrending() {
   const settings = useLiveQuery(() => db.settings.get("app"));

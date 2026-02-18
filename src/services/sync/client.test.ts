@@ -1,17 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { PlayStatus, Subscription } from "../../types";
 import {
-  SyncClient,
-  SyncApiError,
-  encodeRssFeed,
   decodeRssFeed,
-  encodeRssItem,
   decodeRssItem,
-  subscriptionToSync,
-  syncToSubscription,
+  encodeRssFeed,
+  encodeRssItem,
   playStatusToSync,
+  SyncApiError,
+  SyncClient,
+  subscriptionToSync,
   syncToPlayStatus,
+  syncToSubscription,
 } from "./client";
-import type { Subscription, PlayStatus } from "../../types";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -69,7 +69,7 @@ describe("Encoding helpers", () => {
     it("should throw on invalid format (no comma)", () => {
       const invalidEncoded = encodeRssFeed("no-comma-here");
       expect(() => decodeRssItem(invalidEncoded)).toThrow(
-        "Invalid rss_source_item format: missing comma separator"
+        "Invalid rss_source_item format: missing comma separator",
       );
     });
   });
@@ -191,7 +191,7 @@ describe("SyncClient", () => {
       expect(result).toBe(true);
       expect(mockFetch).toHaveBeenCalledWith(
         "https://sync.example.com/api/v1/health",
-        expect.objectContaining({ method: "GET" })
+        expect.objectContaining({ method: "GET" }),
       );
     });
 
@@ -231,7 +231,7 @@ describe("SyncClient", () => {
           headers: expect.objectContaining({
             Authorization: "Bearer test-token",
           }),
-        })
+        }),
       );
     });
 
@@ -256,7 +256,7 @@ describe("SyncClient", () => {
         expect.any(String),
         expect.objectContaining({
           body: expect.stringContaining("2024-01-14T10:00:00Z"),
-        })
+        }),
       );
     });
   });
@@ -295,7 +295,7 @@ describe("SyncClient", () => {
         expect.objectContaining({
           method: "POST",
           body: expect.stringContaining("rss_source_feed"),
-        })
+        }),
       );
     });
 
@@ -310,7 +310,7 @@ describe("SyncClient", () => {
       const encodedFeed = encodeRssFeed("https://example.com/feed.xml");
       expect(mockFetch).toHaveBeenCalledWith(
         `https://sync.example.com/api/v1/subscriptions/${encodedFeed}`,
-        expect.objectContaining({ method: "DELETE" })
+        expect.objectContaining({ method: "DELETE" }),
       );
     });
   });
@@ -338,7 +338,7 @@ describe("SyncClient", () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         "https://sync.example.com/api/v1/play",
-        expect.objectContaining({ method: "POST" })
+        expect.objectContaining({ method: "POST" }),
       );
     });
 
@@ -359,10 +359,7 @@ describe("SyncClient", () => {
         json: () => Promise.resolve(mockStatus),
       });
 
-      const result = await client.getPlayStatus(
-        "https://example.com/feed.xml",
-        encodedEpisodeId
-      );
+      const result = await client.getPlayStatus("https://example.com/feed.xml", encodedEpisodeId);
 
       expect(result).toEqual(mockStatus);
     });
@@ -375,10 +372,7 @@ describe("SyncClient", () => {
       });
 
       const encodedEpisodeId = encodeRssItem("episode-123", "https://example.com/episode.mp3");
-      const result = await client.getPlayStatus(
-        "https://example.com/feed.xml",
-        encodedEpisodeId
-      );
+      const result = await client.getPlayStatus("https://example.com/feed.xml", encodedEpisodeId);
 
       expect(result).toBeNull();
     });
@@ -404,7 +398,7 @@ describe("SyncClient", () => {
           headers: expect.objectContaining({
             Authorization: "Bearer test-token",
           }),
-        })
+        }),
       );
     });
   });
@@ -469,7 +463,7 @@ describe("SyncClient", () => {
       const clientWithRefresh = new SyncClient(
         "https://sync.example.com",
         "expired-token",
-        "refresh-token"
+        "refresh-token",
       );
 
       // First call returns 401

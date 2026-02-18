@@ -1,15 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  ChevronLeft,
-  RefreshCw,
-  Loader2,
-  AlertTriangle,
-} from "lucide-react";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { invalidateFeedCache } from "../../services/storage";
-import { EpisodeList } from "./EpisodeList";
 import type { PodcastFeed } from "../../types";
+import { EpisodeList } from "./EpisodeList";
 
 interface PodcastDetailProps {
   feedUrl: string;
@@ -41,7 +36,11 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={48} className="mx-auto mb-4 text-blue-500 animate-spin" aria-hidden="true" />
+          <Loader2
+            size={48}
+            className="mx-auto mb-4 text-blue-500 animate-spin"
+            aria-hidden="true"
+          />
           <div className="text-gray-500 text-sm">{t("common.loading")}</div>
         </div>
       </div>
@@ -53,6 +52,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
       <div className="h-full flex flex-col">
         <div className="bg-blue-500 px-4 py-3 flex items-center gap-3 shadow-sm">
           <button
+            type="button"
             onClick={() => onNavigate("library")}
             className="text-white text-base flex items-center gap-1"
           >
@@ -63,13 +63,10 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
             <AlertTriangle size={48} className="mx-auto mb-4 text-orange-500" aria-hidden="true" />
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              {t("common.error")}
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-              {t("podcast.loadError")}
-            </p>
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">{t("common.error")}</h2>
+            <p className="text-sm text-gray-500 mb-4">{t("podcast.loadError")}</p>
             <button
+              type="button"
               onClick={handleRefresh}
               className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2"
             >
@@ -86,6 +83,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
     <div className="h-full pb-16 flex flex-col">
       <div className="bg-blue-500 px-4 py-3 flex items-center gap-3 shadow-sm">
         <button
+          type="button"
           onClick={() => onNavigate("library")}
           className="text-white text-base flex items-center gap-1"
         >
@@ -93,6 +91,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
           <span>{t("podcast.backToLibrary")}</span>
         </button>
         <button
+          type="button"
           onClick={handleRefresh}
           className="ml-auto text-white text-sm flex items-center gap-1"
         >
@@ -112,12 +111,8 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
             className="w-20 h-20 rounded-lg shadow-sm"
           />
           <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-base text-gray-900 mb-1">
-              {feed.title}
-            </h1>
-            <p className="text-xs text-gray-500 line-clamp-3">
-              {feed.description}
-            </p>
+            <h1 className="font-semibold text-base text-gray-900 mb-1">{feed.title}</h1>
+            <p className="text-xs text-gray-500 line-clamp-3">{feed.description}</p>
           </div>
         </div>
       </div>

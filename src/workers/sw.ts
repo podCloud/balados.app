@@ -13,13 +13,13 @@
  * @see docs/BACKGROUND_SYNC.md for architecture details
  */
 
-import { precacheAndRoute } from "workbox-precaching";
-import { registerRoute } from "workbox-routing";
-import { NetworkFirst, CacheFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
+import { precacheAndRoute } from "workbox-precaching";
 import { RangeRequestsPlugin } from "workbox-range-requests";
+import { registerRoute } from "workbox-routing";
+import { CacheFirst, NetworkFirst } from "workbox-strategies";
 
-import { processQueue, notifySyncComplete } from "../services/sync/queueProcessor";
+import { notifySyncComplete, processQueue } from "../services/sync/queueProcessor";
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -139,4 +139,3 @@ self.addEventListener("message", (event: ExtendableMessageEvent) => {
     );
   }
 });
-

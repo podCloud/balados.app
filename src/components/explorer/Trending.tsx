@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { useLiveQuery } from "dexie-react-hooks";
-import { TrendingUp, RefreshCw, Podcast } from "lucide-react";
+import { Podcast, RefreshCw, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTrending } from "../../hooks/useTrending";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
@@ -15,13 +15,10 @@ export const Trending = ({ onNavigate }: TrendingProps) => {
   const { t } = useTranslation();
   const { data: podcasts, isLoading, error, refetch } = useTrending();
 
-  const subscribedUrls = useLiveQuery(
-    async () => {
-      const subs = await db.subscriptions.toArray();
-      return new Set(subs.map((s) => s.url));
-    },
-    []
-  );
+  const subscribedUrls = useLiveQuery(async () => {
+    const subs = await db.subscriptions.toArray();
+    return new Set(subs.map((s) => s.url));
+  }, []);
 
   if (isLoading) {
     return <TrendingLoading />;
@@ -31,10 +28,9 @@ export const Trending = ({ onNavigate }: TrendingProps) => {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-gray-400 px-4">
         <TrendingUp size={48} className="mb-3 text-gray-300" />
-        <p className="text-sm text-gray-500 mb-3 text-center">
-          {t("trending.loadError")}
-        </p>
+        <p className="text-sm text-gray-500 mb-3 text-center">{t("trending.loadError")}</p>
         <button
+          type="button"
           onClick={() => refetch()}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600"
         >
@@ -103,10 +99,10 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
-      <a
-        className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer"
-        href="#"
-        onClick={(e) => { e.preventDefault(); onNavigate("podcast", podcast.feed_url); }}
+      <button
+        type="button"
+        className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer bg-transparent border-none p-0 text-left"
+        onClick={() => onNavigate("podcast", podcast.feed_url)}
       >
         {podcast.image ? (
           <img
@@ -121,15 +117,14 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">
-            {podcast.title}
-          </p>
+          <p className="text-sm font-medium text-gray-900 truncate">{podcast.title}</p>
           <p className="text-xs text-gray-500 mt-0.5">
             {t("trending.subscribers", { count: podcast.subscriber_count })}
           </p>
         </div>
-      </a>
+      </button>
       <button
+        type="button"
         onClick={handleSubscribe}
         disabled={isSubscribed || subscribing}
         className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
@@ -158,6 +153,7 @@ const SKELETON_ITEM_COUNT = 6;
 const TrendingLoading = () => (
   <div className="divide-y divide-gray-200">
     {Array.from({ length: SKELETON_ITEM_COUNT }).map((_, i) => (
+      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have no stable ID
       <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
         <div className="w-16 h-16 rounded-lg bg-gray-200 flex-shrink-0" />
         <div className="flex-1 min-w-0">

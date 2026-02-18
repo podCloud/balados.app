@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock SyncClient - track constructor calls
 const mockGetTrending = vi.hoisted(() =>
@@ -10,7 +10,7 @@ const mockGetTrending = vi.hoisted(() =>
       { feed_url: "https://example.com/feed.xml", title: "Test Podcast", subscriber_count: 42 },
     ],
     updated_at: "2026-01-01T00:00:00Z",
-  })
+  }),
 );
 
 const mockConstructorCalls = vi.hoisted(() => [] as string[]);

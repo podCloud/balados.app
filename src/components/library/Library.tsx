@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { Clock, Headphones, Plus, Settings, X } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, X, Headphones, Settings, Clock } from "lucide-react";
 import { db } from "../../services/storage";
-import { addSubscription } from "../../services/storage/subscriptions";
-import { getInProgressEpisodes } from "../../services/storage/playStatus";
 import { getHiddenEpisodeIds } from "../../services/storage/hiddenEpisodes";
+import { getInProgressEpisodes } from "../../services/storage/playStatus";
+import { addSubscription } from "../../services/storage/subscriptions";
 import { SubscriptionItem } from "./SubscriptionItem";
 import { SyncStatusIcon } from "./SyncStatusIcon";
 
@@ -22,17 +22,14 @@ export const Library = ({ onNavigate }: LibraryProps) => {
 
   const subscriptions = useLiveQuery(
     () => db.subscriptions.orderBy("addedAt").reverse().toArray(),
-    []
+    [],
   );
 
-  const inProgressCount = useLiveQuery(
-    async () => {
-      const episodes = await getInProgressEpisodes();
-      const hidden = await getHiddenEpisodeIds();
-      return episodes.filter((e) => !hidden.has(e.episodeId)).length;
-    },
-    []
-  );
+  const inProgressCount = useLiveQuery(async () => {
+    const episodes = await getInProgressEpisodes();
+    const hidden = await getHiddenEpisodeIds();
+    return episodes.filter((e) => !hidden.has(e.episodeId)).length;
+  }, []);
 
   // Initialize with default subscription if empty
   useLiveQuery(async () => {
@@ -42,9 +39,7 @@ export const Library = ({ onNavigate }: LibraryProps) => {
     }
   }, []);
 
-  const handleSubscribe = async (
-    e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent
-  ) => {
+  const handleSubscribe = async (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
     if (!newFeedUrl.trim()) return;
 
@@ -58,37 +53,45 @@ export const Library = ({ onNavigate }: LibraryProps) => {
       <div className="bg-white h-full">
         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200">
           <button
+            type="button"
             onClick={() => onNavigate("settings")}
             aria-label={t("settings.title")}
             className="text-gray-500 w-8 h-8 flex items-center justify-center"
           >
             <Settings size={22} aria-hidden="true" />
           </button>
-          <h2 className="text-base font-semibold text-gray-900">
-            {t("library.title")}
-          </h2>
+          <h2 className="text-base font-semibold text-gray-900">{t("library.title")}</h2>
           <div className="flex items-center gap-1">
             <SyncStatusIcon onNavigate={onNavigate} />
             {(inProgressCount ?? 0) > 0 && (
               <button
+                type="button"
                 onClick={() => onNavigate("inProgress")}
                 className="relative text-gray-500 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"
                 title={t("inProgress.title")}
                 aria-label={`${t("inProgress.title")} (${inProgressCount})`}
               >
                 <Clock size={20} />
-                <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1" aria-hidden="true">
+                <span
+                  className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[10px] font-medium rounded-full min-w-[16px] h-4 flex items-center justify-center px-1"
+                  aria-hidden="true"
+                >
                   {inProgressCount}
                 </span>
               </button>
             )}
             <button
+              type="button"
               onClick={() => setShowAddForm(!showAddForm)}
               aria-label={showAddForm ? t("common.cancel") : t("library.addSubscription")}
               aria-expanded={showAddForm}
               className="text-blue-500 w-8 h-8 flex items-center justify-center"
             >
-              {showAddForm ? <X size={24} aria-hidden="true" /> : <Plus size={24} aria-hidden="true" />}
+              {showAddForm ? (
+                <X size={24} aria-hidden="true" />
+              ) : (
+                <Plus size={24} aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
@@ -108,14 +111,13 @@ export const Library = ({ onNavigate }: LibraryProps) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
+              type="button"
               onClick={handleSubscribe}
               className="w-full bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 mb-2"
             >
               {t("library.subscribe")}
             </button>
-            <p className="text-xs text-gray-500 text-center">
-              {t("debug.title")}
-            </p>
+            <p className="text-xs text-gray-500 text-center">{t("debug.title")}</p>
           </div>
         )}
 
@@ -129,11 +131,7 @@ export const Library = ({ onNavigate }: LibraryProps) => {
         ) : (
           <div className="divide-y divide-gray-200">
             {subscriptions.map((sub) => (
-              <SubscriptionItem
-                key={sub.url}
-                url={sub.url}
-                onNavigate={onNavigate}
-              />
+              <SubscriptionItem key={sub.url} url={sub.url} onNavigate={onNavigate} />
             ))}
           </div>
         )}

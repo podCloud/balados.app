@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { Episode, DownloadedEpisode, DownloadProgress } from "../types";
+import type { DownloadedEpisode, DownloadProgress, Episode } from "../types";
 
 export interface DownloadContextType {
   downloads: Map<string, DownloadedEpisode>;

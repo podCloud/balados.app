@@ -1,26 +1,18 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { SyncClient } from "../services/sync/client";
-import { getSettings, saveSettings, db } from "../services/storage";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { db, getSettings, saveSettings } from "../services/storage";
 import { getSubscriptions } from "../services/storage/subscriptions";
-import { useSyncQueue } from "./useSyncQueue";
+import { registerPeriodicSync, unregisterPeriodicSync } from "../services/sync/backgroundSync";
+import { SyncClient } from "../services/sync/client";
 import {
-  mergeSubscriptions,
   mergePlayStatuses,
-  subscriptionsToSync,
+  mergeSubscriptions,
   playStatusesToSync,
+  subscriptionsToSync,
 } from "../services/sync/merger";
-import {
-  registerPeriodicSync,
-  unregisterPeriodicSync,
-} from "../services/sync/backgroundSync";
-import type { Subscription, PlayStatus } from "../types";
+import type { PlayStatus, Subscription } from "../types";
+import { useSyncQueue } from "./useSyncQueue";
 
-export type SyncStatus =
-  | "disconnected"
-  | "connected"
-  | "syncing"
-  | "pending"
-  | "error";
+export type SyncStatus = "disconnected" | "connected" | "syncing" | "pending" | "error";
 
 export interface UseSyncReturn {
   /** Current sync status */
@@ -89,10 +81,7 @@ export function useSync(): UseSyncReturn {
 
       if (settings.syncServerUrl && settings.syncToken) {
         // Create client and test connection
-        const client = new SyncClient(
-          settings.syncServerUrl,
-          settings.syncToken
-        );
+        const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
         clientRef.current = client;
 
         if (!isMounted.current) return;
@@ -103,9 +92,7 @@ export function useSync(): UseSyncReturn {
           setState({
             status: isConnected ? "connected" : "error",
             serverUrl: settings.syncServerUrl,
-            lastSyncAt: settings.lastSyncAt
-              ? new Date(settings.lastSyncAt)
-              : null,
+            lastSyncAt: settings.lastSyncAt ? new Date(settings.lastSyncAt) : null,
             error: isConnected ? null : "Connection test failed",
             isSyncing: false,
           });
@@ -129,11 +116,7 @@ export function useSync(): UseSyncReturn {
   useEffect(() => {
     if (state.status === "connected" && pendingCount > 0 && !state.isSyncing) {
       setState((prev) => ({ ...prev, status: "pending" }));
-    } else if (
-      state.status === "pending" &&
-      pendingCount === 0 &&
-      !state.isSyncing
-    ) {
+    } else if (state.status === "pending" && pendingCount === 0 && !state.isSyncing) {
       setState((prev) => ({ ...prev, status: "connected" }));
     }
   }, [pendingCount, state.status, state.isSyncing]);
@@ -195,15 +178,14 @@ export function useSync(): UseSyncReturn {
           setState((prev) => ({
             ...prev,
             status: "error",
-            error:
-              error instanceof Error ? error.message : "Connection failed",
+            error: error instanceof Error ? error.message : "Connection failed",
             isSyncing: false,
           }));
         }
         return false;
       }
     },
-    [refreshCount]
+    [refreshCount],
   );
 
   /**
@@ -263,9 +245,7 @@ export function useSync(): UseSyncReturn {
 
       // 3. Get settings for lastSyncAt
       const settings = await getSettings();
-      const since = settings.lastSyncAt
-        ? new Date(settings.lastSyncAt).toISOString()
-        : undefined;
+      const since = settings.lastSyncAt ? new Date(settings.lastSyncAt).toISOString() : undefined;
 
       // 4. Perform sync with server
       const response = await clientRef.current.sync({
@@ -275,15 +255,9 @@ export function useSync(): UseSyncReturn {
       });
 
       // 5. Merge remote data with local
-      const subscriptionResult = mergeSubscriptions(
-        localSubscriptions,
-        response.subscriptions
-      );
+      const subscriptionResult = mergeSubscriptions(localSubscriptions, response.subscriptions);
 
-      const playStatusResult = mergePlayStatuses(
-        localPlayStatuses,
-        response.play_statuses
-      );
+      const playStatusResult = mergePlayStatuses(localPlayStatuses, response.play_statuses);
 
       // 6. Apply merged subscriptions
       await applySubscriptionChanges(localSubscriptions, subscriptionResult.merged);
@@ -350,7 +324,7 @@ export function useSync(): UseSyncReturn {
  */
 async function applySubscriptionChanges(
   current: Subscription[],
-  merged: Subscription[]
+  merged: Subscription[],
 ): Promise<void> {
   const currentUrls = new Set(current.map((s) => s.url));
   const mergedUrls = new Set(merged.map((s) => s.url));
@@ -383,10 +357,7 @@ async function applySubscriptionChanges(
 /**
  * Apply play status changes to local database
  */
-async function applyPlayStatusChanges(
-  current: PlayStatus[],
-  merged: PlayStatus[]
-): Promise<void> {
+async function applyPlayStatusChanges(current: PlayStatus[], merged: PlayStatus[]): Promise<void> {
   const currentIds = new Set(current.map((s) => s.episodeId));
 
   // Add new play statuses

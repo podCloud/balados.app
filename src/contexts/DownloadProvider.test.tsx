@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
-import { useContext, type ReactNode } from "react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { type ReactNode, useContext } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DownloadProvider } from "./DownloadProvider";
 import { DownloadContext } from "./downloadContext";
 
@@ -21,8 +21,7 @@ vi.mock("../services/storage/downloads", () => ({
 
 function useDownloads() {
   const ctx = useContext(DownloadContext);
-  if (!ctx)
-    throw new Error("useDownloads must be used within DownloadProvider");
+  if (!ctx) throw new Error("useDownloads must be used within DownloadProvider");
   return ctx;
 }
 
@@ -101,7 +100,7 @@ describe("DownloadProvider", () => {
     expect(mockDownloadEpisode).toHaveBeenCalledWith(
       mockEpisode,
       "https://example.com/feed.xml",
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
@@ -109,7 +108,7 @@ describe("DownloadProvider", () => {
     mockDownloadEpisode.mockImplementation(
       async (_ep: unknown, _url: string, onProgress: (p: number) => void) => {
         onProgress(50);
-      }
+      },
     );
 
     const { result } = renderHook(() => useDownloads(), { wrapper });

@@ -1,13 +1,13 @@
-import { describe, it, expect } from "vitest";
-import {
-  mergeSubscriptions,
-  mergePlayStatuses,
-  subscriptionsToSync,
-  playStatusesToSync,
-} from "./merger";
-import type { Subscription, PlayStatus } from "../../types";
-import type { SubscriptionSync, PlayStatusSync } from "./client";
+import { describe, expect, it } from "vitest";
+import type { PlayStatus, Subscription } from "../../types";
 import { encodeRssFeed, encodeRssItem } from "../../utils/rssEncoding";
+import type { PlayStatusSync, SubscriptionSync } from "./client";
+import {
+  mergePlayStatuses,
+  mergeSubscriptions,
+  playStatusesToSync,
+  subscriptionsToSync,
+} from "./merger";
 
 describe("mergeSubscriptions", () => {
   const now = Date.now();
@@ -15,9 +15,7 @@ describe("mergeSubscriptions", () => {
   const dayAgo = now - 24 * 60 * 60 * 1000;
 
   it("should keep local-only subscriptions", () => {
-    const local: Subscription[] = [
-      { url: "https://example.com/feed.xml", addedAt: now },
-    ];
+    const local: Subscription[] = [{ url: "https://example.com/feed.xml", addedAt: now }];
     const remote: SubscriptionSync[] = [];
 
     const result = mergeSubscriptions(local, remote);
@@ -90,9 +88,7 @@ describe("mergeSubscriptions", () => {
   });
 
   it("should respect remote unsubscription when it's newer", () => {
-    const local: Subscription[] = [
-      { url: "https://example.com/feed.xml", addedAt: dayAgo },
-    ];
+    const local: Subscription[] = [{ url: "https://example.com/feed.xml", addedAt: dayAgo }];
     const remote: SubscriptionSync[] = [
       {
         rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
@@ -109,9 +105,7 @@ describe("mergeSubscriptions", () => {
   });
 
   it("should keep local subscription if subscribed after remote unsubscribe", () => {
-    const local: Subscription[] = [
-      { url: "https://example.com/feed.xml", addedAt: now },
-    ];
+    const local: Subscription[] = [{ url: "https://example.com/feed.xml", addedAt: now }];
     const remote: SubscriptionSync[] = [
       {
         rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
@@ -146,9 +140,7 @@ describe("mergeSubscriptions", () => {
   });
 
   it("should not create conflict for close timestamps", () => {
-    const local: Subscription[] = [
-      { url: "https://example.com/feed.xml", addedAt: now },
-    ];
+    const local: Subscription[] = [{ url: "https://example.com/feed.xml", addedAt: now }];
     const twoMinutesAgo = now - 2 * 60 * 1000;
     const remote: SubscriptionSync[] = [
       {
@@ -207,9 +199,7 @@ describe("mergePlayStatuses", () => {
     ...overrides,
   });
 
-  const createRemoteStatus = (
-    overrides: Partial<PlayStatusSync> = {}
-  ): PlayStatusSync => ({
+  const createRemoteStatus = (overrides: Partial<PlayStatusSync> = {}): PlayStatusSync => ({
     rss_source_feed: encodeRssFeed("https://example.com/feed.xml"),
     rss_source_item: defaultEpisodeId, // Same format as local episodeId
     position: 100,
@@ -241,9 +231,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should use higher position when timestamps are close", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ position: 100, updatedAt: now }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ position: 100, updatedAt: now })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         position: 200,
@@ -260,9 +248,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should use local position when local is higher and timestamps close", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ position: 300, updatedAt: now }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ position: 300, updatedAt: now })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         position: 200,
@@ -279,9 +265,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should use local when local timestamp is significantly newer", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ position: 100, updatedAt: now }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ position: 100, updatedAt: now })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         position: 500,
@@ -298,9 +282,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should use remote when remote timestamp is significantly newer", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ position: 500, updatedAt: hourAgo }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ position: 500, updatedAt: hourAgo })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         position: 100,
@@ -317,9 +299,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should preserve completed status (sticky)", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ completed: true, updatedAt: hourAgo }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ completed: true, updatedAt: hourAgo })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         played: false,
@@ -334,9 +314,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should set completed when remote says played", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ completed: false, updatedAt: now }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ completed: false, updatedAt: now })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         played: true,
@@ -351,12 +329,8 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should not create conflict when values are identical", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ position: 100, completed: false }),
-    ];
-    const remote: PlayStatusSync[] = [
-      createRemoteStatus({ position: 100, played: false }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ position: 100, completed: false })];
+    const remote: PlayStatusSync[] = [createRemoteStatus({ position: 100, played: false })];
 
     const result = mergePlayStatuses(local, remote);
 
@@ -365,9 +339,7 @@ describe("mergePlayStatuses", () => {
   });
 
   it("should use max timestamp for resolved item", () => {
-    const local: PlayStatus[] = [
-      createLocalStatus({ position: 100, updatedAt: hourAgo }),
-    ];
+    const local: PlayStatus[] = [createLocalStatus({ position: 100, updatedAt: hourAgo })];
     const remote: PlayStatusSync[] = [
       createRemoteStatus({
         position: 200,
@@ -405,9 +377,7 @@ describe("mergePlayStatuses", () => {
     const result = mergePlayStatuses(local, remote);
 
     expect(result.merged).toHaveLength(3);
-    const byId = Object.fromEntries(
-      result.merged.map((s) => [s.episodeId, s])
-    );
+    const byId = Object.fromEntries(result.merged.map((s) => [s.episodeId, s]));
     expect(byId[ep1Id].position).toBe(100);
     expect(byId[ep2Id].position).toBe(300); // Remote higher, close timestamps
     expect(byId[ep3Id].position).toBe(50);

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseRSSText } from "./parser";
 
 // RSS with image in standard <image><url> format (jsdom-compatible)
@@ -215,7 +215,7 @@ describe("parseRSSText", () => {
     const episode = feed.items[0];
 
     expect(episode.description).toBe(
-      "No HTML here, just plain text with punctuation: colons, dashes - and more."
+      "No HTML here, just plain text with punctuation: colons, dashes - and more.",
     );
   });
 
@@ -236,13 +236,13 @@ describe("parseRSSText", () => {
 
   it("throws error for invalid XML", () => {
     expect(() => parseRSSText(INVALID_XML, "https://example.com/feed.xml")).toThrow(
-      "Format RSS invalide"
+      "Format RSS invalide",
     );
   });
 
   it("throws error for RSS without channel", () => {
     expect(() => parseRSSText(RSS_WITHOUT_CHANNEL, "https://example.com/feed.xml")).toThrow(
-      "Format RSS invalide: pas de channel"
+      "Format RSS invalide: pas de channel",
     );
   });
 
