@@ -109,8 +109,7 @@ const SETTINGS_ID = "app_settings";
 export const getSettings = async (): Promise<AppSettings> => {
   const settings = await db.settings.get(SETTINGS_ID);
   if (settings) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ...rest } = settings;
+    const { id: _, ...rest } = settings;
     return rest;
   }
   return {

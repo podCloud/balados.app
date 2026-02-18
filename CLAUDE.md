@@ -93,10 +93,35 @@ npm test -- --watch  # Watch mode
 - **React 19** with TypeScript
 - **Vite 7** as build tool
 - **Tailwind CSS** via @tailwindcss/vite plugin
-- **Biome** for linting + formatting (replaced ESLint)
+- **Biome** for linting + formatting (replaced ESLint in PR #59)
 - **Vitest** + Testing Library for tests
 - **TanStack Query** (React Query) for data fetching
 - **Service Worker** for PWA & background sync
+
+### Biome Rule Coverage (vs old ESLint config)
+
+The old ESLint config used: `@eslint/js` recommended, `typescript-eslint` recommended, `react-hooks` recommended, and `react-refresh`. All major rule groups are covered by Biome:
+
+| Old ESLint Rule Group | Biome Equivalent | Status |
+|----------------------|------------------|--------|
+| `@eslint/js` recommended | `recommended: true` | Fully covered |
+| `react-hooks/rules-of-hooks` | `useHookAtTopLevel` | Explicitly enabled |
+| `react-hooks/exhaustive-deps` | `useExhaustiveDependencies` | Explicitly enabled (warn) |
+| `react-refresh/only-export-components` | `useComponentExportOnlyModules` | Explicitly enabled |
+| TypeScript-ESLint recommended | `recommended: true` + explicit rules | ~90% covered |
+
+**TypeScript-ESLint rules with no Biome equivalent** (low-impact for this codebase):
+- `no-duplicate-enum-values` — no enums in codebase
+- `no-empty-object-type` — edge case
+- `no-non-null-asserted-optional-chain` — edge case
+- `no-unsafe-function-type` — edge case
+- `no-wrapper-object-types` — edge case (e.g., `String` vs `string`)
+- `triple-slash-reference` — not used
+
+**TypeScript-ESLint rules covered by Biome `recommended`:**
+- `no-misused-new` → `noMisleadingInstantiator`
+- `no-unnecessary-type-constraint` → `noUselessTypeConstraint`
+- `no-unsafe-declaration-merging` → `noUnsafeDeclarationMerging`
 
 ## Code Conventions
 
