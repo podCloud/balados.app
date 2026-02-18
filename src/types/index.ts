@@ -176,9 +176,6 @@ export interface UpdatePlayStatusAction extends BaseQueuedAction {
   payload: PlayStatusPayload;
 }
 
-export type QueuedAction =
-  | SubscribeAction
-  | UnsubscribeAction
-  | UpdatePlayStatusAction;
+export type QueuedAction = SubscribeAction | UnsubscribeAction | UpdatePlayStatusAction;
 
 export type QueuedActionType = QueuedAction["action"];

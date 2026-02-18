@@ -80,7 +80,9 @@ git cherry-pick <commit-hashes>
 ```bash
 npm run dev       # Start development server with HMR
 npm run build     # Type-check with tsc and build with Vite
-npm run lint      # Run ESLint on all TypeScript files
+npm run lint      # Run Biome check (lint + format check)
+npm run lint:fix  # Auto-fix lint and formatting issues
+npm run format    # Format all files with Biome
 npm run preview   # Preview production build
 npm test          # Run tests (Vitest)
 npm test -- --watch  # Watch mode
@@ -91,7 +93,7 @@ npm test -- --watch  # Watch mode
 - **React 19** with TypeScript
 - **Vite 7** as build tool
 - **Tailwind CSS** via @tailwindcss/vite plugin
-- **ESLint 9** with flat config format
+- **Biome** for linting + formatting (replaced ESLint)
 - **Vitest** + Testing Library for tests
 - **TanStack Query** (React Query) for data fetching
 - **Service Worker** for PWA & background sync
@@ -154,6 +156,14 @@ The `needs-claude-review` label triggers the Claude review workflow.
 **NEVER merge a PR without Claude review.**
 
 **Never ignore failing tests.** If `npm test` reveals failures (even pre-existing and unrelated to current work), create a GitHub issue to track them.
+
+**Always run `npm run lint:fix` before committing.** A pre-commit hook in `.githooks/` does this automatically (activate with `git config core.hooksPath .githooks`).
+
+**Git Hooks:**
+- Hooks are in `.githooks/` (version-controlled)
+- Activated automatically via `postinstall` script in `package.json` (runs `git config core.hooksPath .githooks` on `npm install`)
+- Can also be activated manually: `git config core.hooksPath .githooks`
+- Pre-commit hook auto-lints and formats staged `.ts`/`.tsx`/`.js`/`.json` files with Biome
 
 A PR is ready to merge only when:
 1. The `needs-claude-review` label was added to trigger the review

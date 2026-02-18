@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "./index";
 import {
-  queueSubscribe,
-  queueUnsubscribe,
-  queuePlayStatus,
-  queueAction,
+  clearQueue,
+  enforceQueueLimit,
   getPendingActions,
   getPendingCount,
-  markAttempted,
-  removeAction,
-  clearQueue,
   getRetryableActions,
-  pruneFailedActions,
-  enforceQueueLimit,
   hasPendingActions,
+  markAttempted,
+  pruneFailedActions,
+  queueAction,
+  queuePlayStatus,
+  queueSubscribe,
+  queueUnsubscribe,
+  removeAction,
 } from "./syncQueue";
 
 describe("syncQueue", () => {

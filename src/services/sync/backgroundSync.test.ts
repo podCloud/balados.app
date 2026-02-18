@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   isBackgroundSyncSupported,
   isPeriodicSyncSupported,
-  requestBackgroundSync,
   registerPeriodicSync,
+  requestBackgroundSync,
   unregisterPeriodicSync,
 } from "./backgroundSync";
 
@@ -29,7 +29,7 @@ describe("backgroundSync", () => {
         writable: true,
         configurable: true,
       });
-      (globalThis.window as unknown as Record<string, unknown>).SyncManager = function () {};
+      (globalThis.window as unknown as Record<string, unknown>).SyncManager = () => {};
 
       expect(isBackgroundSyncSupported()).toBe(true);
 
@@ -66,7 +66,7 @@ describe("backgroundSync", () => {
         writable: true,
         configurable: true,
       });
-      (globalThis.window as unknown as Record<string, unknown>).SyncManager = function () {};
+      (globalThis.window as unknown as Record<string, unknown>).SyncManager = () => {};
 
       await requestBackgroundSync();
       expect(mockRegister).toHaveBeenCalledWith("balados-sync-queue");
@@ -89,7 +89,7 @@ describe("backgroundSync", () => {
         writable: true,
         configurable: true,
       });
-      (globalThis.window as unknown as Record<string, unknown>).SyncManager = function () {};
+      (globalThis.window as unknown as Record<string, unknown>).SyncManager = () => {};
 
       await expect(requestBackgroundSync()).resolves.not.toThrow();
 

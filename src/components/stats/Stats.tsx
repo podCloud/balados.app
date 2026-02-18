@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { AlertCircle, ArrowLeft, CheckCircle, Clock, Play, Radio } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Play, CheckCircle, Radio, Clock, AlertCircle } from "lucide-react";
-import { getListeningStats, getEvents } from "../../services/storage/events";
+import { getEvents, getListeningStats } from "../../services/storage/events";
 import { getSubscription } from "../../services/storage/subscriptions";
 import type { LocalEvent } from "../../types";
 
@@ -22,7 +22,7 @@ const getFallbackTitle = (feedUrl: string): string => {
   try {
     return new URL(feedUrl).hostname;
   } catch {
-    return feedUrl.length > 50 ? feedUrl.slice(0, 50) + "..." : feedUrl;
+    return feedUrl.length > 50 ? `${feedUrl.slice(0, 50)}...` : feedUrl;
   }
 };
 
@@ -40,7 +40,10 @@ const getPeriodStart = (period: Period): number => {
   }
 };
 
-const formatRelativeTime = (timestamp: number, t: (key: string, options?: Record<string, unknown>) => string): string => {
+const formatRelativeTime = (
+  timestamp: number,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string => {
   const now = Date.now();
   const diff = now - timestamp;
   const minutes = Math.floor(diff / (60 * 1000));
@@ -91,7 +94,7 @@ export const Stats = ({ onBack }: StatsProps) => {
                 playCount: p.count,
               };
             }
-          })
+          }),
         );
 
         setStats({
@@ -148,18 +151,22 @@ export const Stats = ({ onBack }: StatsProps) => {
     }
   };
 
-  const periods = useMemo(() => [
-    { id: "today" as const, label: t("stats.today") },
-    { id: "week" as const, label: t("stats.week") },
-    { id: "month" as const, label: t("stats.month") },
-    { id: "allTime" as const, label: t("stats.allTime") },
-  ], [t]);
+  const periods = useMemo(
+    () => [
+      { id: "today" as const, label: t("stats.today") },
+      { id: "week" as const, label: t("stats.week") },
+      { id: "month" as const, label: t("stats.month") },
+      { id: "allTime" as const, label: t("stats.allTime") },
+    ],
+    [t],
+  );
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
         <button
+          type="button"
           onClick={onBack}
           className="p-1 -ml-1 text-gray-600 hover:text-gray-900"
           aria-label={t("settings.back")}
@@ -175,6 +182,7 @@ export const Stats = ({ onBack }: StatsProps) => {
           <div className="flex gap-2">
             {periods.map((p) => (
               <button
+                type="button"
                 key={p.id}
                 onClick={() => setPeriod(p.id)}
                 aria-pressed={period === p.id}
@@ -191,9 +199,7 @@ export const Stats = ({ onBack }: StatsProps) => {
         </div>
 
         {loading ? (
-          <div className="p-4 text-center text-gray-500">
-            {t("common.loading")}
-          </div>
+          <div className="p-4 text-center text-gray-500">{t("common.loading")}</div>
         ) : error ? (
           <div className="p-8 text-center">
             <AlertCircle size={48} className="mx-auto text-red-400 mb-2" aria-hidden="true" />
@@ -204,20 +210,12 @@ export const Stats = ({ onBack }: StatsProps) => {
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3 p-4">
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="text-3xl font-bold text-blue-500">
-                  {stats.totalPlays}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {t("stats.totalPlays")}
-                </div>
+                <div className="text-3xl font-bold text-blue-500">{stats.totalPlays}</div>
+                <div className="text-sm text-gray-500 mt-1">{t("stats.totalPlays")}</div>
               </div>
               <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="text-3xl font-bold text-green-500">
-                  {stats.completedPlays}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {t("stats.completed")}
-                </div>
+                <div className="text-3xl font-bold text-green-500">{stats.completedPlays}</div>
+                <div className="text-sm text-gray-500 mt-1">{t("stats.completed")}</div>
               </div>
             </div>
 
@@ -225,16 +223,11 @@ export const Stats = ({ onBack }: StatsProps) => {
             {stats.topPodcasts.length > 0 && (
               <div className="bg-white mt-2">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <h2 className="font-semibold text-gray-900">
-                    {t("stats.topPodcasts")}
-                  </h2>
+                  <h2 className="font-semibold text-gray-900">{t("stats.topPodcasts")}</h2>
                 </div>
                 <div className="divide-y divide-gray-100">
                   {stats.topPodcasts.slice(0, 5).map((podcast, index) => (
-                    <div
-                      key={podcast.feedUrl}
-                      className="px-4 py-3 flex items-center gap-3"
-                    >
+                    <div key={podcast.feedUrl} className="px-4 py-3 flex items-center gap-3">
                       <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm font-medium flex items-center justify-center">
                         {index + 1}
                       </span>
@@ -255,21 +248,14 @@ export const Stats = ({ onBack }: StatsProps) => {
             {/* Recent activity */}
             <div className="bg-white mt-2">
               <div className="px-4 py-3 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">
-                  {t("stats.recentActivity")}
-                </h2>
+                <h2 className="font-semibold text-gray-900">{t("stats.recentActivity")}</h2>
               </div>
               {recentEvents.length === 0 ? (
-                <div className="px-4 py-8 text-center text-gray-500">
-                  {t("stats.noActivity")}
-                </div>
+                <div className="px-4 py-8 text-center text-gray-500">{t("stats.noActivity")}</div>
               ) : (
                 <div className="divide-y divide-gray-100">
                   {recentEvents.slice(0, 10).map((event) => (
-                    <div
-                      key={event.id}
-                      className="px-4 py-3 flex items-center gap-3"
-                    >
+                    <div key={event.id} className="px-4 py-3 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                         {getEventIcon(event.type)}
                       </div>

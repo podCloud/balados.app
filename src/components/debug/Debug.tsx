@@ -1,11 +1,7 @@
-import { useState, useEffect } from "react";
+import { AlertCircle, AlertTriangle, Info, Terminal } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Terminal, AlertCircle, AlertTriangle, Info } from "lucide-react";
-import {
-  getDebugLogs,
-  clearDebugLogs,
-  subscribeToDebugLogs,
-} from "../../services/debug";
+import { clearDebugLogs, getDebugLogs, subscribeToDebugLogs } from "../../services/debug";
 import type { DebugLog } from "../../types";
 
 const getLogColor = (type: DebugLog["type"]) => {
@@ -47,6 +43,7 @@ export const Debug = () => {
       <div className="bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-700">
         <h2 className="text-base font-semibold text-white">{t("debug.title")}</h2>
         <button
+          type="button"
           onClick={handleClear}
           className="bg-red-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-red-700"
         >
@@ -63,18 +60,15 @@ export const Debug = () => {
         ) : (
           logs.map((log, idx) => (
             <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: debug logs have no stable ID
               key={idx}
               className={`p-2 rounded border ${getLogColor(log.type)} border-gray-700`}
             >
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 mt-0.5">{getLogIcon(log.type)}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-gray-500 text-[10px] mb-1">
-                    {log.timestamp}
-                  </div>
-                  <div className="whitespace-pre-wrap break-words">
-                    {log.message}
-                  </div>
+                  <div className="text-gray-500 text-[10px] mb-1">{log.timestamp}</div>
+                  <div className="whitespace-pre-wrap break-words">{log.message}</div>
                 </div>
               </div>
             </div>

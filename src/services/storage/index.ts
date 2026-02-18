@@ -1,13 +1,13 @@
 import Dexie, { type EntityTable } from "dexie";
 import type {
-  Subscription,
-  PlayStatus,
-  LocalEvent,
-  PodcastFeed,
   AppSettings,
   DownloadedEpisode,
+  LocalEvent,
+  PlayStatus,
+  PodcastFeed,
   QueuedAction,
   StatsSnapshot,
+  Subscription,
 } from "../../types";
 
 // Feed cache with expiration
@@ -27,10 +27,7 @@ class BaladosDatabase extends Dexie {
   downloads!: EntityTable<DownloadedEpisode, "episodeId">;
   syncQueue!: EntityTable<QueuedAction, "id">;
   statsSnapshots!: EntityTable<StatsSnapshot, "id">;
-  hiddenEpisodes!: EntityTable<
-    { episodeId: string; hiddenAt: number },
-    "episodeId"
-  >;
+  hiddenEpisodes!: EntityTable<{ episodeId: string; hiddenAt: number }, "episodeId">;
 
   constructor() {
     super("balados");
@@ -94,9 +91,7 @@ class BaladosDatabase extends Dexie {
             const now = Date.now();
             await tx
               .table("hiddenEpisodes")
-              .bulkPut(
-                ids.map((episodeId) => ({ episodeId, hiddenAt: now })),
-              );
+              .bulkPut(ids.map((episodeId) => ({ episodeId, hiddenAt: now })));
             localStorage.removeItem(HIDDEN_KEY);
           } catch {
             // Ignore malformed localStorage data
@@ -137,9 +132,7 @@ export const getSettings = async (): Promise<AppSettings> => {
   };
 };
 
-export const saveSettings = async (
-  settings: Partial<AppSettings>,
-): Promise<void> => {
+export const saveSettings = async (settings: Partial<AppSettings>): Promise<void> => {
   const current = await getSettings();
   await db.settings.put({ id: SETTINGS_ID, ...current, ...settings });
 };
@@ -147,9 +140,7 @@ export const saveSettings = async (
 // Feed cache helpers
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-export const getCachedFeed = async (
-  url: string,
-): Promise<PodcastFeed | null> => {
+export const getCachedFeed = async (url: string): Promise<PodcastFeed | null> => {
   const cached = await db.feedCache.get(url);
   if (!cached) return null;
 
@@ -162,10 +153,7 @@ export const getCachedFeed = async (
   return cached.feed;
 };
 
-export const cacheFeed = async (
-  url: string,
-  feed: PodcastFeed,
-): Promise<void> => {
+export const cacheFeed = async (url: string, feed: PodcastFeed): Promise<void> => {
   await db.feedCache.put({
     url,
     feed,

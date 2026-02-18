@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "./index";
 import {
-  getSubscriptions,
-  getSubscription,
   addSubscription,
-  updateSubscription,
-  removeSubscription,
+  getSubscription,
+  getSubscriptions,
   hasSubscription,
+  removeSubscription,
+  updateSubscription,
 } from "./subscriptions";
 
 // Mock getSettings and queueAction to avoid sync queue operations
@@ -200,9 +200,7 @@ describe("subscriptions", () => {
     });
 
     it("handles removal of non-existent subscription gracefully", async () => {
-      await expect(
-        removeSubscription("https://nonexistent.com/feed.xml")
-      ).resolves.not.toThrow();
+      await expect(removeSubscription("https://nonexistent.com/feed.xml")).resolves.not.toThrow();
     });
   });
 

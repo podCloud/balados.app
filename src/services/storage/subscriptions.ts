@@ -1,15 +1,13 @@
-import { db, invalidateFeedCache, getSettings } from "./index";
-import { queueAction } from "./syncQueue";
-import { logEvent } from "./events";
 import type { Subscription } from "../../types";
+import { logEvent } from "./events";
+import { db, getSettings, invalidateFeedCache } from "./index";
+import { queueAction } from "./syncQueue";
 
 export const getSubscriptions = async (): Promise<Subscription[]> => {
   return db.subscriptions.orderBy("addedAt").reverse().toArray();
 };
 
-export const getSubscription = async (
-  url: string,
-): Promise<Subscription | undefined> => {
+export const getSubscription = async (url: string): Promise<Subscription | undefined> => {
   return db.subscriptions.get(url);
 };
 

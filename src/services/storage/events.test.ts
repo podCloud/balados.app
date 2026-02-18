@@ -1,6 +1,16 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  clearEvents,
+  createSnapshot,
+  createSnapshotAndPrune,
+  getEventCount,
+  getEvents,
+  getLatestSnapshot,
+  getListeningStats,
+  logEvent,
+  pruneNonEssentialEvents,
+} from "./events";
 import { db } from "./index";
-import { logEvent, getEvents, getListeningStats, clearEvents, getEventCount, pruneNonEssentialEvents, createSnapshot, createSnapshotAndPrune, getLatestSnapshot } from "./events";
 
 describe("events", () => {
   beforeEach(async () => {
@@ -62,13 +72,13 @@ describe("events", () => {
     it("should filter by type", async () => {
       const events = await getEvents({ type: "play_started" });
       expect(events).toHaveLength(2);
-      events.forEach((e) => expect(e.type).toBe("play_started"));
+      for (const e of events) expect(e.type).toBe("play_started");
     });
 
     it("should filter by feedUrl", async () => {
       const events = await getEvents({ feedUrl: "feed1" });
       expect(events).toHaveLength(2);
-      events.forEach((e) => expect(e.feedUrl).toBe("feed1"));
+      for (const e of events) expect(e.feedUrl).toBe("feed1");
     });
 
     it("should limit results", async () => {

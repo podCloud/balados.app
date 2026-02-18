@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerControls } from "./PlayerControls";
 
 const mockSeek = vi.fn();
@@ -16,8 +16,12 @@ vi.mock("../../contexts", () => ({
   usePlayer: () => ({
     isPlaying: false,
     isLoading: false,
-    get currentTime() { return mockCurrentTime; },
-    get duration() { return mockDuration; },
+    get currentTime() {
+      return mockCurrentTime;
+    },
+    get duration() {
+      return mockDuration;
+    },
     pause: mockPause,
     resume: mockResume,
     seek: mockSeek,

@@ -1,15 +1,9 @@
+import { Loader2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Loader2,
-} from "lucide-react";
 import { usePlayer } from "../../contexts";
 
 const formatTime = (seconds: number): string => {
-  if (!seconds || !isFinite(seconds)) return "0:00";
+  if (!seconds || !Number.isFinite(seconds)) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -54,12 +48,30 @@ export const PlayerControls = () => {
         className="h-1.5 bg-gray-200 rounded-full cursor-pointer mb-2"
         onClick={handleProgressClick}
         onKeyDown={(e) => {
-          if (e.key === "ArrowRight") { e.preventDefault(); seek(Math.min(currentTime + 5, duration)); }
-          if (e.key === "ArrowLeft") { e.preventDefault(); seek(Math.max(currentTime - 5, 0)); }
-          if (e.key === "ArrowUp") { e.preventDefault(); seek(Math.min(currentTime + 30, duration)); }
-          if (e.key === "ArrowDown") { e.preventDefault(); seek(Math.max(currentTime - 30, 0)); }
-          if (e.key === "Home") { e.preventDefault(); seek(0); }
-          if (e.key === "End") { e.preventDefault(); seek(duration); }
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            seek(Math.min(currentTime + 5, duration));
+          }
+          if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            seek(Math.max(currentTime - 5, 0));
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            seek(Math.min(currentTime + 30, duration));
+          }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            seek(Math.max(currentTime - 30, 0));
+          }
+          if (e.key === "Home") {
+            e.preventDefault();
+            seek(0);
+          }
+          if (e.key === "End") {
+            e.preventDefault();
+            seek(duration);
+          }
         }}
         role="slider"
         aria-orientation="horizontal"
@@ -86,6 +98,7 @@ export const PlayerControls = () => {
       <div className="flex items-center justify-center gap-6">
         {/* Skip backward */}
         <button
+          type="button"
           onClick={() => skipBackward(15)}
           className="w-12 h-12 flex items-center justify-center text-gray-600 hover:text-gray-900"
           aria-label={t("player.skipBackward")}
@@ -100,6 +113,7 @@ export const PlayerControls = () => {
 
         {/* Play/Pause */}
         <button
+          type="button"
           onClick={isPlaying ? pause : resume}
           disabled={isLoading}
           className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-600 disabled:opacity-50"
@@ -116,6 +130,7 @@ export const PlayerControls = () => {
 
         {/* Skip forward */}
         <button
+          type="button"
           onClick={() => skipForward(30)}
           className="w-12 h-12 flex items-center justify-center text-gray-600 hover:text-gray-900"
           aria-label={t("player.skipForward")}
@@ -132,6 +147,7 @@ export const PlayerControls = () => {
       {/* Playback rate */}
       <div className="flex justify-center mt-4">
         <button
+          type="button"
           onClick={handleRateChange}
           aria-label={t("player.playbackRate", { rate: playbackRate })}
           className="px-3 py-1 text-sm font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200"

@@ -1,6 +1,6 @@
+import type { PlayStatus, Subscription } from "../../types";
+import { decodeRssFeed, encodeRssFeed } from "../../utils/rssEncoding";
 import { getSettings, saveSettings } from "../storage";
-import type { Subscription, PlayStatus } from "../../types";
-import { encodeRssFeed, decodeRssFeed } from "../../utils/rssEncoding";
 
 // API Response types
 export interface SyncConfig {
@@ -57,12 +57,7 @@ export interface TokenResponse {
   token_type: string;
 }
 
-export type SyncStatus =
-  | "disconnected"
-  | "connected"
-  | "syncing"
-  | "pending"
-  | "error";
+export type SyncStatus = "disconnected" | "connected" | "syncing" | "pending" | "error";
 
 export interface SyncState {
   status: SyncStatus;
@@ -86,7 +81,12 @@ export class SyncApiError extends Error {
 }
 
 // Re-export encoding helpers from shared util
-export { encodeRssFeed, decodeRssFeed, encodeRssItem, decodeRssItem } from "../../utils/rssEncoding";
+export {
+  decodeRssFeed,
+  decodeRssItem,
+  encodeRssFeed,
+  encodeRssItem,
+} from "../../utils/rssEncoding";
 
 // Convert local types to sync format
 export const subscriptionToSync = (sub: Subscription): SubscriptionSync => ({
@@ -117,9 +117,7 @@ export const playStatusToSync = (status: PlayStatus): PlayStatusSync => ({
  * Note: duration is not included in sync data (it's episode metadata, not play state).
  * Callers must provide duration separately when needed.
  */
-export const syncToPlayStatus = (
-  sync: PlayStatusSync
-): Omit<PlayStatus, "duration"> => {
+export const syncToPlayStatus = (sync: PlayStatusSync): Omit<PlayStatus, "duration"> => {
   // rss_source_item is already in base64url(guid,enclosureUrl) format, use as episodeId directly
   return {
     episodeId: sync.rss_source_item,
@@ -187,9 +185,7 @@ export class SyncClient {
   setToken(token: string, refreshToken?: string, expiresIn?: number): void {
     this.token = token;
     this.refreshToken = refreshToken ?? null;
-    this.tokenExpiresAt = expiresIn
-      ? Date.now() + expiresIn * 1000
-      : null;
+    this.tokenExpiresAt = expiresIn ? Date.now() + expiresIn * 1000 : null;
   }
 
   /**
@@ -214,7 +210,7 @@ export class SyncClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    retryCount = 0
+    retryCount = 0,
   ): Promise<T> {
     const url = `${this.serverUrl}${endpoint}`;
 
@@ -224,8 +220,7 @@ export class SyncClient {
     };
 
     if (this.token) {
-      (headers as Record<string, string>)["Authorization"] =
-        `Bearer ${this.token}`;
+      (headers as Record<string, string>).Authorization = `Bearer ${this.token}`;
     }
 
     try {
@@ -243,11 +238,8 @@ export class SyncClient {
       }
 
       // Handle retryable errors
-      if (
-        RETRYABLE_STATUS_CODES.includes(response.status) &&
-        retryCount < MAX_RETRIES
-      ) {
-        const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+      if (RETRYABLE_STATUS_CODES.includes(response.status) && retryCount < MAX_RETRIES) {
+        const delay = RETRY_DELAY_MS * 2 ** retryCount;
         await this.sleep(delay);
         return this.request<T>(endpoint, options, retryCount + 1);
       }
@@ -257,7 +249,7 @@ export class SyncClient {
         throw new SyncApiError(
           errorBody || `HTTP ${response.status}`,
           response.status,
-          RETRYABLE_STATUS_CODES.includes(response.status)
+          RETRYABLE_STATUS_CODES.includes(response.status),
         );
       }
 
@@ -274,7 +266,7 @@ export class SyncClient {
         error.message.includes("fetch") &&
         retryCount < MAX_RETRIES
       ) {
-        const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+        const delay = RETRY_DELAY_MS * 2 ** retryCount;
         await this.sleep(delay);
         return this.request<T>(endpoint, options, retryCount + 1);
       }
@@ -341,7 +333,7 @@ export class SyncClient {
   async getSubscriptions(): Promise<SubscriptionSync[]> {
     const response = await this.request<{ subscriptions: SubscriptionSync[] }>(
       "/api/v1/subscriptions",
-      { method: "GET" }
+      { method: "GET" },
     );
     return response.subscriptions;
   }
@@ -384,17 +376,13 @@ export class SyncClient {
    * @param feedUrl - The feed URL
    * @param episodeId - The episode ID (already in base64url(guid,enclosureUrl) format)
    */
-  async getPlayStatus(
-    feedUrl: string,
-    episodeId: string
-  ): Promise<PlayStatusSync | null> {
+  async getPlayStatus(feedUrl: string, episodeId: string): Promise<PlayStatusSync | null> {
     try {
       const encodedFeed = encodeRssFeed(feedUrl);
       // episodeId is already encoded as base64url(guid,enclosureUrl), use directly
-      return await this.request<PlayStatusSync>(
-        `/api/v1/play/${encodedFeed}/${episodeId}`,
-        { method: "GET" }
-      );
+      return await this.request<PlayStatusSync>(`/api/v1/play/${encodedFeed}/${episodeId}`, {
+        method: "GET",
+      });
     } catch (error) {
       if (error instanceof SyncApiError && error.statusCode === 404) {
         return null;
@@ -408,18 +396,15 @@ export class SyncClient {
    */
   async proxyFetch(feedUrl: string): Promise<string> {
     const encodedFeed = encodeRssFeed(feedUrl);
-    const response = await fetch(
-      `${this.serverUrl}/api/v1/rss/proxy/${encodedFeed}`,
-      {
-        headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
-      }
-    );
+    const response = await fetch(`${this.serverUrl}/api/v1/rss/proxy/${encodedFeed}`, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
+    });
 
     if (!response.ok) {
       throw new SyncApiError(
         `Proxy fetch failed for ${feedUrl}: ${response.status}`,
         response.status,
-        RETRYABLE_STATUS_CODES.includes(response.status)
+        RETRYABLE_STATUS_CODES.includes(response.status),
       );
     }
 

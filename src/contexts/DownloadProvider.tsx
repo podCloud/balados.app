@@ -1,12 +1,12 @@
-import { useState, useCallback, useEffect, type ReactNode } from "react";
-import type { Episode, DownloadedEpisode, DownloadProgress } from "../types";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import {
-  downloadEpisode as downloadEpisodeService,
-  deleteDownload as deleteDownloadService,
-  getAllDownloads,
   clearAllDownloads as clearAllDownloadsService,
+  deleteDownload as deleteDownloadService,
+  downloadEpisode as downloadEpisodeService,
+  getAllDownloads,
   getEpisodeId,
 } from "../services/storage/downloads";
+import type { DownloadedEpisode, DownloadProgress, Episode } from "../types";
 import { DownloadContext } from "./downloadContext";
 
 interface DownloadProviderProps {
@@ -14,12 +14,8 @@ interface DownloadProviderProps {
 }
 
 export const DownloadProvider = ({ children }: DownloadProviderProps) => {
-  const [downloads, setDownloads] = useState<Map<string, DownloadedEpisode>>(
-    new Map()
-  );
-  const [progress, setProgress] = useState<Map<string, DownloadProgress>>(
-    new Map()
-  );
+  const [downloads, setDownloads] = useState<Map<string, DownloadedEpisode>>(new Map());
+  const [progress, setProgress] = useState<Map<string, DownloadProgress>>(new Map());
 
   const refresh = useCallback(async () => {
     const allDownloads = await getAllDownloads();
@@ -38,7 +34,7 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
     (episodeId: string): boolean => {
       return downloads.has(episodeId);
     },
-    [downloads]
+    [downloads],
   );
 
   const isDownloading = useCallback(
@@ -46,14 +42,14 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
       const p = progress.get(episodeId);
       return p?.status === "downloading";
     },
-    [progress]
+    [progress],
   );
 
   const getProgress = useCallback(
     (episodeId: string): DownloadProgress | undefined => {
       return progress.get(episodeId);
     },
-    [progress]
+    [progress],
   );
 
   const download = useCallback(
@@ -128,20 +124,17 @@ export const DownloadProvider = ({ children }: DownloadProviderProps) => {
         });
       }
     },
-    [refresh]
+    [refresh],
   );
 
-  const deleteDownload = useCallback(
-    async (episodeId: string): Promise<void> => {
-      await deleteDownloadService(episodeId);
-      setDownloads((prev) => {
-        const next = new Map(prev);
-        next.delete(episodeId);
-        return next;
-      });
-    },
-    []
-  );
+  const deleteDownload = useCallback(async (episodeId: string): Promise<void> => {
+    await deleteDownloadService(episodeId);
+    setDownloads((prev) => {
+      const next = new Map(prev);
+      next.delete(episodeId);
+      return next;
+    });
+  }, []);
 
   const clearAllDownloads = useCallback(async (): Promise<void> => {
     await clearAllDownloadsService();

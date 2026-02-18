@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { AppSettings, QueuedAction } from "../../types";
 import { db } from "../storage/index";
 import { queueSubscribe } from "../storage/syncQueue";
 import {
   acquireSyncLock,
-  releaseSyncLock,
   getEndpointForAction,
+  notifySyncComplete,
   processAction,
   processQueue,
-  notifySyncComplete,
+  releaseSyncLock,
 } from "./queueProcessor";
-import type { QueuedAction, AppSettings } from "../../types";
 
 // Mock backgroundSync to prevent SW registration in queue functions
 vi.mock("./backgroundSync", () => ({
@@ -125,9 +125,7 @@ describe("queueProcessor", () => {
     });
 
     it("returns true on successful API call", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(null, { status: 200 }),
-      );
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
 
       const action: QueuedAction = {
         id: 1,
@@ -141,9 +139,7 @@ describe("queueProcessor", () => {
     });
 
     it("returns false and marks attempted on API failure", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(null, { status: 500 }),
-      );
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 500 }));
 
       const id = await queueSubscribe({
         feedUrl: "https://example.com/feed.xml",
@@ -206,9 +202,7 @@ describe("queueProcessor", () => {
     });
 
     it("processes queued actions and removes them on success", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(null, { status: 200 }),
-      );
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
       await db.settings.put({
         id: "app_settings",
         ...mockSettings,
@@ -225,9 +219,7 @@ describe("queueProcessor", () => {
     });
 
     it("releases lock after processing", async () => {
-      vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(null, { status: 200 }),
-      );
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
       await db.settings.put({
         id: "app_settings",
         ...mockSettings,
@@ -241,9 +233,7 @@ describe("queueProcessor", () => {
     });
 
     it("releases lock even on error", async () => {
-      vi.spyOn(globalThis, "fetch").mockRejectedValue(
-        new Error("Network error"),
-      );
+      vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
       await db.settings.put({
         id: "app_settings",
         ...mockSettings,

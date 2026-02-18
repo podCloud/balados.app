@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toBase64Url } from "../../utils/rssEncoding";
 import { db } from "./index";
 import {
   generateEpisodeId,
+  getInProgressEpisodes,
   getPlayStatus,
   getPlayStatusForFeed,
+  getRecentlyPlayed,
+  markAsCompleted,
   savePlayStatus,
   updatePlayPosition,
-  markAsCompleted,
-  getRecentlyPlayed,
-  getInProgressEpisodes,
 } from "./playStatus";
-import { toBase64Url } from "../../utils/rssEncoding";
 
 // Mock getSettings to avoid sync queue operations
 vi.mock("./index", async (importOriginal) => {
@@ -244,7 +244,7 @@ describe("playStatus", () => {
           duration: 1000,
           completed: false,
           updatedAt: Date.now() - i * 1000,
-        }))
+        })),
       );
 
       const recent = await getRecentlyPlayed(5);

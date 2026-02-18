@@ -1,11 +1,11 @@
+import DOMPurify from "dompurify";
+import { ChevronDown, ChevronUp, ExternalLink, Play } from "lucide-react";
+import { Marked } from "marked";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import { Marked } from "marked";
-import DOMPurify from "dompurify";
 import { usePlayer } from "../../contexts";
-import { PlayerControls } from "./PlayerControls";
 import { DownloadButton } from "../ui/DownloadButton";
+import { PlayerControls } from "./PlayerControls";
 
 const markedInstance = new Marked({ breaks: true, gfm: true });
 
@@ -13,9 +13,27 @@ const markedInstance = new Marked({ breaks: true, gfm: true });
 // may return empty strings. Component tests should mock DOMPurify if needed.
 const PURIFY_CONFIG = {
   ALLOWED_TAGS: [
-    "p", "br", "strong", "em", "b", "i", "ul", "ol", "li",
-    "a", "img", "h1", "h2", "h3", "h4", "h5", "h6",
-    "blockquote", "code", "pre", "hr",
+    "p",
+    "br",
+    "strong",
+    "em",
+    "b",
+    "i",
+    "ul",
+    "ol",
+    "li",
+    "a",
+    "img",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "blockquote",
+    "code",
+    "pre",
+    "hr",
   ],
   ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "width", "height"],
   FORCE_BODY: true,
@@ -37,9 +55,7 @@ export const EpisodePlayer = () => {
       <div className="h-full pb-16 flex items-center justify-center bg-white">
         <div className="text-center">
           <Play size={64} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            {t("player.title")}
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">{t("player.title")}</h2>
           <p className="text-gray-400 text-sm">{t("player.selectEpisode")}</p>
         </div>
       </div>
@@ -62,12 +78,7 @@ export const EpisodePlayer = () => {
         />
         {feedUrl && (
           <div className="mt-4">
-            <DownloadButton
-              episode={currentEpisode}
-              feedUrl={feedUrl}
-              size="md"
-              showLabel
-            />
+            <DownloadButton episode={currentEpisode} feedUrl={feedUrl} size="md" showLabel />
           </div>
         )}
       </div>
@@ -91,6 +102,7 @@ export const EpisodePlayer = () => {
       {hasShowNotes && (
         <div className="flex-shrink-0 border-t border-gray-200 mt-2">
           <button
+            type="button"
             onClick={() => setShowNotesOpen(!showNotesOpen)}
             className="w-full flex items-center justify-between px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
@@ -105,6 +117,7 @@ export const EpisodePlayer = () => {
             <div className="px-6 pb-6">
               <div
                 className="max-w-none text-sm text-gray-700 [&_a]:text-blue-600 [&_a]:underline [&_img]:rounded-lg [&_img]:max-w-full [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-0.5 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-gray-500 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-gray-100 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_hr]:my-3"
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized HTML from DOMPurify
                 dangerouslySetInnerHTML={{ __html: renderedNotes }}
               />
               {currentEpisode.link && (

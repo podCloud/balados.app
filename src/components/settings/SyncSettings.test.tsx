@@ -1,19 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SyncSettings } from "./SyncSettings";
 
 // Mock SyncClient - vi.hoisted ensures these are available before vi.mock hoisting
-const { mockTestConnection, mockSaveCredentials, mockClearCredentials } =
-  vi.hoisted(() => ({
-    mockTestConnection: vi.fn().mockResolvedValue(true),
-    mockSaveCredentials: vi.fn().mockResolvedValue(undefined),
-    mockClearCredentials: vi.fn().mockResolvedValue(undefined),
-  }));
+const { mockTestConnection, mockSaveCredentials, mockClearCredentials } = vi.hoisted(() => ({
+  mockTestConnection: vi.fn().mockResolvedValue(true),
+  mockSaveCredentials: vi.fn().mockResolvedValue(undefined),
+  mockClearCredentials: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock("../../services/sync/client", () => {
   class SyncClient {
-    constructor() {}
     testConnection = mockTestConnection;
     saveCredentials = mockSaveCredentials;
     clearCredentials = mockClearCredentials;
@@ -117,9 +115,7 @@ describe("SyncSettings", () => {
     render(<SyncSettings />);
 
     await waitFor(() => {
-      expect(
-        screen.getByPlaceholderText("sync.balados.app")
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("sync.balados.app")).toBeInTheDocument();
     });
   });
 
@@ -336,9 +332,7 @@ describe("SyncSettings", () => {
 
     await user.click(screen.getByText("Manual token"));
 
-    expect(
-      screen.getByPlaceholderText("Paste token here")
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Paste token here")).toBeInTheDocument();
     expect(screen.getByText("Connect with token")).toBeInTheDocument();
   });
 
@@ -372,17 +366,11 @@ describe("SyncSettings", () => {
     });
 
     // Enter server URL
-    await user.type(
-      screen.getByPlaceholderText("sync.balados.app"),
-      "sync.example.com"
-    );
+    await user.type(screen.getByPlaceholderText("sync.balados.app"), "sync.example.com");
 
     // Show and fill token input
     await user.click(screen.getByText("Manual token"));
-    await user.type(
-      screen.getByPlaceholderText("Paste token here"),
-      "my-secret-token"
-    );
+    await user.type(screen.getByPlaceholderText("Paste token here"), "my-secret-token");
 
     // Click connect with token
     fireEvent.click(screen.getByText("Connect with token"));
@@ -404,16 +392,10 @@ describe("SyncSettings", () => {
       expect(screen.getByPlaceholderText("sync.balados.app")).toBeInTheDocument();
     });
 
-    await user.type(
-      screen.getByPlaceholderText("sync.balados.app"),
-      "sync.example.com"
-    );
+    await user.type(screen.getByPlaceholderText("sync.balados.app"), "sync.example.com");
 
     await user.click(screen.getByText("Manual token"));
-    await user.type(
-      screen.getByPlaceholderText("Paste token here"),
-      "bad-token"
-    );
+    await user.type(screen.getByPlaceholderText("Paste token here"), "bad-token");
 
     fireEvent.click(screen.getByText("Connect with token"));
 

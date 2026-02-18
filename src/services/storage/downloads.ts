@@ -1,5 +1,5 @@
+import type { DownloadedEpisode, Episode } from "../../types";
 import { db } from "./index";
-import type { Episode, DownloadedEpisode } from "../../types";
 
 const CACHE_NAME = "podcast-audio";
 
@@ -16,7 +16,7 @@ export const getEpisodeId = (episode: Episode): string => {
 export const downloadEpisode = async (
   episode: Episode,
   feedUrl: string,
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
 ): Promise<void> => {
   const episodeId = getEpisodeId(episode);
 
@@ -55,8 +55,7 @@ export const downloadEpisode = async (
     }
 
     // Create a new response for caching
-    const contentType =
-      response.headers.get("content-type") || "audio/mpeg";
+    const contentType = response.headers.get("content-type") || "audio/mpeg";
     const cacheResponse = new Response(allChunks, {
       headers: { "Content-Type": contentType },
     });
@@ -116,9 +115,7 @@ export const deleteDownload = async (episodeId: string): Promise<void> => {
 /**
  * Check if an episode is downloaded
  */
-export const isEpisodeDownloaded = async (
-  episodeId: string
-): Promise<boolean> => {
+export const isEpisodeDownloaded = async (episodeId: string): Promise<boolean> => {
   const download = await db.downloads.get(episodeId);
   return !!download;
 };
@@ -126,9 +123,7 @@ export const isEpisodeDownloaded = async (
 /**
  * Get cached URL for an episode if it exists
  */
-export const getCachedAudioUrl = async (
-  enclosureUrl: string
-): Promise<string | null> => {
+export const getCachedAudioUrl = async (enclosureUrl: string): Promise<string | null> => {
   const cache = await caches.open(CACHE_NAME);
   const response = await cache.match(enclosureUrl);
 

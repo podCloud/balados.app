@@ -1,8 +1,8 @@
+import { ChevronRight, Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Play, Pause } from "lucide-react";
 import { usePlayer } from "../../contexts";
-import { DownloadButton } from "../ui/DownloadButton";
 import type { Episode } from "../../types";
+import { DownloadButton } from "../ui/DownloadButton";
 
 interface EpisodeListProps {
   episodes: Episode[];
@@ -38,6 +38,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
 
         return (
           <button
+            type="button"
             key={episode.guid || idx}
             onClick={() => handleClick(episode)}
             className={`w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100 ${
@@ -47,11 +48,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
             <div className="flex gap-3">
               <div className="relative flex-shrink-0">
                 {episode.image ? (
-                  <img
-                    src={episode.image}
-                    alt={episode.title}
-                    className="w-14 h-14 rounded-lg"
-                  />
+                  <img src={episode.image} alt={episode.title} className="w-14 h-14 rounded-lg" />
                 ) : (
                   <div className="w-14 h-14 rounded-lg bg-gray-200" />
                 )}

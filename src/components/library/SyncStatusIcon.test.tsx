@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SyncStatusIcon } from "./SyncStatusIcon";
 
 const mockOnNavigate = vi.fn();
@@ -35,9 +35,7 @@ describe("SyncStatusIcon", () => {
       pendingCount: 0,
     });
 
-    const { container } = render(
-      <SyncStatusIcon onNavigate={mockOnNavigate} />
-    );
+    const { container } = render(<SyncStatusIcon onNavigate={mockOnNavigate} />);
     expect(container.firstChild).toBeNull();
   });
 

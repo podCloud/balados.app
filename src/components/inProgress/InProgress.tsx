@@ -1,15 +1,15 @@
-import { useMemo } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { useQuery } from "@tanstack/react-query";
+import { useLiveQuery } from "dexie-react-hooks";
+import { ChevronLeft, Clock, EyeOff, Pause, Play, X } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, X, Play, Pause, Clock, EyeOff } from "lucide-react";
-import { getCachedFeed } from "../../services/storage";
-import { getInProgressEpisodes, generateEpisodeId } from "../../services/storage/playStatus";
-import { getHiddenEpisodeIds, hideEpisode } from "../../services/storage/hiddenEpisodes";
-import { fetchAndParseRSS } from "../../services/rss/parser";
 import { usePlayer } from "../../contexts";
+import { fetchAndParseRSS } from "../../services/rss/parser";
+import { getCachedFeed } from "../../services/storage";
+import { getHiddenEpisodeIds, hideEpisode } from "../../services/storage/hiddenEpisodes";
+import { generateEpisodeId, getInProgressEpisodes } from "../../services/storage/playStatus";
+import type { Episode, PlayStatus, PodcastFeed } from "../../types";
 import { DownloadButton } from "../ui/DownloadButton";
-import type { PlayStatus, Episode, PodcastFeed } from "../../types";
 
 interface InProgressProps {
   onBack: () => void;
@@ -41,10 +41,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
   const hiddenEpisodes = useLiveQuery(() => getHiddenEpisodeIds(), []);
 
   // Get in-progress episodes from DB (reactive)
-  const playStatuses = useLiveQuery(
-    () => getInProgressEpisodes(),
-    []
-  );
+  const playStatuses = useLiveQuery(() => getInProgressEpisodes(), []);
 
   // Get unique feed URLs (sorted for stable query key)
   const feedUrls = useMemo(() => {
@@ -79,7 +76,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
           } catch (error) {
             console.error(`Failed to fetch feed ${url}:`, error);
           }
-        })
+        }),
       );
 
       return feeds;
@@ -153,6 +150,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-gray-200">
         <button
+          type="button"
           onClick={onBack}
           className="p-1 -ml-1 hover:bg-gray-100 rounded-lg"
           aria-label={t("settings.back")}
@@ -166,9 +164,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500">
-            {t("common.loading")}
-          </div>
+          <div className="p-8 text-center text-gray-500">{t("common.loading")}</div>
         ) : enrichedEpisodes.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <EyeOff size={48} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
@@ -179,12 +175,14 @@ export const InProgress = ({ onBack }: InProgressProps) => {
             {enrichedEpisodes.map((item) => {
               const isCurrent = isCurrentEpisode(item.episode);
               const isEpisodePlaying = isCurrent && isPlaying;
-              const progress = item.playStatus.duration > 0
-                ? (item.playStatus.position / item.playStatus.duration) * 100
-                : 0;
+              const progress =
+                item.playStatus.duration > 0
+                  ? (item.playStatus.position / item.playStatus.duration) * 100
+                  : 0;
 
               return (
                 <button
+                  type="button"
                   key={item.playStatus.episodeId}
                   onClick={() => handleClick(item)}
                   className={`w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100 ${
@@ -217,7 +215,12 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                         {isEpisodePlaying ? (
                           <Pause size={24} className="text-white" fill="white" aria-hidden="true" />
                         ) : (
-                          <Play size={24} className="text-white ml-1" fill="white" aria-hidden="true" />
+                          <Play
+                            size={24}
+                            className="text-white ml-1"
+                            fill="white"
+                            aria-hidden="true"
+                          />
                         )}
                       </div>
                     </div>
@@ -261,6 +264,7 @@ export const InProgress = ({ onBack }: InProgressProps) => {
                     <div className="flex items-center gap-1 flex-shrink-0 self-center">
                       <DownloadButton episode={item.episode} feedUrl={item.feedUrl} />
                       <button
+                        type="button"
                         onClick={(e) => handleHide(item.playStatus.episodeId, e)}
                         className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
                         title={t("inProgress.hide")}

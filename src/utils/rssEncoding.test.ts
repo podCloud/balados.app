@@ -1,12 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  toBase64Url,
-  fromBase64Url,
-  encodeRssFeed,
   decodeRssFeed,
-  encodeRssItem,
   decodeRssItem,
+  encodeRssFeed,
+  encodeRssItem,
+  fromBase64Url,
   generateEpisodeId,
+  toBase64Url,
 } from "./rssEncoding";
 
 describe("toBase64Url / fromBase64Url", () => {

@@ -1,7 +1,7 @@
 import TurndownService from "turndown";
-import type { PodcastFeed, Episode } from "../../types";
+import type { Episode, PodcastFeed } from "../../types";
+import { cacheFeed, getCachedFeed } from "../storage";
 import { fetchWithProxy } from "./proxyManager";
-import { getCachedFeed, cacheFeed } from "../storage";
 
 const createTurndown = () => {
   const td = new TurndownService({
@@ -29,8 +29,7 @@ const getElementText = (parent: Element, tag: string): string => {
 const getContentEncoded = (item: Element): string | null => {
   // content:encoded uses a namespace — try both selector forms
   const el =
-    item.querySelector("content\\:encoded") ??
-    item.getElementsByTagName("content:encoded")[0];
+    item.querySelector("content\\:encoded") ?? item.getElementsByTagName("content:encoded")[0];
   return el?.textContent || null;
 };
 
@@ -58,14 +57,13 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
   // Break at last word boundary to avoid mid-word truncation
   const truncated = plain.substring(0, maxLength);
   const lastSpace = truncated.lastIndexOf(" ");
-  return (lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) : truncated) + "…";
+  return `${lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) : truncated}…`;
 };
 
 const parseEpisode = (item: Element, feedImage: string): Episode => {
   const enclosure = item.querySelector("enclosure");
   const duration = getElementText(item, "itunes\\:duration");
-  const itemImage =
-    item.querySelector("itunes\\:image")?.getAttribute("href") || feedImage;
+  const itemImage = item.querySelector("itunes\\:image")?.getAttribute("href") || feedImage;
 
   // Get guid or fall back to enclosure URL
   const guidEl = item.querySelector("guid");
@@ -119,9 +117,7 @@ export const parseRSSText = (text: string, url: string): PodcastFeed => {
     channel.querySelector("itunes\\:image")?.getAttribute("href") ||
     "";
 
-  const items = Array.from(xml.querySelectorAll("item")).map((item) =>
-    parseEpisode(item, image),
-  );
+  const items = Array.from(xml.querySelectorAll("item")).map((item) => parseEpisode(item, image));
 
   return { title, description, image, items, url };
 };
