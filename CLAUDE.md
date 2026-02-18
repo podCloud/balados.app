@@ -153,6 +153,8 @@ The `needs-claude-review` label triggers the Claude review workflow.
 
 **NEVER merge a PR without Claude review.**
 
+**Never ignore failing tests.** If `npm test` reveals failures (even pre-existing and unrelated to current work), create a GitHub issue to track them.
+
 A PR is ready to merge only when:
 1. The `needs-claude-review` label was added to trigger the review
 2. CI checks pass (`claude-review` shows `pass`)
