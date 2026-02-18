@@ -101,7 +101,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
       <button
         type="button"
-        className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer bg-transparent border-none p-0 text-left"
+        className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer bg-transparent appearance-none border-0 p-0 text-left"
         onClick={() => onNavigate("podcast", podcast.feed_url)}
       >
         {podcast.image ? (
