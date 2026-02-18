@@ -158,6 +158,7 @@ describe("Trending", () => {
 
     render(<Trending onNavigate={onNavigate} />);
 
+    // biome-ignore lint/style/noNonNullAssertion: test assertion - button exists in rendered output
     const podcastButton = screen.getByText("Podcast One").closest("button")!;
     expect(podcastButton).toBeInTheDocument();
     expect(podcastButton.tagName).toBe("BUTTON");

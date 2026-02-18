@@ -29,7 +29,7 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
       type="button"
       onClick={onExpand}
       aria-label={t("player.expandPlayer")}
-      className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100 safe-area-inset-bottom w-full text-left border-none p-0"
+      className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 cursor-pointer hover:bg-gray-50 active:bg-gray-100 safe-area-inset-bottom w-full text-left appearance-none p-0"
     >
       {/* Progress bar */}
       <div className="h-0.5 bg-gray-200">

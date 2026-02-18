@@ -262,6 +262,7 @@ describe("SyncSettings", () => {
       expect(screen.getByText("Sync now")).toBeInTheDocument();
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test assertion - button exists in rendered output
     fireEvent.click(screen.getByText("Sync now").closest("button")!);
 
     expect(mockProcessQueue).toHaveBeenCalled();
@@ -284,6 +285,7 @@ describe("SyncSettings", () => {
       expect(screen.getByText("Disconnect")).toBeInTheDocument();
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test assertion - button exists in rendered output
     fireEvent.click(screen.getByText("Disconnect").closest("button")!);
 
     await waitFor(() => {
@@ -309,6 +311,7 @@ describe("SyncSettings", () => {
       expect(screen.getByText("Disconnect")).toBeInTheDocument();
     });
 
+    // biome-ignore lint/style/noNonNullAssertion: test assertion - button exists in rendered output
     fireEvent.click(screen.getByText("Disconnect").closest("button")!);
 
     expect(mockClearCredentials).not.toHaveBeenCalled();
@@ -349,6 +352,7 @@ describe("SyncSettings", () => {
     const input = screen.getByPlaceholderText("sync.balados.app");
     await user.type(input, "bad.server.com");
 
+    // biome-ignore lint/style/noNonNullAssertion: test assertion - button exists in rendered output
     fireEvent.click(screen.getByText("Connect").closest("button")!);
 
     await waitFor(() => {

@@ -79,15 +79,17 @@ export const createSnapshot = async (beforeTimestamp?: number): Promise<StatsSna
   const podcastMap = new Map<string, { plays: number; completed: number }>();
 
   for (const event of playStarted) {
-    const current = podcastMap.get(event.feedUrl!) || { plays: 0, completed: 0 };
+    const feedUrl = event.feedUrl as string; // guaranteed by filter above
+    const current = podcastMap.get(feedUrl) || { plays: 0, completed: 0 };
     current.plays++;
-    podcastMap.set(event.feedUrl!, current);
+    podcastMap.set(feedUrl, current);
   }
 
   for (const event of playCompleted) {
-    const current = podcastMap.get(event.feedUrl!) || { plays: 0, completed: 0 };
+    const feedUrl = event.feedUrl as string; // guaranteed by filter above
+    const current = podcastMap.get(feedUrl) || { plays: 0, completed: 0 };
     current.completed++;
-    podcastMap.set(event.feedUrl!, current);
+    podcastMap.set(feedUrl, current);
   }
 
   const podcastStats: PodcastStats[] = Array.from(podcastMap.entries()).map(([feedUrl, stats]) => ({

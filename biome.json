@@ -39,7 +39,7 @@
         "noNamespace": "error",
         "useAsConstAssertion": "error",
         "useComponentExportOnlyModules": "error",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "error"
       },
       "suspicious": {
         "noExplicitAny": "error",

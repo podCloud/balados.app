@@ -255,6 +255,7 @@ describe("DEFAULT_PROXIES", () => {
   it("has CORS Anywhere disabled by default", () => {
     const corsAnywhere = DEFAULT_PROXIES.find((p) => p.name === "CORS Anywhere");
     expect(corsAnywhere).toBeDefined();
+    // biome-ignore lint/style/noNonNullAssertion: test assertion - corsAnywhere verified by toBeDefined above
     expect(corsAnywhere!.enabled).toBe(false);
   });
 });
