@@ -144,7 +144,6 @@ describe("queueProcessor", () => {
       const id = await queueSubscribe({
         feedUrl: "https://example.com/feed.xml",
       });
-      // biome-ignore lint/style/noNonNullAssertion: test assertion - action just created above
       const action = (await db.syncQueue.get(id))!;
 
       const result = await processAction(action, mockSettings);

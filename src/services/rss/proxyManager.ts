@@ -50,7 +50,9 @@ export const fetchWithProxy = async (url: string): Promise<FetchResult> => {
         const text = await response.text();
         return { text, proxyUsed: proxy.name };
       }
-    } catch {}
+    } catch {
+      // Proxy failed, try next one
+    }
   }
 
   throw new Error("Impossible de recuperer le flux RSS");

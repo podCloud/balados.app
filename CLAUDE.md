@@ -161,7 +161,8 @@ The `needs-claude-review` label triggers the Claude review workflow.
 
 **Git Hooks:**
 - Hooks are in `.githooks/` (version-controlled)
-- Activated via `git config core.hooksPath .githooks`
+- Activated automatically via `postinstall` script in `package.json` (runs `git config core.hooksPath .githooks` on `npm install`)
+- Can also be activated manually: `git config core.hooksPath .githooks`
 - Pre-commit hook auto-lints and formats staged `.ts`/`.tsx`/`.js`/`.json` files with Biome
 
 A PR is ready to merge only when:

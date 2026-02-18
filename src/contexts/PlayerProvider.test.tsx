@@ -222,7 +222,6 @@ describe("PlayerProvider", () => {
   it("resume() calls play on audio element", () => {
     const { result } = renderHook(() => usePlayer(), { wrapper });
     const playSpy = vi
-      // biome-ignore lint/style/noNonNullAssertion: test assertion - audioRef is set by hook
       .spyOn(result.current.audioRef.current!, "play")
       .mockImplementation(() => Promise.resolve());
 
