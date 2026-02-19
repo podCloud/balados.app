@@ -28,6 +28,7 @@ export const LikeButton = ({ feedUrl, likeCount, size = "sm" }: LikeButtonProps)
       type="button"
       onClick={handleClick}
       disabled={isLoading}
+      aria-pressed={isLiked}
       className={`flex items-center gap-1 transition-colors ${
         isLiked ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-red-400"
       }`}
