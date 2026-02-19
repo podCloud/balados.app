@@ -23,6 +23,7 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
   // Track whether the user had liked this podcast when the DB first loaded,
   // so we can compute a correct optimistic delta (server count already includes existing likes)
   const likedAtLoad = useRef<boolean | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset ref when feedUrl changes
   useEffect(() => {
     likedAtLoad.current = null;
   }, [feedUrl]);
