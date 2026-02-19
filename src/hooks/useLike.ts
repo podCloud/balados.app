@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { db } from "../services/storage";
 import type { PodcastLike } from "../types";
 
@@ -7,6 +7,8 @@ interface UseLikeReturn {
   isLiked: boolean;
   toggleLike: () => Promise<void>;
   isLoading: boolean;
+  /** Delta to apply to server count for optimistic display: -1, 0, or +1 */
+  likeDelta: number;
 }
 
 export const useLike = (feedUrl: string): UseLikeReturn => {
@@ -17,6 +19,15 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
   const isInitializing = like === undefined;
 
   const isLiked = like != null;
+
+  // Track whether the user had liked this podcast when the DB first loaded,
+  // so we can compute a correct optimistic delta (server count already includes existing likes)
+  const likedAtLoad = useRef<boolean | null>(null);
+  if (!isInitializing && likedAtLoad.current === null) {
+    likedAtLoad.current = isLiked;
+  }
+
+  const likeDelta = isInitializing ? 0 : (isLiked ? 1 : 0) - (likedAtLoad.current ? 1 : 0);
 
   const toggleLike = useCallback(async () => {
     if (isInitializing) return;
@@ -50,5 +61,5 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
     }
   }, [feedUrl, isLiked, isInitializing]);
 
-  return { isLiked, toggleLike, isLoading: isLoading || isInitializing };
+  return { isLiked, toggleLike, isLoading: isLoading || isInitializing, likeDelta };
 };

@@ -10,7 +10,7 @@ interface LikeButtonProps {
 
 export const LikeButton = ({ feedUrl, likeCount, size = "sm" }: LikeButtonProps) => {
   const { t } = useTranslation();
-  const { isLiked, toggleLike, isLoading } = useLike(feedUrl);
+  const { isLiked, toggleLike, isLoading, likeDelta } = useLike(feedUrl);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -19,8 +19,9 @@ export const LikeButton = ({ feedUrl, likeCount, size = "sm" }: LikeButtonProps)
 
   const iconSize = size === "sm" ? 16 : 20;
 
-  // Optimistic count: adjust server count based on local like state
-  const displayCount = likeCount != null ? likeCount + (isLiked ? 1 : 0) : undefined;
+  // Optimistic count: apply delta relative to server count
+  // likeDelta is 0 if unchanged, +1 if user just liked, -1 if user just unliked
+  const displayCount = likeCount != null ? Math.max(0, likeCount + likeDelta) : undefined;
 
   return (
     <button

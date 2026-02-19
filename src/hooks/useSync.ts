@@ -400,21 +400,25 @@ async function applyLikeChanges(
   likes: import("../services/sync/client").LikeSync[],
 ): Promise<void> {
   for (const like of likes) {
-    // Skip episode-level likes (not supported in this version)
-    if (like.rss_source_item) continue;
+    try {
+      // Skip episode-level likes (not supported in this version)
+      if (like.rss_source_item) continue;
 
-    const feedUrl = decodeRssFeed(like.rss_source_feed);
+      const feedUrl = decodeRssFeed(like.rss_source_feed);
 
-    if (like.unliked_at) {
-      // Unlike: remove from local DB
-      await db.likes.delete(feedUrl);
-    } else {
-      // Like: add/update in local DB
-      const newLike: PodcastLike = {
-        feedUrl,
-        likedAt: new Date(like.liked_at).getTime(),
-      };
-      await db.likes.put(newLike);
+      if (like.unliked_at) {
+        // Unlike: remove from local DB
+        await db.likes.delete(feedUrl);
+      } else {
+        // Like: add/update in local DB
+        const newLike: PodcastLike = {
+          feedUrl,
+          likedAt: new Date(like.liked_at).getTime(),
+        };
+        await db.likes.put(newLike);
+      }
+    } catch (error) {
+      console.error("[sync] Failed to apply like change:", like.rss_source_feed, error);
     }
   }
 }
