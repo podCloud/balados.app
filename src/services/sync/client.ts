@@ -32,9 +32,17 @@ export interface SyncRequest {
   play_statuses?: PlayStatusSync[];
 }
 
+export interface LikeSync {
+  rss_source_feed: string;
+  rss_source_item?: string | null;
+  liked_at: string;
+  unliked_at?: string | null;
+}
+
 export interface SyncResponse {
   subscriptions: SubscriptionSync[];
   play_statuses: PlayStatusSync[];
+  likes?: LikeSync[];
   synced_at: string;
 }
 

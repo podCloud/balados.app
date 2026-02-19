@@ -111,6 +111,8 @@ class BaladosDatabase extends Dexie {
       syncQueue: "++id, action, createdAt",
       statsSnapshots: "++id, createdAt",
       hiddenEpisodes: "episodeId",
+      // Primary key is feedUrl (podcast-level likes only).
+      // If episode-level likes are added later, migrate to composite key [feedUrl+itemId].
       likes: "feedUrl, likedAt",
     });
   }

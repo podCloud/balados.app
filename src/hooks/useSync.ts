@@ -9,7 +9,8 @@ import {
   playStatusesToSync,
   subscriptionsToSync,
 } from "../services/sync/merger";
-import type { PlayStatus, Subscription } from "../types";
+import type { PlayStatus, PodcastLike, Subscription } from "../types";
+import { decodeRssFeed } from "../utils/rssEncoding";
 import { useSyncQueue } from "./useSyncQueue";
 
 export type SyncStatus = "disconnected" | "connected" | "syncing" | "pending" | "error";
@@ -265,11 +266,16 @@ export function useSync(): UseSyncReturn {
       // 7. Apply merged play statuses
       await applyPlayStatusChanges(localPlayStatuses, playStatusResult.merged);
 
-      // 8. Update lastSyncAt
+      // 8. Apply remote likes (podcast-level only)
+      if (response.likes?.length) {
+        await applyLikeChanges(response.likes);
+      }
+
+      // 9. Update lastSyncAt
       const syncTime = new Date(response.synced_at).getTime();
       await saveSettings({ lastSyncAt: syncTime });
 
-      // 9. Refresh pending count
+      // 10. Refresh pending count
       await refreshCount();
 
       if (isMounted.current) {
@@ -384,6 +390,33 @@ async function applyPlayStatusChanges(current: PlayStatus[], merged: PlayStatus[
 
   // Note: We don't delete play statuses that aren't in merged
   // because local history should be preserved
+}
+
+/**
+ * Apply like changes from server to local database.
+ * Handles both new likes and unlikes (unliked_at set).
+ */
+async function applyLikeChanges(
+  likes: import("../services/sync/client").LikeSync[],
+): Promise<void> {
+  for (const like of likes) {
+    // Skip episode-level likes (not supported in this version)
+    if (like.rss_source_item) continue;
+
+    const feedUrl = decodeRssFeed(like.rss_source_feed);
+
+    if (like.unliked_at) {
+      // Unlike: remove from local DB
+      await db.likes.delete(feedUrl);
+    } else {
+      // Like: add/update in local DB
+      const newLike: PodcastLike = {
+        feedUrl,
+        likedAt: new Date(like.liked_at).getTime(),
+      };
+      await db.likes.put(newLike);
+    }
+  }
 }
 
 export default useSync;

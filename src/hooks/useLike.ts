@@ -12,11 +12,14 @@ interface UseLikeReturn {
 export const useLike = (feedUrl: string): UseLikeReturn => {
   const [isLoading, setIsLoading] = useState(false);
 
+  // useLiveQuery returns undefined while the DB query is loading
   const like = useLiveQuery(() => db.likes.get(feedUrl), [feedUrl]);
+  const isInitializing = like === undefined;
 
   const isLiked = like != null;
 
   const toggleLike = useCallback(async () => {
+    if (isInitializing) return;
     setIsLoading(true);
     try {
       if (isLiked) {
@@ -45,7 +48,7 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [feedUrl, isLiked]);
+  }, [feedUrl, isLiked, isInitializing]);
 
-  return { isLiked, toggleLike, isLoading };
+  return { isLiked, toggleLike, isLoading: isLoading || isInitializing };
 };

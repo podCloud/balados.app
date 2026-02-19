@@ -19,6 +19,9 @@ export const LikeButton = ({ feedUrl, likeCount, size = "sm" }: LikeButtonProps)
 
   const iconSize = size === "sm" ? 16 : 20;
 
+  // Optimistic count: adjust server count based on local like state
+  const displayCount = likeCount != null ? likeCount + (isLiked ? 1 : 0) : undefined;
+
   return (
     <button
       type="button"
@@ -31,7 +34,7 @@ export const LikeButton = ({ feedUrl, likeCount, size = "sm" }: LikeButtonProps)
       title={isLiked ? t("likes.unlike") : t("likes.like")}
     >
       <Heart size={iconSize} fill={isLiked ? "currentColor" : "none"} aria-hidden="true" />
-      {likeCount != null && likeCount > 0 && <span className="text-xs">{likeCount}</span>}
+      {displayCount != null && displayCount > 0 && <span className="text-xs">{displayCount}</span>}
     </button>
   );
 };
