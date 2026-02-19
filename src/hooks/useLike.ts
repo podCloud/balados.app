@@ -9,7 +9,7 @@ interface UseLikeReturn {
   isLoading: boolean;
 }
 
-export const useLike = (feedUrl: string, _itemId?: string): UseLikeReturn => {
+export const useLike = (feedUrl: string): UseLikeReturn => {
   const [isLoading, setIsLoading] = useState(false);
 
   const like = useLiveQuery(() => db.likes.get(feedUrl), [feedUrl]);
@@ -21,7 +21,6 @@ export const useLike = (feedUrl: string, _itemId?: string): UseLikeReturn => {
     try {
       if (isLiked) {
         await db.likes.delete(feedUrl);
-        // Queue unlike for sync
         await db.syncQueue.add({
           action: "unlikePodcast",
           payload: { feedUrl },
@@ -34,7 +33,6 @@ export const useLike = (feedUrl: string, _itemId?: string): UseLikeReturn => {
           likedAt: Date.now(),
         };
         await db.likes.put(newLike);
-        // Queue like for sync
         await db.syncQueue.add({
           action: "likePodcast",
           payload: { feedUrl },
@@ -42,6 +40,8 @@ export const useLike = (feedUrl: string, _itemId?: string): UseLikeReturn => {
           attempts: 0,
         });
       }
+    } catch (error) {
+      console.error("[useLike] Failed to toggle like:", error);
     } finally {
       setIsLoading(false);
     }

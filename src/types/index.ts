@@ -134,10 +134,9 @@ export interface DownloadProgress {
   error?: string;
 }
 
-// Like type for local storage
+// Like type for local storage (podcast-level likes only)
 export interface PodcastLike {
   feedUrl: string;
-  itemId?: string; // undefined for podcast likes, set for episode likes
   likedAt: number;
 }
 
@@ -185,7 +184,6 @@ export interface UpdatePlayStatusAction extends BaseQueuedAction {
 
 export interface LikePodcastPayload {
   feedUrl: string;
-  itemId?: string;
 }
 
 export interface LikePodcastAction extends BaseQueuedAction {

@@ -99,6 +99,17 @@ export function getEndpointForAction(
 }
 
 /**
+ * Get the request body for a queued action.
+ * Handles encoding differences between action types.
+ */
+function getBodyForAction(action: QueuedAction): unknown {
+  if (action.action === "likePodcast") {
+    return { rss_source_feed: encodeRssFeed(action.payload.feedUrl) };
+  }
+  return action.payload;
+}
+
+/**
  * Process a single queued action against the sync API.
  * Returns true on success, false on failure.
  */
@@ -111,13 +122,7 @@ export async function processAction(action: QueuedAction, settings: AppSettings)
     const endpoint = getEndpointForAction(action, settings.syncServerUrl);
     let body: string | undefined;
     if (endpoint.method !== "DELETE") {
-      if (action.action === "likePodcast") {
-        body = JSON.stringify({
-          rss_source_feed: encodeRssFeed(action.payload.feedUrl),
-        });
-      } else {
-        body = JSON.stringify(action.payload);
-      }
+      body = JSON.stringify(getBodyForAction(action));
     }
     const response = await fetch(endpoint.url, {
       method: endpoint.method,

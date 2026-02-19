@@ -167,8 +167,7 @@
   },
   "likes": {
     "like": "J'aime",
-    "unlike": "Je n'aime plus",
-    "liked": "Aimé"
+    "unlike": "Je n'aime plus"
   },
   "a11y": {
     "skipToContent": "Aller au contenu principal"

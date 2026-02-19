@@ -4,14 +4,13 @@ import { useLike } from "../../hooks/useLike";
 
 interface LikeButtonProps {
   feedUrl: string;
-  itemId?: string;
   likeCount?: number;
   size?: "sm" | "md";
 }
 
-export const LikeButton = ({ feedUrl, itemId, likeCount, size = "sm" }: LikeButtonProps) => {
+export const LikeButton = ({ feedUrl, likeCount, size = "sm" }: LikeButtonProps) => {
   const { t } = useTranslation();
-  const { isLiked, toggleLike, isLoading } = useLike(feedUrl, itemId);
+  const { isLiked, toggleLike, isLoading } = useLike(feedUrl);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -32,9 +31,7 @@ export const LikeButton = ({ feedUrl, itemId, likeCount, size = "sm" }: LikeButt
       title={isLiked ? t("likes.unlike") : t("likes.like")}
     >
       <Heart size={iconSize} fill={isLiked ? "currentColor" : "none"} aria-hidden="true" />
-      {likeCount != null && likeCount > 0 && (
-        <span className="text-xs text-gray-500">{likeCount}</span>
-      )}
+      {likeCount != null && likeCount > 0 && <span className="text-xs">{likeCount}</span>}
     </button>
   );
 };

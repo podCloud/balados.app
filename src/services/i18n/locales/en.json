@@ -167,8 +167,7 @@
   },
   "likes": {
     "like": "Like",
-    "unlike": "Unlike",
-    "liked": "Liked"
+    "unlike": "Unlike"
   },
   "a11y": {
     "skipToContent": "Skip to main content"
