@@ -38,11 +38,19 @@ export interface SyncResponse {
   synced_at: string;
 }
 
+export interface LikeSync {
+  rss_source_feed: string;
+  rss_source_item?: string | null;
+  liked_at: string;
+  unliked_at?: string | null;
+}
+
 export interface TrendingPodcast {
   feed_url: string;
   title: string;
   image?: string;
   subscriber_count: number;
+  likes?: number;
 }
 
 export interface TrendingResponse {
@@ -418,6 +426,52 @@ export class SyncClient {
     return this.request<TrendingResponse>("/api/v1/public/trending/podcasts", {
       method: "GET",
     });
+  }
+
+  /**
+   * Like a podcast or episode
+   */
+  async likePodcast(feedUrl: string, itemId?: string): Promise<void> {
+    const body: Record<string, string> = {
+      rss_source_feed: encodeRssFeed(feedUrl),
+    };
+    if (itemId) {
+      body.rss_source_item = itemId;
+    }
+    await this.request("/api/v1/likes", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  /**
+   * Unlike a podcast
+   */
+  async unlikePodcast(feedUrl: string): Promise<void> {
+    const encodedFeed = encodeRssFeed(feedUrl);
+    await this.request(`/api/v1/likes/${encodedFeed}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Unlike an episode
+   */
+  async unlikeEpisode(feedUrl: string, itemId: string): Promise<void> {
+    const encodedFeed = encodeRssFeed(feedUrl);
+    await this.request(`/api/v1/likes/${encodedFeed}/${itemId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Get all likes for the current user
+   */
+  async getLikes(): Promise<LikeSync[]> {
+    const response = await this.request<{ likes: LikeSync[] }>("/api/v1/likes", {
+      method: "GET",
+    });
+    return response.likes;
   }
 
   /**

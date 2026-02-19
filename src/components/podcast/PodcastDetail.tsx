@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { invalidateFeedCache } from "../../services/storage";
 import type { PodcastFeed } from "../../types";
+import { LikeButton } from "../ui/LikeButton";
 import { EpisodeList } from "./EpisodeList";
 
 interface PodcastDetailProps {
@@ -90,14 +91,17 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
           <ChevronLeft size={20} aria-hidden="true" />
           <span>{t("podcast.backToLibrary")}</span>
         </button>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          className="ml-auto text-white text-sm flex items-center gap-1"
-        >
-          <RefreshCw size={14} aria-hidden="true" />
-          {t("podcast.refresh")}
-        </button>
+        <div className="ml-auto flex items-center gap-3">
+          <LikeButton feedUrl={feedUrl} size="md" />
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="text-white text-sm flex items-center gap-1"
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            {t("podcast.refresh")}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border-b border-gray-200 px-4 py-4">

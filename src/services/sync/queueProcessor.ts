@@ -86,6 +86,15 @@ export function getEndpointForAction(
     }
     case "updatePlayStatus":
       return { url: `${baseUrl}/api/v1/play`, method: "POST" };
+    case "likePodcast":
+      return { url: `${baseUrl}/api/v1/likes`, method: "POST" };
+    case "unlikePodcast": {
+      const likeFeedId = encodeRssFeed(action.payload.feedUrl);
+      return {
+        url: `${baseUrl}/api/v1/likes/${likeFeedId}`,
+        method: "DELETE",
+      };
+    }
   }
 }
 
@@ -100,13 +109,23 @@ export async function processAction(action: QueuedAction, settings: AppSettings)
 
   try {
     const endpoint = getEndpointForAction(action, settings.syncServerUrl);
+    let body: string | undefined;
+    if (endpoint.method !== "DELETE") {
+      if (action.action === "likePodcast") {
+        body = JSON.stringify({
+          rss_source_feed: encodeRssFeed(action.payload.feedUrl),
+        });
+      } else {
+        body = JSON.stringify(action.payload);
+      }
+    }
     const response = await fetch(endpoint.url, {
       method: endpoint.method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${settings.syncToken}`,
       },
-      body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
+      body,
     });
 
     if (!response.ok) {
