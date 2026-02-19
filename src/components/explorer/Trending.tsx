@@ -6,6 +6,7 @@ import { useTrending } from "../../hooks/useTrending";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
 import type { TrendingPodcast } from "../../services/sync/client";
+import { LikeButton } from "../ui/LikeButton";
 
 interface TrendingProps {
   onNavigate: (view: string, feedUrl?: string | null) => void;
@@ -123,6 +124,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
           </p>
         </div>
       </button>
+      <LikeButton feedUrl={podcast.feed_url} likeCount={podcast.likes} />
       <button
         type="button"
         onClick={handleSubscribe}

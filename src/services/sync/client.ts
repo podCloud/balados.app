@@ -32,9 +32,17 @@ export interface SyncRequest {
   play_statuses?: PlayStatusSync[];
 }
 
+export interface LikeSync {
+  rss_source_feed: string;
+  rss_source_item?: string | null;
+  liked_at: string;
+  unliked_at?: string | null;
+}
+
 export interface SyncResponse {
   subscriptions: SubscriptionSync[];
   play_statuses: PlayStatusSync[];
+  likes?: LikeSync[];
   synced_at: string;
 }
 
@@ -43,6 +51,7 @@ export interface TrendingPodcast {
   title: string;
   image?: string;
   subscriber_count: number;
+  likes?: number;
 }
 
 export interface TrendingResponse {
@@ -417,6 +426,28 @@ export class SyncClient {
   async getTrending(): Promise<TrendingResponse> {
     return this.request<TrendingResponse>("/api/v1/public/trending/podcasts", {
       method: "GET",
+    });
+  }
+
+  /**
+   * Like a podcast
+   */
+  async likePodcast(feedUrl: string): Promise<void> {
+    await this.request("/api/v1/likes", {
+      method: "POST",
+      body: JSON.stringify({
+        rss_source_feed: encodeRssFeed(feedUrl),
+      }),
+    });
+  }
+
+  /**
+   * Unlike a podcast
+   */
+  async unlikePodcast(feedUrl: string): Promise<void> {
+    const encodedFeed = encodeRssFeed(feedUrl);
+    await this.request(`/api/v1/likes/${encodedFeed}`, {
+      method: "DELETE",
     });
   }
 

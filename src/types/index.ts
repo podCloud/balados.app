@@ -134,6 +134,12 @@ export interface DownloadProgress {
   error?: string;
 }
 
+// Like type for local storage (podcast-level likes only)
+export interface PodcastLike {
+  feedUrl: string;
+  likedAt: number;
+}
+
 // Offline queue types - discriminated union for type safety
 export interface SubscribePayload {
   feedUrl: string;
@@ -176,6 +182,25 @@ export interface UpdatePlayStatusAction extends BaseQueuedAction {
   payload: PlayStatusPayload;
 }
 
-export type QueuedAction = SubscribeAction | UnsubscribeAction | UpdatePlayStatusAction;
+export interface LikePodcastPayload {
+  feedUrl: string;
+}
+
+export interface LikePodcastAction extends BaseQueuedAction {
+  action: "likePodcast";
+  payload: LikePodcastPayload;
+}
+
+export interface UnlikePodcastAction extends BaseQueuedAction {
+  action: "unlikePodcast";
+  payload: LikePodcastPayload;
+}
+
+export type QueuedAction =
+  | SubscribeAction
+  | UnsubscribeAction
+  | UpdatePlayStatusAction
+  | LikePodcastAction
+  | UnlikePodcastAction;
 
 export type QueuedActionType = QueuedAction["action"];

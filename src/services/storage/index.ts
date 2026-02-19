@@ -5,6 +5,7 @@ import type {
   LocalEvent,
   PlayStatus,
   PodcastFeed,
+  PodcastLike,
   QueuedAction,
   StatsSnapshot,
   Subscription,
@@ -28,6 +29,7 @@ class BaladosDatabase extends Dexie {
   syncQueue!: EntityTable<QueuedAction, "id">;
   statsSnapshots!: EntityTable<StatsSnapshot, "id">;
   hiddenEpisodes!: EntityTable<{ episodeId: string; hiddenAt: number }, "episodeId">;
+  likes!: EntityTable<PodcastLike, "feedUrl">;
 
   constructor() {
     super("balados");
@@ -98,6 +100,21 @@ class BaladosDatabase extends Dexie {
           }
         }
       });
+
+    this.version(6).stores({
+      subscriptions: "url, addedAt",
+      playStatuses: "episodeId, feedUrl, updatedAt",
+      events: "++id, type, feedUrl, timestamp",
+      feedCache: "url, cachedAt",
+      settings: "id",
+      downloads: "episodeId, feedUrl, downloadedAt",
+      syncQueue: "++id, action, createdAt",
+      statsSnapshots: "++id, createdAt",
+      hiddenEpisodes: "episodeId",
+      // Primary key is feedUrl (podcast-level likes only).
+      // If episode-level likes are added later, migrate to composite key [feedUrl+itemId].
+      likes: "feedUrl, likedAt",
+    });
   }
 }
 

@@ -93,6 +93,30 @@ describe("queueProcessor", () => {
       expect(endpoint.url).toContain("/api/v1/subscriptions/");
     });
 
+    it("returns POST /likes for likePodcast", () => {
+      const action: QueuedAction = {
+        action: "likePodcast",
+        payload: { feedUrl: "https://example.com/feed.xml" },
+        createdAt: Date.now(),
+        attempts: 0,
+      };
+      const endpoint = getEndpointForAction(action, baseUrl);
+      expect(endpoint.method).toBe("POST");
+      expect(endpoint.url).toBe(`${baseUrl}/api/v1/likes`);
+    });
+
+    it("returns DELETE /likes/{id} for unlikePodcast", () => {
+      const action: QueuedAction = {
+        action: "unlikePodcast",
+        payload: { feedUrl: "https://example.com/feed.xml" },
+        createdAt: Date.now(),
+        attempts: 0,
+      };
+      const endpoint = getEndpointForAction(action, baseUrl);
+      expect(endpoint.method).toBe("DELETE");
+      expect(endpoint.url).toContain("/api/v1/likes/");
+    });
+
     it("returns POST /play for updatePlayStatus", () => {
       const action: QueuedAction = {
         action: "updatePlayStatus",
@@ -152,6 +176,28 @@ describe("queueProcessor", () => {
       const updated = await db.syncQueue.get(id);
       expect(updated?.attempts).toBe(1);
       expect(updated?.error).toBe("HTTP 500");
+    });
+
+    it("sends base64url-encoded feed in body for likePodcast", async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(new Response(null, { status: 200 }));
+
+      const action: QueuedAction = {
+        action: "likePodcast",
+        payload: { feedUrl: "https://example.com/feed.xml" },
+        createdAt: Date.now(),
+        attempts: 0,
+      };
+      await processAction(action, mockSettings);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/likes"),
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("rss_source_feed"),
+        }),
+      );
     });
 
     it("sends Authorization header with token", async () => {

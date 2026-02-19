@@ -86,7 +86,27 @@ export function getEndpointForAction(
     }
     case "updatePlayStatus":
       return { url: `${baseUrl}/api/v1/play`, method: "POST" };
+    case "likePodcast":
+      return { url: `${baseUrl}/api/v1/likes`, method: "POST" };
+    case "unlikePodcast": {
+      const likeFeedId = encodeRssFeed(action.payload.feedUrl);
+      return {
+        url: `${baseUrl}/api/v1/likes/${likeFeedId}`,
+        method: "DELETE",
+      };
+    }
   }
+}
+
+/**
+ * Get the request body for a queued action.
+ * Handles encoding differences between action types.
+ */
+function getBodyForAction(action: QueuedAction): unknown {
+  if (action.action === "likePodcast") {
+    return { rss_source_feed: encodeRssFeed(action.payload.feedUrl) };
+  }
+  return action.payload;
 }
 
 /**
@@ -100,13 +120,17 @@ export async function processAction(action: QueuedAction, settings: AppSettings)
 
   try {
     const endpoint = getEndpointForAction(action, settings.syncServerUrl);
+    let body: string | undefined;
+    if (endpoint.method !== "DELETE") {
+      body = JSON.stringify(getBodyForAction(action));
+    }
     const response = await fetch(endpoint.url, {
       method: endpoint.method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${settings.syncToken}`,
       },
-      body: endpoint.method !== "DELETE" ? JSON.stringify(action.payload) : undefined,
+      body,
     });
 
     if (!response.ok) {

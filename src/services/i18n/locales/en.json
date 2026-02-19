@@ -165,6 +165,10 @@
     "playCompleted": "Episode finished",
     "playPaused": "Play paused"
   },
+  "likes": {
+    "like": "Like",
+    "unlike": "Unlike"
+  },
   "a11y": {
     "skipToContent": "Skip to main content"
   }
