@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "../services/storage";
 import type { PodcastLike } from "../types";
 
@@ -23,6 +23,9 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
   // Track whether the user had liked this podcast when the DB first loaded,
   // so we can compute a correct optimistic delta (server count already includes existing likes)
   const likedAtLoad = useRef<boolean | null>(null);
+  useEffect(() => {
+    likedAtLoad.current = null;
+  }, [feedUrl]);
   if (!isInitializing && likedAtLoad.current === null) {
     likedAtLoad.current = isLiked;
   }

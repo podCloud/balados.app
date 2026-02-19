@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { db, getSettings, saveSettings } from "../services/storage";
 import { getSubscriptions } from "../services/storage/subscriptions";
 import { registerPeriodicSync, unregisterPeriodicSync } from "../services/sync/backgroundSync";
+import type { LikeSync } from "../services/sync/client";
 import { SyncClient } from "../services/sync/client";
 import {
   mergePlayStatuses,
@@ -396,9 +397,7 @@ async function applyPlayStatusChanges(current: PlayStatus[], merged: PlayStatus[
  * Apply like changes from server to local database.
  * Handles both new likes and unlikes (unliked_at set).
  */
-async function applyLikeChanges(
-  likes: import("../services/sync/client").LikeSync[],
-): Promise<void> {
+async function applyLikeChanges(likes: LikeSync[]): Promise<void> {
   for (const like of likes) {
     try {
       // Skip episode-level likes (not supported in this version)
