@@ -67,6 +67,8 @@ https://{server}/api/v1/
 | DELETE | `/subscriptions/{feed}` | Remove subscription | Yes |
 | POST | `/play` | Update play position | Yes |
 | GET | `/play/{feed}/{item}` | Get play position | Yes |
+| POST | `/likes/{feed}` | Like a podcast | Yes |
+| DELETE | `/likes/{feed}` | Unlike a podcast | Yes |
 | GET | `/rss/proxy/{feed}` | CORS proxy | Yes |
 | GET | `/public/trending/podcasts` | Trending (no auth) | Yes |
 
@@ -96,6 +98,17 @@ balados.app                              balados.sync
 Subscription {                    -->    SubscriptionSync {
   url: string                              rss_source_feed: base64(url)
   addedAt: number (timestamp)              subscribed_at: ISO string
+}                                        }
+```
+
+### Like Sync
+
+```
+balados.app                              balados.sync
+-----------                              ------------
+PodcastLike {                     -->    LikeSync {
+  feedUrl: string                          rss_source_feed: base64(feedUrl)
+  likedAt: number (timestamp)              liked_at: ISO string
 }                                        }
 ```
 
@@ -251,23 +264,19 @@ src/
 ### New (created for sync)
 ```
 src/
-└── services/
-    └── sync/
-        ├── index.ts          # Module exports
-        ├── client.ts         # SyncClient class
-        └── client.test.ts    # Tests
-```
-
-### To Create
-```
-src/
 ├── services/
 │   └── sync/
+│       ├── index.ts          # Module exports
+│       ├── client.ts         # SyncClient class
+│       ├── client.test.ts    # Tests
 │       ├── merger.ts         # Conflict resolution
-│       └── merger.test.ts
+│       └── queueProcessor.ts # Offline queue processing (incl. likes)
 ├── hooks/
-│   └── useSync.ts            # React hook for sync
+│   ├── useLike.ts            # Like state + optimistic updates
+│   └── useSync.ts            # React hook for sync (incl. applyLikeChanges)
 └── components/
-    └── settings/
-        └── SyncSettings.tsx  # Sync UI
+    ├── settings/
+    │   └── SyncSettings.tsx  # Sync UI
+    └── ui/
+        └── LikeButton.tsx    # Heart icon button with count
 ```

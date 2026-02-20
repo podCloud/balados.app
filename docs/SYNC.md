@@ -93,6 +93,16 @@ interface PlayStatusSync {
 }
 ```
 
+### Likes
+
+```typescript
+interface LikeSync {
+  rss_source_feed: string   // base64(feedUrl)
+  liked_at: string          // ISO date
+  unliked_at?: string       // ISO date (si unliké)
+}
+```
+
 ### Playlists
 
 ```typescript
@@ -116,6 +126,7 @@ POST /api/v1/sync
 {
   subscriptions: [...],
   play_statuses: [...],
+  likes: [...],
   playlists: [...]
 }
 
@@ -123,6 +134,7 @@ Response:
 {
   subscriptions: [...],    // Merged result
   play_statuses: [...],
+  likes: [...],
   playlists: [...]
 }
 ```
@@ -137,6 +149,7 @@ POST /api/v1/sync
   since: "2024-01-15T10:00:00Z",  // Dernier sync
   subscriptions: [changed...],
   play_statuses: [changed...],
+  likes: [changed...],
   playlists: [changed...]
 }
 ```
@@ -167,6 +180,7 @@ function resolveConflict(local: Data, remote: Data): Data {
 |---------|------------|
 | Même épisode, positions différentes | Position la plus avancée |
 | Abonnement local + désabo remote | Timestamp le plus récent |
+| Like local + unlike remote | Timestamp le plus récent |
 | Playlist modifiée des deux côtés | Merge des items + timestamp |
 
 ### Notifications de conflit

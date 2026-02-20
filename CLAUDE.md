@@ -225,8 +225,10 @@ src/
 │   ├── stats/
 │   │   └── LocalStats.tsx
 │   └── ui/
+│       ├── LikeButton.tsx
 │       └── (shared components)
 ├── hooks/
+│   ├── useLike.ts
 │   ├── useLocalStorage.ts
 │   ├── useSync.ts
 │   └── useOffline.ts
@@ -314,6 +316,8 @@ Stats view shows listening habits without external tracking.
 | `POST /api/v1/sync` | Full sync |
 | `GET/POST /api/v1/subscriptions` | Subscriptions |
 | `POST /api/v1/play` | Record play position |
+| `POST /api/v1/likes/{feed}` | Like a podcast |
+| `DELETE /api/v1/likes/{feed}` | Unlike a podcast |
 | `GET /api/v1/rss/proxy/{feed}` | CORS proxy |
 | `GET /api/v1/rss/user/{token}/subscriptions` | Aggregated feed |
 | `GET /api/v1/public/trending/podcasts` | Trending data |
@@ -361,6 +365,19 @@ La fonctionnalité sync est maintenant implémentée :
 - [x] #24 Conflict resolution merger
 - [x] #25 useSync React hook
 
+### Likes (PR #64) - COMPLÈTE
+
+Système de likes pour les podcasts avec sync :
+- [x] `hooks/useLike.ts` - Hook React avec état like + mises à jour optimistes (likeDelta)
+- [x] `components/ui/LikeButton.tsx` - Bouton coeur avec compteur
+- [x] `types/index.ts` - Type PodcastLike, actions queue likePodcast/unlikePodcast
+- [x] `services/storage/index.ts` - Table likes dans Dexie DB
+- [x] `services/sync/queueProcessor.ts` - Mapping endpoints like/unlike
+- [x] `hooks/useSync.ts` - applyLikeChanges pour intégration sync
+- [x] Traductions i18n pour les likes
+
+**Follow-up:** [#65](https://github.com/podCloud/balados.app/issues/65) - Opérations like/queue non-atomiques
+
 **Documentation détaillée:** [docs/SYNC_STATUS.md](docs/SYNC_STATUS.md)
 
 #### Fichiers implémentés
@@ -394,4 +411,6 @@ const episodeId = generateEpisodeId(guid, enclosureUrl)
 - `GET/POST/DELETE /api/v1/subscriptions` - Abonnements
 - `POST /api/v1/play` - Position de lecture
 - `GET /api/v1/rss/proxy/{base64url_feed}` - CORS proxy
+- `POST /api/v1/likes/{feed}` - Liker un podcast
+- `DELETE /api/v1/likes/{feed}` - Unliker un podcast
 - `GET /api/v1/public/trending/podcasts` - Tendances

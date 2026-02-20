@@ -7,7 +7,7 @@ Phase 1: Fondations          █████████████████
 Phase 2: PWA & Offline       ████████████████████  100% ✓
 Phase 3: Internationalisation████████████████████  100% ✓
 Phase 4: Synchronisation     █████████████████░░░   85% ✓ (core done)
-Phase 5: Tendances           ████████████░░░░░░░░   60%
+Phase 5: Tendances & Social  █████████████████░░░   85%
 ```
 
 ---
@@ -167,7 +167,7 @@ Phase 5: Tendances           ████████████░░░░░
 
 ---
 
-## Phase 5: Tendances & Découverte
+## Phase 5: Tendances, Social & Découverte
 
 **Objectif**: Fonctionnalités sociales via balados.sync.
 
@@ -178,14 +178,24 @@ Phase 5: Tendances           ████████████░░░░░
 - [ ] Épisodes populaires
 - [x] Refresh automatique
 
-### 5.2 Statistiques locales
+### 5.2 Likes (PR #64)
+
+- [x] Hook `useLike` avec état like + mises à jour optimistes (likeDelta)
+- [x] Composant `LikeButton` (icône coeur + compteur)
+- [x] Type `PodcastLike` + actions queue `likePodcast`/`unlikePodcast`
+- [x] Table likes dans Dexie DB
+- [x] Intégration sync (`queueProcessor` + `applyLikeChanges`)
+- [x] Traductions i18n
+- [ ] Opérations like/queue atomiques ([#65](https://github.com/podCloud/balados.app/issues/65))
+
+### 5.3 Statistiques locales
 
 - [x] Event logging local (PR #28)
 - [x] Page Stats personnelles (PR #28)
 - [x] Graphiques temps d'écoute
 - [x] Top podcasts personnels
 
-### 5.3 Recherche améliorée
+### 5.4 Recherche améliorée
 
 - [ ] Recherche dans iTunes/PodcastIndex
 - [ ] Suggestions basées sur abonnements

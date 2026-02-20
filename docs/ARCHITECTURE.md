@@ -79,6 +79,7 @@ components/
 └── ui/               # Composants partagés
     ├── DownloadButton.tsx
     ├── ErrorBoundary.tsx
+    ├── LikeButton.tsx
     ├── OfflineBanner.tsx
     └── TabBar.tsx
 ```
@@ -139,11 +140,11 @@ Logique métier indépendante de l'UI.
 #### Storage Service
 
 ```typescript
-// services/storage/index.ts - Dexie.js database schema
+// services/storage/index.ts - Dexie.js database schema (incl. likes table)
 // services/storage/subscriptions.ts - Subscription CRUD
 // services/storage/playStatus.ts - Play position tracking
 // services/storage/events.ts - Local event logging for stats
-// services/storage/syncQueue.ts - Offline sync action queue
+// services/storage/syncQueue.ts - Offline sync action queue (incl. likePodcast/unlikePodcast)
 // services/storage/downloads.ts - Episode download persistence
 // services/storage/hiddenEpisodes.ts - Hidden episodes tracking
 ```
@@ -153,7 +154,8 @@ Logique métier indépendante de l'UI.
 Hooks React qui connectent l'UI aux services.
 
 ```typescript
-// hooks/useSync.ts - React hook for sync state management
+// hooks/useLike.ts - Like state & optimistic updates (likeDelta)
+// hooks/useSync.ts - React hook for sync state management (incl. applyLikeChanges)
 // hooks/useSyncQueue.ts - Sync queue operations
 // hooks/useTrending.ts - Trending podcasts data
 // hooks/useOnline.ts - Network status detection
@@ -210,6 +212,11 @@ interface BaladosDB {
     position: number
     completed: boolean
     updatedAt: Date
+  }
+
+  likes: {
+    feedUrl: string      // Primary key
+    likedAt: number      // Timestamp
   }
 
   events: {
