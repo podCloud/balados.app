@@ -165,6 +165,25 @@ Phase 5: Tendances & Social  █████████████████
 - [ ] Historique/logs de sync
 - [x] Gestion des erreurs
 
+### 4.6 Durcissement du proxy RSS (côté serveur enforce le JWT)
+
+**Contexte** : aujourd'hui le proxy serveur `/api/v1/rss/proxy/{feed}` est un **open proxy** (public, le JWT envoyé est ignoré). Le serveur va **enforcer le JWT** (voir `balados.sync/TODOS.md` — Phase A). L'app envoie déjà `Authorization: Bearer` sur ce proxy (`proxyManager.ts`), donc le chemin nominal ne change pas.
+
+**Décision** : le HMAC ne concerne **pas** le feed XML (le `fetch` porte déjà le header → JWT suffit). Le proxy d'images HMAC est **reporté** (bonus privacy marginal). L'audio reste **en direct** (préserver les stats du podcasteur).
+
+#### Phase A — MAINTENANT (s'aligner sur l'enforcement serveur)
+
+- [ ] Gérer proprement un **401** renvoyé par le proxy serveur (token invalide/expiré) : tenter un refresh token, sinon surfacer une ré-auth — **ne pas** retomber silencieusement sur les proxies publics avec un token mort.
+- [ ] Vérifier que la cascade `proxyManager.ts` (direct → serveur → proxies publics) reste cohérente quand le serveur exige le JWT.
+
+#### Phase B — FUTUR (proxy d'images HMAC, si on l'active un jour)
+
+Dépend de `balados.sync` Phase B (endpoint `POST /api/v1/rss/sign` + capability URLs `?sig=`).
+
+- [ ] En mode connecté, obtenir l'URL signée via `POST /api/v1/rss/sign` (au lieu de construire l'URL côté client) ; rendre le feed réécrit (les `<img src>` pointent déjà vers `/api/v1/rss/asset/{urlB64}?sig=…`, DOMPurify autorise déjà `src`).
+- [ ] **Service Worker** : élargir la route de cache images — la regex actuelle `/\.(png|jpg|jpeg|webp|gif)$/` **ne matchera pas** une URL proxifiée terminant par `?sig=…`. Sans ça, les images proxifiées contournent le cache 30 j (`workers/sw.ts`).
+- [ ] **Modal d'avertissement trackers** au play/download (feature sœur — pendant « audio » : l'audio n'est pas proxifié, on prévient l'user des trackers connus au moment où il engage la lecture/le téléchargement).
+
 ---
 
 ## Phase 5: Tendances, Social & Découverte
