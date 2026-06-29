@@ -35,10 +35,10 @@ git checkout -b fix/issue-<number>-<slug>
 # 3. Pusher la branche
 git push -u origin <branch-name>
 
-# 4. Créer la PR avec review obligatoire
-~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
+# 4. Créer la PR
+~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers --title "..." --body "..."
 
-# 5. ATTENDRE LA REVIEW avant de merger
+# 5. Lancer la review locale (skill development-workflow) et attendre l'approbation
 ```
 
 ### RÈGLES DE MERGE
@@ -55,7 +55,7 @@ git push -u origin <branch-name>
 - [ ] Ne JAMAIS commit sur main (sauf exceptions ci-dessus)
 - [ ] Ne JAMAIS push sur main (sauf exceptions ci-dessus)
 - [ ] TOUJOURS passer par une PR
-- [ ] TOUJOURS attendre la review Claude
+- [ ] TOUJOURS lancer la review locale (skill `development-workflow`) et attendre l'approbation
 - [ ] LIRE la review en entier et appliquer les suggestions
 
 ### SI J'AI OUBLIÉ ET COMMITÉ SUR MAIN
@@ -159,26 +159,23 @@ git commit --author="Claude <noreply@anthropic.com>" -m "message"
 
 ### PR Review Workflow
 
-**IMPORTANT**: When checking PR status, always read the full comments/reviews, not just the CI check status:
+Review is **local** via the `development-workflow` skill (at `balados/.claude/skills/development-workflow/`): adversarial subagents run the review and post verdicts as PR comments. No label, no CI review job.
+
+**IMPORTANT**: When checking PR status, always read the full comments/reviews:
 
 ```bash
 # Check for review comments (ALWAYS do this first)
 ~/.config/podclaude/gh.sh pr view <number> --comments
-
-# Then check CI status
-~/.config/podclaude/gh.sh pr checks <number>
 ```
 
-**Creating PRs with review:**
+**Creating PRs:**
 ```bash
-~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers --label "needs-claude-review" --title "..." --body "..."
+~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers --title "..." --body "..."
 ```
 
 **Always assign PRs to `pofmagicfingers`** when creating them.
 
-The `needs-claude-review` label triggers the Claude review workflow.
-
-**NEVER merge a PR without Claude review.**
+**NEVER merge a PR without a completed local review.**
 
 **Never ignore failing tests.** If `npm test` reveals failures (even pre-existing and unrelated to current work), create a GitHub issue to track them.
 
@@ -191,16 +188,11 @@ The `needs-claude-review` label triggers the Claude review workflow.
 - Pre-commit hook auto-lints and formats staged `.ts`/`.tsx`/`.js`/`.json` files with Biome
 
 A PR is ready to merge only when:
-1. The `needs-claude-review` label was added to trigger the review
-2. CI checks pass (`claude-review` shows `pass`)
-3. Review comments indicate **no critical issues** remaining
-4. If issues were raised, they must be fixed and a new review requested
+1. The local review (skill `development-workflow`) has been run and completed
+2. Review comments indicate **no critical issues** remaining
+3. If issues were raised, they must be fixed and a new review run
 
-The `claude-review` CI check passing alone is NOT sufficient - the review content must explicitly approve or show no blocking issues.
-
-If `claude-review` shows `skipping`, the label was NOT added - add it and wait for review.
-
-**After fixing review issues:** Re-add the `needs-claude-review` label (remove then add) to trigger a new review, then wait for the review to complete before proceeding.
+**After fixing review issues:** Re-run the `development-workflow` skill to trigger a new review, then wait for the review to complete before proceeding.
 
 ## Architecture
 
