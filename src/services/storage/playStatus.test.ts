@@ -231,6 +231,82 @@ describe("playStatus", () => {
     });
   });
 
+  describe("savePlayStatus throttling (sync enabled)", () => {
+    beforeEach(() => {
+      vi.mocked(getSettings).mockResolvedValue({
+        locale: "fr",
+        proxies: [],
+        syncServerUrl: "https://sync.example.com",
+        syncToken: "token",
+      });
+    });
+
+    it("queues on the first call", async () => {
+      await savePlayStatus({
+        episodeId: "throttle-first",
+        feedUrl: "https://example.com/feed.xml",
+        position: 10,
+        duration: 1000,
+        completed: false,
+      });
+
+      expect(await db.syncQueue.count()).toBe(1);
+    });
+
+    it("does not queue again on a second call within the throttle window, but still saves locally", async () => {
+      // Queue dedup would collapse two inserts down to a queue count of 1 either way,
+      // so count the real db.syncQueue.add calls to prove the second call is skipped.
+      const addSpy = vi.spyOn(db.syncQueue, "add");
+      const episodeId = "throttle-repeat";
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 10,
+        duration: 1000,
+        completed: false,
+      });
+      expect(addSpy).toHaveBeenCalledTimes(1);
+
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 20,
+        duration: 1000,
+        completed: false,
+      });
+
+      // Second call within the throttle window must not touch the queue at all
+      expect(addSpy).toHaveBeenCalledTimes(1);
+      // But the local play status is updated on every call regardless of throttling
+      const status = await db.playStatuses.get(episodeId);
+      expect(status?.position).toBe(20);
+    });
+
+    it("queues immediately when completed, even within the throttle window", async () => {
+      const addSpy = vi.spyOn(db.syncQueue, "add");
+      const episodeId = "throttle-completed";
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 10,
+        duration: 1000,
+        completed: false,
+      });
+      expect(addSpy).toHaveBeenCalledTimes(1);
+
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 1000,
+        duration: 1000,
+        completed: true,
+      });
+
+      // Completion forces an immediate queue insert rather than waiting out the throttle window
+      expect(addSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe("markAsCompleted", () => {
     it("marks episode as completed", async () => {
       await markAsCompleted("mark-complete", "https://example.com/feed.xml", 1800);

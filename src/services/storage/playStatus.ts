@@ -20,13 +20,20 @@ export const getPlayStatusForFeed = async (feedUrl: string): Promise<PlayStatus[
 export const savePlayStatus = async (status: Omit<PlayStatus, "updatedAt">): Promise<void> => {
   // The play status write and the queue insert must stay atomic: if one fails, the
   // other must roll back too, or local state diverges from the sync queue (see issue #65).
+  //
+  // Queue for sync with throttling (avoid spamming during playback, e.g. PlayerProvider's
+  // periodic 10s position saves): sync if completed, first sync, or throttle time passed.
+  // The local play status is still saved on every call regardless of throttling.
   const settings = await getSettings();
-  const shouldQueue = Boolean(settings.syncServerUrl);
+  const lastSync = lastSyncTime.get(status.episodeId) || 0;
+  const now = Date.now();
+  const shouldQueue =
+    Boolean(settings.syncServerUrl) && (status.completed || now - lastSync >= SYNC_THROTTLE_MS);
 
   await db.transaction("rw", db.playStatuses, db.syncQueue, async () => {
     await db.playStatuses.put({
       ...status,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
     if (shouldQueue) {
       await queuePlayStatusAction({
@@ -40,7 +47,7 @@ export const savePlayStatus = async (status: Omit<PlayStatus, "updatedAt">): Pro
   });
 
   if (shouldQueue) {
-    lastSyncTime.set(status.episodeId, Date.now());
+    lastSyncTime.set(status.episodeId, now);
     await requestBackgroundSync();
   }
 };
