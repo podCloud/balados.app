@@ -1,7 +1,8 @@
 import type { Subscription } from "../../types";
+import { requestBackgroundSync } from "../sync/backgroundSync";
 import { logEvent } from "./events";
 import { db, getSettings, invalidateFeedCache } from "./index";
-import { queueAction } from "./syncQueue";
+import { queueSubscribeAction, queueUnsubscribeAction } from "./syncQueue";
 
 export const getSubscriptions = async (): Promise<Subscription[]> => {
   return db.subscriptions.orderBy("addedAt").reverse().toArray();
@@ -22,15 +23,24 @@ export const addSubscription = async (url: string): Promise<Subscription> => {
     addedAt: Date.now(),
   };
 
-  await db.subscriptions.add(subscription);
+  // Queue for sync if server is configured. The subscription write and the queue
+  // insert must stay atomic: if one fails, the other must roll back too, or local
+  // state diverges from the sync queue (see issue #65).
+  const settings = await getSettings();
+  const shouldQueue = Boolean(settings.syncServerUrl);
+
+  await db.transaction("rw", db.subscriptions, db.syncQueue, async () => {
+    await db.subscriptions.add(subscription);
+    if (shouldQueue) {
+      await queueSubscribeAction({ feedUrl: url });
+    }
+  });
 
   // Log subscription event for stats
   await logEvent("subscription_added", { feedUrl: url });
 
-  // Queue for sync if server is configured
-  const settings = await getSettings();
-  if (settings.syncServerUrl) {
-    await queueAction("subscribe", { feedUrl: url });
+  if (shouldQueue) {
+    await requestBackgroundSync();
   }
 
   return subscription;
@@ -44,19 +54,26 @@ export const updateSubscription = async (
 };
 
 export const removeSubscription = async (url: string): Promise<void> => {
-  await db.subscriptions.delete(url);
+  // The subscription deletion, play status cleanup, and queue insert must stay atomic
+  // (see issue #65): if the queue insert fails, the deletions must roll back too.
+  const settings = await getSettings();
+  const shouldQueue = Boolean(settings.syncServerUrl);
+
+  await db.transaction("rw", db.subscriptions, db.playStatuses, db.syncQueue, async () => {
+    await db.subscriptions.delete(url);
+    await db.playStatuses.where("feedUrl").equals(url).delete();
+    if (shouldQueue) {
+      await queueUnsubscribeAction({ feedUrl: url });
+    }
+  });
+
   await invalidateFeedCache(url);
 
   // Log subscription event for stats
   await logEvent("subscription_removed", { feedUrl: url });
 
-  // Clean up play statuses for this feed
-  await db.playStatuses.where("feedUrl").equals(url).delete();
-
-  // Queue for sync if server is configured
-  const settings = await getSettings();
-  if (settings.syncServerUrl) {
-    await queueAction("unsubscribe", { feedUrl: url });
+  if (shouldQueue) {
+    await requestBackgroundSync();
   }
 };
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toBase64Url } from "../../utils/rssEncoding";
-import { db } from "./index";
+import { db, getSettings } from "./index";
 import {
   generateEpisodeId,
   getInProgressEpisodes,
@@ -12,7 +12,7 @@ import {
   updatePlayPosition,
 } from "./playStatus";
 
-// Mock getSettings to avoid sync queue operations
+// Mock getSettings to avoid sync queue operations by default (syncServerUrl: null)
 vi.mock("./index", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./index")>();
   return {
@@ -28,6 +28,9 @@ describe("playStatus", () => {
   beforeEach(async () => {
     // Clear database before each test
     await db.playStatuses.clear();
+    await db.syncQueue.clear();
+    vi.restoreAllMocks();
+    vi.mocked(getSettings).mockResolvedValue({ locale: "fr", proxies: [] });
   });
 
   describe("generateEpisodeId", () => {
@@ -185,6 +188,122 @@ describe("playStatus", () => {
       const status = await db.playStatuses.get("already-complete");
       expect(status?.completed).toBe(true);
       expect(status?.position).toBe(100);
+    });
+  });
+
+  describe("atomicity (sync enabled)", () => {
+    beforeEach(() => {
+      vi.mocked(getSettings).mockResolvedValue({
+        locale: "fr",
+        proxies: [],
+        syncServerUrl: "https://sync.example.com",
+        syncToken: "token",
+      });
+    });
+
+    it("rolls back savePlayStatus when queuing the sync action fails", async () => {
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
+
+      await expect(
+        savePlayStatus({
+          episodeId: "atomic-save",
+          feedUrl: "https://example.com/feed.xml",
+          position: 60,
+          duration: 1200,
+          completed: false,
+        }),
+      ).rejects.toThrow("queue failed");
+
+      expect(await db.playStatuses.get("atomic-save")).toBeUndefined();
+      expect(await db.syncQueue.count()).toBe(0);
+    });
+
+    it("rolls back updatePlayPosition when queuing the sync action fails", async () => {
+      // Completion always queues regardless of throttle, guaranteeing the queue branch runs
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
+
+      await expect(
+        updatePlayPosition("atomic-update", "https://example.com/feed.xml", 1000, 1000),
+      ).rejects.toThrow("queue failed");
+
+      expect(await db.playStatuses.get("atomic-update")).toBeUndefined();
+      expect(await db.syncQueue.count()).toBe(0);
+    });
+  });
+
+  describe("savePlayStatus throttling (sync enabled)", () => {
+    beforeEach(() => {
+      vi.mocked(getSettings).mockResolvedValue({
+        locale: "fr",
+        proxies: [],
+        syncServerUrl: "https://sync.example.com",
+        syncToken: "token",
+      });
+    });
+
+    it("queues on the first call", async () => {
+      await savePlayStatus({
+        episodeId: "throttle-first",
+        feedUrl: "https://example.com/feed.xml",
+        position: 10,
+        duration: 1000,
+        completed: false,
+      });
+
+      expect(await db.syncQueue.count()).toBe(1);
+    });
+
+    it("does not queue again on a second call within the throttle window, but still saves locally", async () => {
+      // Queue dedup would collapse two inserts down to a queue count of 1 either way,
+      // so count the real db.syncQueue.add calls to prove the second call is skipped.
+      const addSpy = vi.spyOn(db.syncQueue, "add");
+      const episodeId = "throttle-repeat";
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 10,
+        duration: 1000,
+        completed: false,
+      });
+      expect(addSpy).toHaveBeenCalledTimes(1);
+
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 20,
+        duration: 1000,
+        completed: false,
+      });
+
+      // Second call within the throttle window must not touch the queue at all
+      expect(addSpy).toHaveBeenCalledTimes(1);
+      // But the local play status is updated on every call regardless of throttling
+      const status = await db.playStatuses.get(episodeId);
+      expect(status?.position).toBe(20);
+    });
+
+    it("queues immediately when completed, even within the throttle window", async () => {
+      const addSpy = vi.spyOn(db.syncQueue, "add");
+      const episodeId = "throttle-completed";
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 10,
+        duration: 1000,
+        completed: false,
+      });
+      expect(addSpy).toHaveBeenCalledTimes(1);
+
+      await savePlayStatus({
+        episodeId,
+        feedUrl: "https://example.com/feed.xml",
+        position: 1000,
+        duration: 1000,
+        completed: true,
+      });
+
+      // Completion forces an immediate queue insert rather than waiting out the throttle window
+      expect(addSpy).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -1,10 +1,10 @@
 import type {
+  LikePodcastPayload,
   PlayStatusPayload,
   QueuedAction,
   SubscribePayload,
   UnsubscribePayload,
 } from "../../types";
-import { requestBackgroundSync } from "../sync/backgroundSync";
 import { db } from "./index";
 
 const MAX_ATTEMPTS = 5;
@@ -12,114 +12,61 @@ const BASE_RETRY_DELAY = 1000; // 1 second
 const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 
 /**
- * Add a subscribe action to the sync queue with deduplication
+ * Remove any existing queue actions matching `matchesExisting`, then insert `newAction`.
+ * Pure Dexie operations only (no side effects) so callers can compose this inside their
+ * own `db.transaction(...)` to keep it atomic with an unrelated table write (e.g. a
+ * subscription or play status record).
+ *
+ * Calling this (or `queueSubscribeAction`/`queueUnsubscribeAction`/`queuePlayStatusAction`/
+ * `queueLikeAction`) standalone, outside an enclosing `db.transaction(...)`, still performs
+ * the dedup-then-insert correctly for the sync queue itself — it just no longer rolls back
+ * together with whatever other table write it was meant to accompany (see issue #65). Every
+ * production caller must wrap it in a transaction that also covers its primary table write.
  */
-export const queueSubscribe = async (payload: SubscribePayload): Promise<number> => {
-  try {
-    // Remove any existing subscribe/unsubscribe for same feed (deduplication)
-    const existing = await db.syncQueue
-      .filter(
-        (a) =>
-          (a.action === "subscribe" || a.action === "unsubscribe") &&
-          a.payload.feedUrl === payload.feedUrl,
-      )
-      .toArray();
-
-    for (const action of existing) {
-      if (action.id) await db.syncQueue.delete(action.id);
-    }
-
-    const id = await db.syncQueue.add({
-      action: "subscribe",
-      payload,
-      createdAt: Date.now(),
-      attempts: 0,
-    });
-    await requestBackgroundSync();
-    return id as number;
-  } catch (error) {
-    console.error("Failed to queue subscribe action:", error);
-    throw error;
-  }
-};
-
-/**
- * Add an unsubscribe action to the sync queue with deduplication
- */
-export const queueUnsubscribe = async (payload: UnsubscribePayload): Promise<number> => {
-  try {
-    // Remove any existing subscribe/unsubscribe for same feed (deduplication)
-    const existing = await db.syncQueue
-      .filter(
-        (a) =>
-          (a.action === "subscribe" || a.action === "unsubscribe") &&
-          a.payload.feedUrl === payload.feedUrl,
-      )
-      .toArray();
-
-    for (const action of existing) {
-      if (action.id) await db.syncQueue.delete(action.id);
-    }
-
-    const id = await db.syncQueue.add({
-      action: "unsubscribe",
-      payload,
-      createdAt: Date.now(),
-      attempts: 0,
-    });
-    await requestBackgroundSync();
-    return id as number;
-  } catch (error) {
-    console.error("Failed to queue unsubscribe action:", error);
-    throw error;
-  }
-};
-
-/**
- * Add a play status update to the sync queue with deduplication
- */
-export const queuePlayStatus = async (payload: PlayStatusPayload): Promise<number> => {
-  try {
-    // Remove any existing play status for same episode (keep only latest)
-    const existing = await db.syncQueue
-      .filter((a) => a.action === "updatePlayStatus" && a.payload.episodeId === payload.episodeId)
-      .toArray();
-
-    for (const action of existing) {
-      if (action.id) await db.syncQueue.delete(action.id);
-    }
-
-    const id = await db.syncQueue.add({
-      action: "updatePlayStatus",
-      payload,
-      createdAt: Date.now(),
-      attempts: 0,
-    });
-    await requestBackgroundSync();
-    return id as number;
-  } catch (error) {
-    console.error("Failed to queue play status action:", error);
-    throw error;
-  }
-};
-
-/**
- * Legacy function for backwards compatibility
- * @deprecated Use queueSubscribe, queueUnsubscribe, or queuePlayStatus instead
- */
-export const queueAction = async (
-  action: "subscribe" | "unsubscribe" | "updatePlayStatus",
-  payload: SubscribePayload | UnsubscribePayload | PlayStatusPayload,
+const insertDeduped = async (
+  matchesExisting: (action: QueuedAction) => boolean,
+  newAction: Omit<QueuedAction, "id">,
 ): Promise<number> => {
-  switch (action) {
-    case "subscribe":
-      return queueSubscribe(payload as SubscribePayload);
-    case "unsubscribe":
-      return queueUnsubscribe(payload as UnsubscribePayload);
-    case "updatePlayStatus":
-      return queuePlayStatus(payload as PlayStatusPayload);
+  const existing = await db.syncQueue.filter(matchesExisting).toArray();
+  for (const action of existing) {
+    if (action.id) await db.syncQueue.delete(action.id);
   }
+  return (await db.syncQueue.add(newAction)) as number;
 };
+
+const insertSubscribeAction = (
+  action: "subscribe" | "unsubscribe",
+  payload: SubscribePayload | UnsubscribePayload,
+): Promise<number> =>
+  insertDeduped(
+    (a) =>
+      (a.action === "subscribe" || a.action === "unsubscribe") &&
+      a.payload.feedUrl === payload.feedUrl,
+    { action, payload, createdAt: Date.now(), attempts: 0 },
+  );
+
+export const queueSubscribeAction = (payload: SubscribePayload): Promise<number> =>
+  insertSubscribeAction("subscribe", payload);
+
+export const queueUnsubscribeAction = (payload: UnsubscribePayload): Promise<number> =>
+  insertSubscribeAction("unsubscribe", payload);
+
+export const queuePlayStatusAction = (payload: PlayStatusPayload): Promise<number> =>
+  insertDeduped(
+    (a) => a.action === "updatePlayStatus" && a.payload.episodeId === payload.episodeId,
+    { action: "updatePlayStatus", payload, createdAt: Date.now(), attempts: 0 },
+  );
+
+export const queueLikeAction = (
+  action: "likePodcast" | "unlikePodcast",
+  payload: LikePodcastPayload,
+): Promise<number> =>
+  insertDeduped(
+    (a) =>
+      (a.action === "likePodcast" || a.action === "unlikePodcast") &&
+      a.payload.feedUrl === payload.feedUrl,
+    { action, payload, createdAt: Date.now(), attempts: 0 },
+  );
 
 /**
  * Get all pending actions in the queue
