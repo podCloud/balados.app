@@ -33,8 +33,13 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
 
   const likeDelta = isInitializing ? 0 : (isLiked ? 1 : 0) - (likedAtLoad.current ? 1 : 0);
 
+  // Guards against a second toggleLike call firing while the first transaction is
+  // still in flight (e.g. rapid double-click), which would otherwise double-write.
+  const isProcessingRef = useRef(false);
+
   const toggleLike = useCallback(async () => {
-    if (isInitializing) return;
+    if (isInitializing || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setIsLoading(true);
     try {
       await db.transaction("rw", db.likes, db.syncQueue, async () => {
@@ -63,6 +68,7 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
     } catch (error) {
       console.error("[useLike] Failed to toggle like:", error);
     } finally {
+      isProcessingRef.current = false;
       setIsLoading(false);
     }
   }, [feedUrl, isLiked, isInitializing]);

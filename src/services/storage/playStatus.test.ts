@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toBase64Url } from "../../utils/rssEncoding";
-import { db } from "./index";
+import { db, getSettings } from "./index";
 import {
   generateEpisodeId,
   getInProgressEpisodes,
@@ -12,7 +12,7 @@ import {
   updatePlayPosition,
 } from "./playStatus";
 
-// Mock getSettings to avoid sync queue operations
+// Mock getSettings to avoid sync queue operations by default (syncServerUrl: null)
 vi.mock("./index", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./index")>();
   return {
@@ -28,6 +28,9 @@ describe("playStatus", () => {
   beforeEach(async () => {
     // Clear database before each test
     await db.playStatuses.clear();
+    await db.syncQueue.clear();
+    vi.restoreAllMocks();
+    vi.mocked(getSettings).mockResolvedValue({ locale: "fr", proxies: [] });
   });
 
   describe("generateEpisodeId", () => {
@@ -185,6 +188,46 @@ describe("playStatus", () => {
       const status = await db.playStatuses.get("already-complete");
       expect(status?.completed).toBe(true);
       expect(status?.position).toBe(100);
+    });
+  });
+
+  describe("atomicity (sync enabled)", () => {
+    beforeEach(() => {
+      vi.mocked(getSettings).mockResolvedValue({
+        locale: "fr",
+        proxies: [],
+        syncServerUrl: "https://sync.example.com",
+        syncToken: "token",
+      });
+    });
+
+    it("rolls back savePlayStatus when queuing the sync action fails", async () => {
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
+
+      await expect(
+        savePlayStatus({
+          episodeId: "atomic-save",
+          feedUrl: "https://example.com/feed.xml",
+          position: 60,
+          duration: 1200,
+          completed: false,
+        }),
+      ).rejects.toThrow("queue failed");
+
+      expect(await db.playStatuses.get("atomic-save")).toBeUndefined();
+      expect(await db.syncQueue.count()).toBe(0);
+    });
+
+    it("rolls back updatePlayPosition when queuing the sync action fails", async () => {
+      // Completion always queues regardless of throttle, guaranteeing the queue branch runs
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
+
+      await expect(
+        updatePlayPosition("atomic-update", "https://example.com/feed.xml", 1000, 1000),
+      ).rejects.toThrow("queue failed");
+
+      expect(await db.playStatuses.get("atomic-update")).toBeUndefined();
+      expect(await db.syncQueue.count()).toBe(0);
     });
   });
 

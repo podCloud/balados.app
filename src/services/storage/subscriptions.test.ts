@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { db } from "./index";
+import { db, getSettings } from "./index";
 import {
   addSubscription,
   getSubscription,
@@ -9,7 +9,9 @@ import {
   updateSubscription,
 } from "./subscriptions";
 
-// Mock getSettings and queueAction to avoid sync queue operations
+// Mock getSettings to avoid sync queue operations by default (syncServerUrl: null).
+// syncQueue itself is NOT mocked: atomicity tests below need the real Dexie writes
+// to verify that a failed queue insert rolls back the paired subscription write.
 vi.mock("./index", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./index")>();
   return {
@@ -22,15 +24,14 @@ vi.mock("./index", async (importOriginal) => {
   };
 });
 
-vi.mock("./syncQueue", () => ({
-  queueAction: vi.fn().mockResolvedValue(undefined),
-}));
-
 describe("subscriptions", () => {
   beforeEach(async () => {
     // Clear database before each test
     await db.subscriptions.clear();
     await db.playStatuses.clear();
+    await db.syncQueue.clear();
+    vi.restoreAllMocks();
+    vi.mocked(getSettings).mockResolvedValue({ locale: "fr", proxies: [] });
   });
 
   describe("getSubscriptions", () => {
@@ -201,6 +202,38 @@ describe("subscriptions", () => {
 
     it("handles removal of non-existent subscription gracefully", async () => {
       await expect(removeSubscription("https://nonexistent.com/feed.xml")).resolves.not.toThrow();
+    });
+  });
+
+  describe("atomicity (sync enabled)", () => {
+    beforeEach(() => {
+      vi.mocked(getSettings).mockResolvedValue({
+        locale: "fr",
+        proxies: [],
+        syncServerUrl: "https://sync.example.com",
+        syncToken: "token",
+      });
+    });
+
+    it("rolls back the subscription add when queuing the sync action fails", async () => {
+      const url = "https://atomic-add.com/feed.xml";
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
+
+      await expect(addSubscription(url)).rejects.toThrow("queue failed");
+
+      expect(await db.subscriptions.get(url)).toBeUndefined();
+      expect(await db.syncQueue.count()).toBe(0);
+    });
+
+    it("rolls back the subscription removal when queuing the sync action fails", async () => {
+      const url = "https://atomic-remove.com/feed.xml";
+      await db.subscriptions.put({ url, addedAt: Date.now() });
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
+
+      await expect(removeSubscription(url)).rejects.toThrow("queue failed");
+
+      expect(await db.subscriptions.get(url)).toEqual(expect.objectContaining({ url }));
+      expect(await db.syncQueue.count()).toBe(0);
     });
   });
 

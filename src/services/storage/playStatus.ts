@@ -1,6 +1,7 @@
 import type { PlayStatus } from "../../types";
+import { requestBackgroundSync } from "../sync/backgroundSync";
 import { db, getSettings } from "./index";
-import { queuePlayStatus } from "./syncQueue";
+import { queuePlayStatusAction } from "./syncQueue";
 
 export { generateEpisodeId } from "../../utils/rssEncoding";
 
@@ -17,22 +18,30 @@ export const getPlayStatusForFeed = async (feedUrl: string): Promise<PlayStatus[
 };
 
 export const savePlayStatus = async (status: Omit<PlayStatus, "updatedAt">): Promise<void> => {
-  await db.playStatuses.put({
-    ...status,
-    updatedAt: Date.now(),
+  // The play status write and the queue insert must stay atomic: if one fails, the
+  // other must roll back too, or local state diverges from the sync queue (see issue #65).
+  const settings = await getSettings();
+  const shouldQueue = Boolean(settings.syncServerUrl);
+
+  await db.transaction("rw", db.playStatuses, db.syncQueue, async () => {
+    await db.playStatuses.put({
+      ...status,
+      updatedAt: Date.now(),
+    });
+    if (shouldQueue) {
+      await queuePlayStatusAction({
+        episodeId: status.episodeId,
+        feedUrl: status.feedUrl,
+        position: status.position,
+        duration: status.duration,
+        completed: status.completed,
+      });
+    }
   });
 
-  // Queue for sync if server is configured
-  const settings = await getSettings();
-  if (settings.syncServerUrl) {
-    await queuePlayStatus({
-      episodeId: status.episodeId,
-      feedUrl: status.feedUrl,
-      position: status.position,
-      duration: status.duration,
-      completed: status.completed,
-    });
+  if (shouldQueue) {
     lastSyncTime.set(status.episodeId, Date.now());
+    await requestBackgroundSync();
   }
 };
 
@@ -46,32 +55,39 @@ export const updatePlayPosition = async (
   const completed = duration > 0 && position / duration >= 0.95;
   const finalCompleted = existing ? existing.completed || completed : completed;
 
-  await db.playStatuses.put({
-    episodeId,
-    feedUrl,
-    position,
-    duration,
-    completed: finalCompleted,
-    updatedAt: Date.now(),
-  });
-
-  // Queue for sync with throttling (avoid spamming during playback)
+  // Queue for sync with throttling (avoid spamming during playback): sync if
+  // completed, first sync, or throttle time passed.
   const settings = await getSettings();
-  if (settings.syncServerUrl) {
-    const lastSync = lastSyncTime.get(episodeId) || 0;
-    const now = Date.now();
+  const lastSync = lastSyncTime.get(episodeId) || 0;
+  const now = Date.now();
+  const shouldQueue =
+    Boolean(settings.syncServerUrl) && (finalCompleted || now - lastSync >= SYNC_THROTTLE_MS);
 
-    // Sync if: completed, first sync, or throttle time passed
-    if (finalCompleted || now - lastSync >= SYNC_THROTTLE_MS) {
-      await queuePlayStatus({
+  // The play status write and the queue insert must stay atomic: if one fails, the
+  // other must roll back too, or local state diverges from the sync queue (see issue #65).
+  await db.transaction("rw", db.playStatuses, db.syncQueue, async () => {
+    await db.playStatuses.put({
+      episodeId,
+      feedUrl,
+      position,
+      duration,
+      completed: finalCompleted,
+      updatedAt: now,
+    });
+    if (shouldQueue) {
+      await queuePlayStatusAction({
         episodeId,
         feedUrl,
         position,
         duration,
         completed: finalCompleted,
       });
-      lastSyncTime.set(episodeId, now);
     }
+  });
+
+  if (shouldQueue) {
+    lastSyncTime.set(episodeId, now);
+    await requestBackgroundSync();
   }
 };
 

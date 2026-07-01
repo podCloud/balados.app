@@ -159,4 +159,18 @@ describe("useLike", () => {
     expect(await db.likes.get(feedUrl)).toEqual(expect.objectContaining({ feedUrl }));
     expect(await db.syncQueue.count()).toBe(0);
   });
+
+  it("ignores a second toggleLike call while the first is still in flight", async () => {
+    mockUseLiveQuery.mockReturnValue(null);
+
+    const { useLike } = await import("./useLike");
+    const { result } = renderHook(() => useLike(feedUrl));
+
+    await act(async () => {
+      await Promise.all([result.current.toggleLike(), result.current.toggleLike()]);
+    });
+
+    // Only the first call should have run; the second is a no-op re-entrancy guard
+    expect(await db.syncQueue.count()).toBe(1);
+  });
 });
