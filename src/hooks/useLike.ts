@@ -37,27 +37,29 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
     if (isInitializing) return;
     setIsLoading(true);
     try {
-      if (isLiked) {
-        await db.likes.delete(feedUrl);
-        await db.syncQueue.add({
-          action: "unlikePodcast",
-          payload: { feedUrl },
-          createdAt: Date.now(),
-          attempts: 0,
-        });
-      } else {
-        const newLike: PodcastLike = {
-          feedUrl,
-          likedAt: Date.now(),
-        };
-        await db.likes.put(newLike);
-        await db.syncQueue.add({
-          action: "likePodcast",
-          payload: { feedUrl },
-          createdAt: Date.now(),
-          attempts: 0,
-        });
-      }
+      await db.transaction("rw", db.likes, db.syncQueue, async () => {
+        if (isLiked) {
+          await db.likes.delete(feedUrl);
+          await db.syncQueue.add({
+            action: "unlikePodcast",
+            payload: { feedUrl },
+            createdAt: Date.now(),
+            attempts: 0,
+          });
+        } else {
+          const newLike: PodcastLike = {
+            feedUrl,
+            likedAt: Date.now(),
+          };
+          await db.likes.put(newLike);
+          await db.syncQueue.add({
+            action: "likePodcast",
+            payload: { feedUrl },
+            createdAt: Date.now(),
+            attempts: 0,
+          });
+        }
+      });
     } catch (error) {
       console.error("[useLike] Failed to toggle like:", error);
     } finally {

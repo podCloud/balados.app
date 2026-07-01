@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "./index";
 import {
   clearQueue,
@@ -18,6 +18,7 @@ import {
 
 describe("syncQueue", () => {
   beforeEach(async () => {
+    vi.restoreAllMocks();
     await db.syncQueue.clear();
   });
 
@@ -310,6 +311,63 @@ describe("syncQueue", () => {
     });
 
     // Note: Testing the 1000 item limit would be slow, so we trust the logic
+  });
+
+  describe("atomicity", () => {
+    beforeEach(() => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    it("keeps the existing unsubscribe action if the new subscribe insert fails", async () => {
+      await queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" });
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
+
+      await expect(queueSubscribe({ feedUrl: "https://example.com/feed.xml" })).rejects.toThrow(
+        "add failed",
+      );
+
+      const actions = await db.syncQueue.toArray();
+      expect(actions).toHaveLength(1);
+      expect(actions[0].action).toBe("unsubscribe");
+    });
+
+    it("keeps the existing subscribe action if the new unsubscribe insert fails", async () => {
+      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
+
+      await expect(queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" })).rejects.toThrow(
+        "add failed",
+      );
+
+      const actions = await db.syncQueue.toArray();
+      expect(actions).toHaveLength(1);
+      expect(actions[0].action).toBe("subscribe");
+    });
+
+    it("keeps the existing play status action if the new insert fails", async () => {
+      await queuePlayStatus({
+        episodeId: "ep1",
+        feedUrl: "https://example.com/feed.xml",
+        position: 100,
+        duration: 1000,
+        completed: false,
+      });
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
+
+      await expect(
+        queuePlayStatus({
+          episodeId: "ep1",
+          feedUrl: "https://example.com/feed.xml",
+          position: 500,
+          duration: 1000,
+          completed: false,
+        }),
+      ).rejects.toThrow("add failed");
+
+      const actions = await db.syncQueue.toArray();
+      expect(actions).toHaveLength(1);
+      expect((actions[0].payload as { position: number }).position).toBe(100);
+    });
   });
 
   describe("hasPendingActions", () => {

@@ -1,30 +1,22 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { db } from "../services/storage";
 
-// Mock dexie-react-hooks
+// Mock dexie-react-hooks (only the read side; writes go through the real Dexie DB
+// backed by fake-indexeddb so transaction/rollback semantics are genuinely exercised)
 const mockUseLiveQuery = vi.hoisted(() => vi.fn());
 vi.mock("dexie-react-hooks", () => ({
   useLiveQuery: (fn: () => unknown) => mockUseLiveQuery(fn),
 }));
 
-// Mock storage
-const mockGet = vi.fn();
-const mockPut = vi.fn();
-const mockDelete = vi.fn();
-const mockAdd = vi.fn();
-vi.mock("../services/storage", () => ({
-  db: {
-    likes: { get: mockGet, put: mockPut, delete: mockDelete },
-    syncQueue: { add: mockAdd },
-  },
-}));
+const feedUrl = "https://example.com/feed.xml";
 
 describe("useLike", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockPut.mockResolvedValue(undefined);
-    mockDelete.mockResolvedValue(undefined);
-    mockAdd.mockResolvedValue(1);
+  beforeEach(async () => {
+    vi.restoreAllMocks();
+    mockUseLiveQuery.mockReset();
+    await db.likes.clear();
+    await db.syncQueue.clear();
   });
 
   it("returns isLoading true while DB query is initializing", async () => {
@@ -32,7 +24,7 @@ describe("useLike", () => {
     mockUseLiveQuery.mockReturnValue(undefined);
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     expect(result.current.isLiked).toBe(false);
     expect(result.current.isLoading).toBe(true);
@@ -44,7 +36,7 @@ describe("useLike", () => {
     mockUseLiveQuery.mockReturnValue(null);
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     expect(result.current.isLiked).toBe(false);
     expect(result.current.isLoading).toBe(false);
@@ -52,10 +44,10 @@ describe("useLike", () => {
   });
 
   it("returns isLiked true when a like record exists", async () => {
-    mockUseLiveQuery.mockReturnValue({ feedUrl: "https://example.com/feed.xml", likedAt: 123 });
+    mockUseLiveQuery.mockReturnValue({ feedUrl, likedAt: 123 });
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     expect(result.current.isLiked).toBe(true);
     expect(result.current.isLoading).toBe(false);
@@ -67,42 +59,38 @@ describe("useLike", () => {
     mockUseLiveQuery.mockReturnValue(null);
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     await act(async () => {
       await result.current.toggleLike();
     });
 
-    expect(mockPut).toHaveBeenCalledWith(
-      expect.objectContaining({
-        feedUrl: "https://example.com/feed.xml",
-        likedAt: expect.any(Number),
-      }),
-    );
-    expect(mockAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "likePodcast",
-        payload: { feedUrl: "https://example.com/feed.xml" },
-      }),
+    const like = await db.likes.get(feedUrl);
+    expect(like).toEqual(expect.objectContaining({ feedUrl, likedAt: expect.any(Number) }));
+
+    const queued = await db.syncQueue.toArray();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toEqual(
+      expect.objectContaining({ action: "likePodcast", payload: { feedUrl } }),
     );
   });
 
   it("toggleLike removes a like and queues unlike action", async () => {
-    mockUseLiveQuery.mockReturnValue({ feedUrl: "https://example.com/feed.xml", likedAt: 123 });
+    await db.likes.put({ feedUrl, likedAt: 123 });
+    mockUseLiveQuery.mockReturnValue({ feedUrl, likedAt: 123 });
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     await act(async () => {
       await result.current.toggleLike();
     });
 
-    expect(mockDelete).toHaveBeenCalledWith("https://example.com/feed.xml");
-    expect(mockAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "unlikePodcast",
-        payload: { feedUrl: "https://example.com/feed.xml" },
-      }),
+    expect(await db.likes.get(feedUrl)).toBeUndefined();
+    const queued = await db.syncQueue.toArray();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toEqual(
+      expect.objectContaining({ action: "unlikePodcast", payload: { feedUrl } }),
     );
   });
 
@@ -110,24 +98,23 @@ describe("useLike", () => {
     mockUseLiveQuery.mockReturnValue(undefined);
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     await act(async () => {
       await result.current.toggleLike();
     });
 
-    expect(mockPut).not.toHaveBeenCalled();
-    expect(mockDelete).not.toHaveBeenCalled();
-    expect(mockAdd).not.toHaveBeenCalled();
+    expect(await db.likes.get(feedUrl)).toBeUndefined();
+    expect(await db.syncQueue.count()).toBe(0);
   });
 
   it("handles errors gracefully in toggleLike", async () => {
     mockUseLiveQuery.mockReturnValue(null);
-    mockPut.mockRejectedValue(new Error("DB write failed"));
+    vi.spyOn(db.likes, "put").mockRejectedValueOnce(new Error("DB write failed"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { useLike } = await import("./useLike");
-    const { result } = renderHook(() => useLike("https://example.com/feed.xml"));
+    const { result } = renderHook(() => useLike(feedUrl));
 
     await act(async () => {
       await result.current.toggleLike();
@@ -136,7 +123,40 @@ describe("useLike", () => {
     // Should not throw, and should log the error
     expect(consoleSpy).toHaveBeenCalledWith("[useLike] Failed to toggle like:", expect.any(Error));
     expect(result.current.isLoading).toBe(false);
+  });
 
-    consoleSpy.mockRestore();
+  it("rolls back the like write when queuing the sync action fails", async () => {
+    mockUseLiveQuery.mockReturnValue(null);
+    vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("Queue write failed"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { useLike } = await import("./useLike");
+    const { result } = renderHook(() => useLike(feedUrl));
+
+    await act(async () => {
+      await result.current.toggleLike();
+    });
+
+    // The like put must be rolled back since the transaction failed on the queue write
+    expect(await db.likes.get(feedUrl)).toBeUndefined();
+    expect(await db.syncQueue.count()).toBe(0);
+  });
+
+  it("rolls back the like deletion when queuing the unlike action fails", async () => {
+    await db.likes.put({ feedUrl, likedAt: 123 });
+    mockUseLiveQuery.mockReturnValue({ feedUrl, likedAt: 123 });
+    vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("Queue write failed"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { useLike } = await import("./useLike");
+    const { result } = renderHook(() => useLike(feedUrl));
+
+    await act(async () => {
+      await result.current.toggleLike();
+    });
+
+    // The like deletion must be rolled back since the transaction failed on the queue write
+    expect(await db.likes.get(feedUrl)).toEqual(expect.objectContaining({ feedUrl }));
+    expect(await db.syncQueue.count()).toBe(0);
   });
 });

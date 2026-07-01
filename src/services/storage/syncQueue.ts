@@ -16,24 +16,26 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
  */
 export const queueSubscribe = async (payload: SubscribePayload): Promise<number> => {
   try {
-    // Remove any existing subscribe/unsubscribe for same feed (deduplication)
-    const existing = await db.syncQueue
-      .filter(
-        (a) =>
-          (a.action === "subscribe" || a.action === "unsubscribe") &&
-          a.payload.feedUrl === payload.feedUrl,
-      )
-      .toArray();
+    const id = await db.transaction("rw", db.syncQueue, async () => {
+      // Remove any existing subscribe/unsubscribe for same feed (deduplication)
+      const existing = await db.syncQueue
+        .filter(
+          (a) =>
+            (a.action === "subscribe" || a.action === "unsubscribe") &&
+            a.payload.feedUrl === payload.feedUrl,
+        )
+        .toArray();
 
-    for (const action of existing) {
-      if (action.id) await db.syncQueue.delete(action.id);
-    }
+      for (const action of existing) {
+        if (action.id) await db.syncQueue.delete(action.id);
+      }
 
-    const id = await db.syncQueue.add({
-      action: "subscribe",
-      payload,
-      createdAt: Date.now(),
-      attempts: 0,
+      return db.syncQueue.add({
+        action: "subscribe",
+        payload,
+        createdAt: Date.now(),
+        attempts: 0,
+      });
     });
     await requestBackgroundSync();
     return id as number;
@@ -48,24 +50,26 @@ export const queueSubscribe = async (payload: SubscribePayload): Promise<number>
  */
 export const queueUnsubscribe = async (payload: UnsubscribePayload): Promise<number> => {
   try {
-    // Remove any existing subscribe/unsubscribe for same feed (deduplication)
-    const existing = await db.syncQueue
-      .filter(
-        (a) =>
-          (a.action === "subscribe" || a.action === "unsubscribe") &&
-          a.payload.feedUrl === payload.feedUrl,
-      )
-      .toArray();
+    const id = await db.transaction("rw", db.syncQueue, async () => {
+      // Remove any existing subscribe/unsubscribe for same feed (deduplication)
+      const existing = await db.syncQueue
+        .filter(
+          (a) =>
+            (a.action === "subscribe" || a.action === "unsubscribe") &&
+            a.payload.feedUrl === payload.feedUrl,
+        )
+        .toArray();
 
-    for (const action of existing) {
-      if (action.id) await db.syncQueue.delete(action.id);
-    }
+      for (const action of existing) {
+        if (action.id) await db.syncQueue.delete(action.id);
+      }
 
-    const id = await db.syncQueue.add({
-      action: "unsubscribe",
-      payload,
-      createdAt: Date.now(),
-      attempts: 0,
+      return db.syncQueue.add({
+        action: "unsubscribe",
+        payload,
+        createdAt: Date.now(),
+        attempts: 0,
+      });
     });
     await requestBackgroundSync();
     return id as number;
@@ -80,20 +84,22 @@ export const queueUnsubscribe = async (payload: UnsubscribePayload): Promise<num
  */
 export const queuePlayStatus = async (payload: PlayStatusPayload): Promise<number> => {
   try {
-    // Remove any existing play status for same episode (keep only latest)
-    const existing = await db.syncQueue
-      .filter((a) => a.action === "updatePlayStatus" && a.payload.episodeId === payload.episodeId)
-      .toArray();
+    const id = await db.transaction("rw", db.syncQueue, async () => {
+      // Remove any existing play status for same episode (keep only latest)
+      const existing = await db.syncQueue
+        .filter((a) => a.action === "updatePlayStatus" && a.payload.episodeId === payload.episodeId)
+        .toArray();
 
-    for (const action of existing) {
-      if (action.id) await db.syncQueue.delete(action.id);
-    }
+      for (const action of existing) {
+        if (action.id) await db.syncQueue.delete(action.id);
+      }
 
-    const id = await db.syncQueue.add({
-      action: "updatePlayStatus",
-      payload,
-      createdAt: Date.now(),
-      attempts: 0,
+      return db.syncQueue.add({
+        action: "updatePlayStatus",
+        payload,
+        createdAt: Date.now(),
+        attempts: 0,
+      });
     });
     await requestBackgroundSync();
     return id as number;
