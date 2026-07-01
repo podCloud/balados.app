@@ -1,10 +1,10 @@
 import type {
+  LikePodcastPayload,
   PlayStatusPayload,
   QueuedAction,
   SubscribePayload,
   UnsubscribePayload,
 } from "../../types";
-import { requestBackgroundSync } from "../sync/backgroundSync";
 import { db } from "./index";
 
 const MAX_ATTEMPTS = 5;
@@ -51,65 +51,16 @@ export const queuePlayStatusAction = (payload: PlayStatusPayload): Promise<numbe
     { action: "updatePlayStatus", payload, createdAt: Date.now(), attempts: 0 },
   );
 
-/**
- * Add a subscribe action to the sync queue with deduplication
- */
-export const queueSubscribe = async (payload: SubscribePayload): Promise<number> => {
-  try {
-    const id = await db.transaction("rw", db.syncQueue, () => queueSubscribeAction(payload));
-    await requestBackgroundSync();
-    return id;
-  } catch (error) {
-    console.error("Failed to queue subscribe action:", error);
-    throw error;
-  }
-};
-
-/**
- * Add an unsubscribe action to the sync queue with deduplication
- */
-export const queueUnsubscribe = async (payload: UnsubscribePayload): Promise<number> => {
-  try {
-    const id = await db.transaction("rw", db.syncQueue, () => queueUnsubscribeAction(payload));
-    await requestBackgroundSync();
-    return id;
-  } catch (error) {
-    console.error("Failed to queue unsubscribe action:", error);
-    throw error;
-  }
-};
-
-/**
- * Add a play status update to the sync queue with deduplication
- */
-export const queuePlayStatus = async (payload: PlayStatusPayload): Promise<number> => {
-  try {
-    const id = await db.transaction("rw", db.syncQueue, () => queuePlayStatusAction(payload));
-    await requestBackgroundSync();
-    return id;
-  } catch (error) {
-    console.error("Failed to queue play status action:", error);
-    throw error;
-  }
-};
-
-/**
- * Legacy function for backwards compatibility
- * @deprecated Use queueSubscribe, queueUnsubscribe, or queuePlayStatus instead
- */
-export const queueAction = async (
-  action: "subscribe" | "unsubscribe" | "updatePlayStatus",
-  payload: SubscribePayload | UnsubscribePayload | PlayStatusPayload,
-): Promise<number> => {
-  switch (action) {
-    case "subscribe":
-      return queueSubscribe(payload as SubscribePayload);
-    case "unsubscribe":
-      return queueUnsubscribe(payload as UnsubscribePayload);
-    case "updatePlayStatus":
-      return queuePlayStatus(payload as PlayStatusPayload);
-  }
-};
+export const queueLikeAction = (
+  action: "likePodcast" | "unlikePodcast",
+  payload: LikePodcastPayload,
+): Promise<number> =>
+  insertDeduped(
+    (a) =>
+      (a.action === "likePodcast" || a.action === "unlikePodcast") &&
+      a.payload.feedUrl === payload.feedUrl,
+    { action, payload, createdAt: Date.now(), attempts: 0 },
+  );
 
 /**
  * Get all pending actions in the queue

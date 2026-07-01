@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppSettings, QueuedAction } from "../../types";
 import { db } from "../storage/index";
-import { queueSubscribe } from "../storage/syncQueue";
+import { queueSubscribeAction } from "../storage/syncQueue";
 import {
   acquireSyncLock,
   getEndpointForAction,
@@ -165,7 +165,7 @@ describe("queueProcessor", () => {
     it("returns false and marks attempted on API failure", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 500 }));
 
-      const id = await queueSubscribe({
+      const id = await queueSubscribeAction({
         feedUrl: "https://example.com/feed.xml",
       });
       const action = (await db.syncQueue.get(id))!;
@@ -254,8 +254,8 @@ describe("queueProcessor", () => {
         ...mockSettings,
       } as AppSettings & { id: string });
 
-      await queueSubscribe({ feedUrl: "https://a.com/feed.xml" });
-      await queueSubscribe({ feedUrl: "https://b.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://a.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://b.com/feed.xml" });
 
       const result = await processQueue("app");
       expect(result).toBe(2);
@@ -284,7 +284,7 @@ describe("queueProcessor", () => {
         id: "app_settings",
         ...mockSettings,
       } as AppSettings & { id: string });
-      await queueSubscribe({ feedUrl: "https://a.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://a.com/feed.xml" });
 
       await processQueue("app");
 

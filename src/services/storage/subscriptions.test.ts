@@ -228,11 +228,22 @@ describe("subscriptions", () => {
     it("rolls back the subscription removal when queuing the sync action fails", async () => {
       const url = "https://atomic-remove.com/feed.xml";
       await db.subscriptions.put({ url, addedAt: Date.now() });
+      await db.playStatuses.put({
+        episodeId: "ep1",
+        feedUrl: url,
+        position: 100,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now(),
+      });
       vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("queue failed"));
 
       await expect(removeSubscription(url)).rejects.toThrow("queue failed");
 
       expect(await db.subscriptions.get(url)).toEqual(expect.objectContaining({ url }));
+      // The play status cleanup is part of the same transaction (see removeSubscription):
+      // it must roll back too, not just the subscription row.
+      expect(await db.playStatuses.get("ep1")).toEqual(expect.objectContaining({ feedUrl: url }));
       expect(await db.syncQueue.count()).toBe(0);
     });
   });

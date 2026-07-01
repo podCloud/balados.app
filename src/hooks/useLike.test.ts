@@ -173,4 +173,26 @@ describe("useLike", () => {
     // Only the first call should have run; the second is a no-op re-entrancy guard
     expect(await db.syncQueue.count()).toBe(1);
   });
+
+  it("stays consistent when two mounted hook instances toggle the same feed concurrently", async () => {
+    // Simulates two <LikeButton feedUrl="..."> instances (or two browser tabs
+    // sharing the same IndexedDB) racing a toggle for the same feed. Each has its
+    // own re-entrancy ref, so the per-instance guard alone cannot prevent this.
+    mockUseLiveQuery.mockReturnValue(null);
+
+    const { useLike } = await import("./useLike");
+    const a = renderHook(() => useLike(feedUrl));
+    const b = renderHook(() => useLike(feedUrl));
+
+    await act(async () => {
+      await Promise.all([a.result.current.toggleLike(), b.result.current.toggleLike()]);
+    });
+
+    // Two toggles on an initially-unliked feed must net out to "liked, then
+    // unliked" (mirroring two real clicks), not two identical "like" writes.
+    expect(await db.likes.get(feedUrl)).toBeUndefined();
+    const queued = await db.syncQueue.toArray();
+    expect(queued).toHaveLength(1);
+    expect(queued[0]).toEqual(expect.objectContaining({ action: "unlikePodcast" }));
+  });
 });

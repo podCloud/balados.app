@@ -9,10 +9,10 @@ import {
   hasPendingActions,
   markAttempted,
   pruneFailedActions,
-  queueAction,
-  queuePlayStatus,
-  queueSubscribe,
-  queueUnsubscribe,
+  queueLikeAction,
+  queuePlayStatusAction,
+  queueSubscribeAction,
+  queueUnsubscribeAction,
   removeAction,
 } from "./syncQueue";
 
@@ -22,9 +22,9 @@ describe("syncQueue", () => {
     await db.syncQueue.clear();
   });
 
-  describe("queueSubscribe", () => {
+  describe("queueSubscribeAction", () => {
     it("adds a subscribe action to the queue", async () => {
-      const id = await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      const id = await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       expect(id).toBeGreaterThan(0);
 
@@ -35,16 +35,16 @@ describe("syncQueue", () => {
     });
 
     it("deduplicates subscribe actions for same feed", async () => {
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const count = await db.syncQueue.count();
       expect(count).toBe(1);
     });
 
     it("removes existing unsubscribe when subscribing", async () => {
-      await queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" });
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueUnsubscribeAction({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const actions = await db.syncQueue.toArray();
       expect(actions).toHaveLength(1);
@@ -52,17 +52,17 @@ describe("syncQueue", () => {
     });
   });
 
-  describe("queueUnsubscribe", () => {
+  describe("queueUnsubscribeAction", () => {
     it("adds an unsubscribe action to the queue", async () => {
-      const id = await queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" });
+      const id = await queueUnsubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const action = await db.syncQueue.get(id);
       expect(action?.action).toBe("unsubscribe");
     });
 
     it("removes existing subscribe when unsubscribing", async () => {
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
-      await queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
+      await queueUnsubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const actions = await db.syncQueue.toArray();
       expect(actions).toHaveLength(1);
@@ -70,9 +70,9 @@ describe("syncQueue", () => {
     });
   });
 
-  describe("queuePlayStatus", () => {
+  describe("queuePlayStatusAction", () => {
     it("adds a play status action to the queue", async () => {
-      const id = await queuePlayStatus({
+      const id = await queuePlayStatusAction({
         episodeId: "ep1",
         feedUrl: "https://example.com/feed.xml",
         position: 100,
@@ -86,14 +86,14 @@ describe("syncQueue", () => {
     });
 
     it("keeps only latest play status for same episode", async () => {
-      await queuePlayStatus({
+      await queuePlayStatusAction({
         episodeId: "ep1",
         feedUrl: "https://example.com/feed.xml",
         position: 100,
         duration: 1000,
         completed: false,
       });
-      await queuePlayStatus({
+      await queuePlayStatusAction({
         episodeId: "ep1",
         feedUrl: "https://example.com/feed.xml",
         position: 500,
@@ -107,32 +107,47 @@ describe("syncQueue", () => {
     });
   });
 
-  describe("queueAction (legacy)", () => {
-    it("routes to queueSubscribe", async () => {
-      await queueAction("subscribe", { feedUrl: "https://test.com/feed.xml" });
+  describe("queueLikeAction", () => {
+    it("adds a likePodcast action to the queue", async () => {
+      const id = await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
 
-      const actions = await db.syncQueue.toArray();
-      expect(actions[0].action).toBe("subscribe");
+      const action = await db.syncQueue.get(id);
+      expect(action?.action).toBe("likePodcast");
+      expect(action?.payload.feedUrl).toBe("https://example.com/feed.xml");
     });
 
-    it("routes to queueUnsubscribe", async () => {
-      await queueAction("unsubscribe", { feedUrl: "https://test.com/feed.xml" });
+    it("deduplicates repeated like actions for the same feed", async () => {
+      await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
+      await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
 
-      const actions = await db.syncQueue.toArray();
-      expect(actions[0].action).toBe("unsubscribe");
+      const count = await db.syncQueue.count();
+      expect(count).toBe(1);
     });
 
-    it("routes to queuePlayStatus", async () => {
-      await queueAction("updatePlayStatus", {
-        episodeId: "ep1",
-        feedUrl: "https://test.com/feed.xml",
-        position: 50,
-        duration: 500,
-        completed: false,
-      });
+    it("removes an existing likePodcast action when unliking", async () => {
+      await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
+      await queueLikeAction("unlikePodcast", { feedUrl: "https://example.com/feed.xml" });
 
       const actions = await db.syncQueue.toArray();
-      expect(actions[0].action).toBe("updatePlayStatus");
+      expect(actions).toHaveLength(1);
+      expect(actions[0].action).toBe("unlikePodcast");
+    });
+
+    it("removes an existing unlikePodcast action when liking", async () => {
+      await queueLikeAction("unlikePodcast", { feedUrl: "https://example.com/feed.xml" });
+      await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
+
+      const actions = await db.syncQueue.toArray();
+      expect(actions).toHaveLength(1);
+      expect(actions[0].action).toBe("likePodcast");
+    });
+
+    it("does not affect actions for a different feed", async () => {
+      await queueLikeAction("likePodcast", { feedUrl: "https://other.com/feed.xml" });
+      await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
+
+      const count = await db.syncQueue.count();
+      expect(count).toBe(2);
     });
   });
 
@@ -169,9 +184,9 @@ describe("syncQueue", () => {
     });
 
     it("returns correct count", async () => {
-      await queueSubscribe({ feedUrl: "https://a.com/feed.xml" });
-      await queueSubscribe({ feedUrl: "https://b.com/feed.xml" });
-      await queueSubscribe({ feedUrl: "https://c.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://a.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://b.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://c.com/feed.xml" });
 
       const count = await getPendingCount();
       expect(count).toBe(3);
@@ -180,7 +195,7 @@ describe("syncQueue", () => {
 
   describe("markAttempted", () => {
     it("increments attempts and sets lastAttemptAt", async () => {
-      const id = await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      const id = await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       await markAttempted(id);
 
@@ -190,7 +205,7 @@ describe("syncQueue", () => {
     });
 
     it("stores error message", async () => {
-      const id = await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      const id = await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       await markAttempted(id, "Network error");
 
@@ -205,7 +220,7 @@ describe("syncQueue", () => {
 
   describe("removeAction", () => {
     it("removes action from queue", async () => {
-      const id = await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      const id = await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       await removeAction(id);
 
@@ -216,8 +231,8 @@ describe("syncQueue", () => {
 
   describe("clearQueue", () => {
     it("removes all actions", async () => {
-      await queueSubscribe({ feedUrl: "https://a.com/feed.xml" });
-      await queueSubscribe({ feedUrl: "https://b.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://a.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://b.com/feed.xml" });
 
       await clearQueue();
 
@@ -228,7 +243,7 @@ describe("syncQueue", () => {
 
   describe("getRetryableActions", () => {
     it("returns actions with 0 attempts", async () => {
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const retryable = await getRetryableActions();
       expect(retryable).toHaveLength(1);
@@ -284,7 +299,7 @@ describe("syncQueue", () => {
         createdAt: Date.now(),
         attempts: 5,
       });
-      await queueSubscribe({ feedUrl: "https://ok.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://ok.com/feed.xml" });
 
       const pruned = await pruneFailedActions();
 
@@ -295,7 +310,7 @@ describe("syncQueue", () => {
     });
 
     it("returns 0 when no failed actions", async () => {
-      await queueSubscribe({ feedUrl: "https://ok.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://ok.com/feed.xml" });
 
       const pruned = await pruneFailedActions();
       expect(pruned).toBe(0);
@@ -304,7 +319,7 @@ describe("syncQueue", () => {
 
   describe("enforceQueueLimit", () => {
     it("does nothing when under limit", async () => {
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const removed = await enforceQueueLimit();
       expect(removed).toBe(0);
@@ -313,18 +328,25 @@ describe("syncQueue", () => {
     // Note: Testing the 1000 item limit would be slow, so we trust the logic
   });
 
-  describe("atomicity", () => {
+  describe("atomicity (composed inside a caller transaction)", () => {
+    // The *Action helpers are pure Dexie ops with no transaction of their own (see
+    // insertDeduped's docstring in syncQueue.ts) — callers (subscriptions.ts,
+    // playStatus.ts, useLike.ts) compose them inside their own db.transaction(...).
+    // These tests reproduce that composition to prove the dedup-delete-then-insert
+    // sequence rolls back as a unit when the caller's transaction aborts.
     beforeEach(() => {
       vi.spyOn(console, "error").mockImplementation(() => {});
     });
 
     it("keeps the existing unsubscribe action if the new subscribe insert fails", async () => {
-      await queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueUnsubscribeAction({ feedUrl: "https://example.com/feed.xml" });
       vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
 
-      await expect(queueSubscribe({ feedUrl: "https://example.com/feed.xml" })).rejects.toThrow(
-        "add failed",
-      );
+      await expect(
+        db.transaction("rw", db.syncQueue, () =>
+          queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" }),
+        ),
+      ).rejects.toThrow("add failed");
 
       const actions = await db.syncQueue.toArray();
       expect(actions).toHaveLength(1);
@@ -332,12 +354,14 @@ describe("syncQueue", () => {
     });
 
     it("keeps the existing subscribe action if the new unsubscribe insert fails", async () => {
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
       vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
 
-      await expect(queueUnsubscribe({ feedUrl: "https://example.com/feed.xml" })).rejects.toThrow(
-        "add failed",
-      );
+      await expect(
+        db.transaction("rw", db.syncQueue, () =>
+          queueUnsubscribeAction({ feedUrl: "https://example.com/feed.xml" }),
+        ),
+      ).rejects.toThrow("add failed");
 
       const actions = await db.syncQueue.toArray();
       expect(actions).toHaveLength(1);
@@ -345,7 +369,7 @@ describe("syncQueue", () => {
     });
 
     it("keeps the existing play status action if the new insert fails", async () => {
-      await queuePlayStatus({
+      await queuePlayStatusAction({
         episodeId: "ep1",
         feedUrl: "https://example.com/feed.xml",
         position: 100,
@@ -355,18 +379,35 @@ describe("syncQueue", () => {
       vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
 
       await expect(
-        queuePlayStatus({
-          episodeId: "ep1",
-          feedUrl: "https://example.com/feed.xml",
-          position: 500,
-          duration: 1000,
-          completed: false,
-        }),
+        db.transaction("rw", db.syncQueue, () =>
+          queuePlayStatusAction({
+            episodeId: "ep1",
+            feedUrl: "https://example.com/feed.xml",
+            position: 500,
+            duration: 1000,
+            completed: false,
+          }),
+        ),
       ).rejects.toThrow("add failed");
 
       const actions = await db.syncQueue.toArray();
       expect(actions).toHaveLength(1);
       expect((actions[0].payload as { position: number }).position).toBe(100);
+    });
+
+    it("keeps the existing likePodcast action if the new unlike insert fails", async () => {
+      await queueLikeAction("likePodcast", { feedUrl: "https://example.com/feed.xml" });
+      vi.spyOn(db.syncQueue, "add").mockRejectedValueOnce(new Error("add failed"));
+
+      await expect(
+        db.transaction("rw", db.syncQueue, () =>
+          queueLikeAction("unlikePodcast", { feedUrl: "https://example.com/feed.xml" }),
+        ),
+      ).rejects.toThrow("add failed");
+
+      const actions = await db.syncQueue.toArray();
+      expect(actions).toHaveLength(1);
+      expect(actions[0].action).toBe("likePodcast");
     });
   });
 
@@ -377,7 +418,7 @@ describe("syncQueue", () => {
     });
 
     it("returns true when actions exist", async () => {
-      await queueSubscribe({ feedUrl: "https://example.com/feed.xml" });
+      await queueSubscribeAction({ feedUrl: "https://example.com/feed.xml" });
 
       const has = await hasPendingActions();
       expect(has).toBe(true);

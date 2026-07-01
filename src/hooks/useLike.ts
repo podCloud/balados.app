@@ -1,6 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "../services/storage";
+import { queueLikeAction } from "../services/storage/syncQueue";
 import type { PodcastLike } from "../types";
 
 interface UseLikeReturn {
@@ -43,26 +44,22 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
     setIsLoading(true);
     try {
       await db.transaction("rw", db.likes, db.syncQueue, async () => {
-        if (isLiked) {
+        // Read fresh inside the transaction rather than trusting the `isLiked`
+        // closure: IndexedDB serializes overlapping rw transactions on the same
+        // tables, so two mounted instances (or two tabs) toggling the same
+        // feedUrl concurrently each see the other's committed write and toggle
+        // in the correct direction instead of racing on the same stale snapshot.
+        const current = await db.likes.get(feedUrl);
+        if (current) {
           await db.likes.delete(feedUrl);
-          await db.syncQueue.add({
-            action: "unlikePodcast",
-            payload: { feedUrl },
-            createdAt: Date.now(),
-            attempts: 0,
-          });
+          await queueLikeAction("unlikePodcast", { feedUrl });
         } else {
           const newLike: PodcastLike = {
             feedUrl,
             likedAt: Date.now(),
           };
           await db.likes.put(newLike);
-          await db.syncQueue.add({
-            action: "likePodcast",
-            payload: { feedUrl },
-            createdAt: Date.now(),
-            attempts: 0,
-          });
+          await queueLikeAction("likePodcast", { feedUrl });
         }
       });
     } catch (error) {
@@ -71,7 +68,7 @@ export const useLike = (feedUrl: string): UseLikeReturn => {
       isProcessingRef.current = false;
       setIsLoading(false);
     }
-  }, [feedUrl, isLiked, isInitializing]);
+  }, [feedUrl, isInitializing]);
 
   return { isLiked, toggleLike, isLoading: isLoading || isInitializing, likeDelta };
 };
