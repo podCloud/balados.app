@@ -16,6 +16,12 @@ const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
  * Pure Dexie operations only (no side effects) so callers can compose this inside their
  * own `db.transaction(...)` to keep it atomic with an unrelated table write (e.g. a
  * subscription or play status record).
+ *
+ * Calling this (or `queueSubscribeAction`/`queueUnsubscribeAction`/`queuePlayStatusAction`/
+ * `queueLikeAction`) standalone, outside an enclosing `db.transaction(...)`, still performs
+ * the dedup-then-insert correctly for the sync queue itself — it just no longer rolls back
+ * together with whatever other table write it was meant to accompany (see issue #65). Every
+ * production caller must wrap it in a transaction that also covers its primary table write.
  */
 const insertDeduped = async (
   matchesExisting: (action: QueuedAction) => boolean,
