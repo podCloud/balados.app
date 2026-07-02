@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayStatus } from "../types";
-import { getEpisodeStatus } from "./listeningHistory";
+import { getEpisodeStatus, isWithinPeriod } from "./listeningHistory";
 
 const basePlayStatus: PlayStatus = {
   episodeId: "ep1",
@@ -28,5 +28,38 @@ describe("getEpisodeStatus", () => {
     expect(getEpisodeStatus({ ...basePlayStatus, completed: false, position: 0 })).toBe(
       "notStarted",
     );
+  });
+});
+
+describe("isWithinPeriod", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const now = 1_000_000_000_000;
+
+  it("passes everything through when period is empty", () => {
+    expect(isWithinPeriod(now - 1000 * DAY, "", now)).toBe(true);
+  });
+
+  it("includes a timestamp exactly at the week boundary", () => {
+    expect(isWithinPeriod(now - 7 * DAY, "week", now)).toBe(true);
+  });
+
+  it("excludes a timestamp just past the week boundary", () => {
+    expect(isWithinPeriod(now - 7 * DAY - 1, "week", now)).toBe(false);
+  });
+
+  it("includes a timestamp within the month window", () => {
+    expect(isWithinPeriod(now - 15 * DAY, "month", now)).toBe(true);
+  });
+
+  it("excludes a timestamp past the month window", () => {
+    expect(isWithinPeriod(now - 31 * DAY, "month", now)).toBe(false);
+  });
+
+  it("includes a timestamp within the year window", () => {
+    expect(isWithinPeriod(now - 200 * DAY, "year", now)).toBe(true);
+  });
+
+  it("excludes a timestamp past the year window", () => {
+    expect(isWithinPeriod(now - 366 * DAY, "year", now)).toBe(false);
   });
 });
