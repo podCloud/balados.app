@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PlayStatus, Subscription } from "../types";
 import {
   computeListeningStats,
+  computeStreak,
   filterPlayStatuses,
   getEpisodeStatus,
   isWithinPeriod,
@@ -227,5 +228,58 @@ describe("computeListeningStats", () => {
       title: "feed0.com",
       count: 2,
     });
+  });
+});
+
+describe("computeStreak", () => {
+  // Fixed "now": 2026-07-02T12:00:00 local, well clear of any DST edge for this test.
+  const now = new Date(2026, 6, 2, 12, 0, 0).getTime();
+
+  const at = (daysAgo: number, hour = 10) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(hour, 0, 0, 0);
+    return d.getTime();
+  };
+
+  const ps = (updatedAt: number): PlayStatus => ({
+    episodeId: `ep-${updatedAt}`,
+    feedUrl: "https://x.com/f",
+    position: 1,
+    duration: 1,
+    completed: false,
+    updatedAt,
+  });
+
+  it("returns 0 for no activity", () => {
+    expect(computeStreak([], now)).toBe(0);
+  });
+
+  it("returns 0 when the most recent activity is 2+ days ago", () => {
+    expect(computeStreak([ps(at(2))], now)).toBe(0);
+  });
+
+  it("returns 1 for a single day of activity today", () => {
+    expect(computeStreak([ps(at(0))], now)).toBe(1);
+  });
+
+  it("counts a streak that continues through yesterday", () => {
+    expect(computeStreak([ps(at(1))], now)).toBe(1);
+  });
+
+  it("counts multiple consecutive days ending today", () => {
+    expect(computeStreak([ps(at(0)), ps(at(1)), ps(at(2))], now)).toBe(3);
+  });
+
+  it("stops counting at a gap of 2+ days", () => {
+    expect(computeStreak([ps(at(0)), ps(at(1)), ps(at(3))], now)).toBe(2);
+  });
+
+  it("collapses multiple entries on the same day into one streak day", () => {
+    expect(computeStreak([ps(at(0, 9)), ps(at(0, 20)), ps(at(1, 8))], now)).toBe(2);
+  });
+
+  it("counts a streak ending yesterday even with older non-consecutive activity further back", () => {
+    expect(computeStreak([ps(at(1)), ps(at(2)), ps(at(10))], now)).toBe(2);
   });
 });

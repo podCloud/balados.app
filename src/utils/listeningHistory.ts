@@ -73,3 +73,35 @@ export const computeListeningStats = (
     topPodcasts,
   };
 };
+
+// Local calendar day, as a comparable integer key (year*10000 + month*100 + day).
+const dayKey = (timestamp: number): number => {
+  const d = new Date(timestamp);
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+};
+
+// Whole-day difference between two dayKey values, computed via real Date
+// objects at local midnight so DST transitions don't skew the count.
+const daysBetween = (a: number, b: number): number => {
+  const toDate = (key: number) =>
+    new Date(Math.floor(key / 10000), Math.floor((key % 10000) / 100) - 1, key % 100);
+  return Math.round((toDate(a).getTime() - toDate(b).getTime()) / DAY_MS);
+};
+
+export const computeStreak = (all: PlayStatus[], now: number): number => {
+  const dates = [...new Set(all.map((ps) => dayKey(ps.updatedAt)))].sort((a, b) => b - a);
+  if (dates.length === 0) return 0;
+
+  const today = dayKey(now);
+  if (daysBetween(today, dates[0]) > 1) return 0; // no activity today or yesterday
+
+  let streak = 1;
+  for (let i = 0; i < dates.length - 1; i++) {
+    if (daysBetween(dates[i], dates[i + 1]) === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+};
