@@ -142,6 +142,10 @@
     "hide": "Hide this episode",
     "resume": "Resume listening"
   },
+  "listeningHistory": {
+    "title": "Listening History",
+    "empty": "No listening history yet"
+  },
   "stats": {
     "title": "Statistics",
     "period": "Period",
