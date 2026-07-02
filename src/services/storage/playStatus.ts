@@ -17,6 +17,10 @@ export const getPlayStatusForFeed = async (feedUrl: string): Promise<PlayStatus[
   return db.playStatuses.where("feedUrl").equals(feedUrl).toArray();
 };
 
+export const getAllPlayStatuses = async (): Promise<PlayStatus[]> => {
+  return db.playStatuses.toArray();
+};
+
 export const savePlayStatus = async (status: Omit<PlayStatus, "updatedAt">): Promise<void> => {
   // The play status write and the queue insert must stay atomic: if one fails, the
   // other must roll back too, or local state diverges from the sync queue (see issue #65).

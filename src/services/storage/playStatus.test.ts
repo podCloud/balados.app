@@ -3,6 +3,7 @@ import { toBase64Url } from "../../utils/rssEncoding";
 import { db, getSettings } from "./index";
 import {
   generateEpisodeId,
+  getAllPlayStatuses,
   getInProgressEpisodes,
   getPlayStatus,
   getPlayStatusForFeed,
@@ -104,6 +105,37 @@ describe("playStatus", () => {
       expect(statuses).toHaveLength(2);
       expect(statuses.map((s) => s.episodeId)).toContain("ep1");
       expect(statuses.map((s) => s.episodeId)).toContain("ep2");
+    });
+  });
+
+  describe("getAllPlayStatuses", () => {
+    it("returns all play statuses regardless of feed", async () => {
+      await db.playStatuses.bulkPut([
+        {
+          episodeId: "ep1",
+          feedUrl: "https://a.com/feed.xml",
+          position: 100,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now(),
+        },
+        {
+          episodeId: "ep2",
+          feedUrl: "https://b.com/feed.xml",
+          position: 200,
+          duration: 2000,
+          completed: true,
+          updatedAt: Date.now(),
+        },
+      ]);
+
+      const all = await getAllPlayStatuses();
+      expect(all).toHaveLength(2);
+    });
+
+    it("returns an empty array when there are no play statuses", async () => {
+      const all = await getAllPlayStatuses();
+      expect(all).toEqual([]);
     });
   });
 
