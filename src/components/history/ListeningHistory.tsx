@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { ChevronLeft, History as HistoryIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePlayer } from "../../contexts";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { db } from "../../services/storage";
 import { generateEpisodeId, getAllPlayStatuses } from "../../services/storage/playStatus";
@@ -43,6 +44,7 @@ const statusBadgeClass: Record<string, string> = {
 
 export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
   const { t } = useTranslation();
+  const { play } = usePlayer();
   const now = Date.now();
 
   const allPlayStatuses = useLiveQuery(() => getAllPlayStatuses(), []);
@@ -114,6 +116,7 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
       );
       return {
         playStatus: ps,
+        episode,
         title: episode?.title ?? getFallbackTitle(ps.feedUrl),
         image: episode?.image || feed?.image,
       };
@@ -224,7 +227,7 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
             )}
 
             <div className="divide-y divide-gray-200">
-              {enrichedPageItems.map(({ playStatus, title, image }) => {
+              {enrichedPageItems.map(({ playStatus, episode, title, image }) => {
                 const status = getEpisodeStatus(playStatus);
                 const progress =
                   playStatus.duration > 0 ? (playStatus.position / playStatus.duration) * 100 : 0;
@@ -234,7 +237,7 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
                     type="button"
                     key={playStatus.episodeId}
                     onClick={() => {
-                      /* wired in Task 12 */
+                      if (episode) play(episode, playStatus.feedUrl);
                     }}
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
                     data-testid="history-row"

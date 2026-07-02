@@ -11,8 +11,9 @@ vi.mock("@tanstack/react-query", () => ({
   useQuery: (opts: unknown) => mockUseQuery(opts),
 }));
 
+const mockPlay = vi.fn();
 vi.mock("../../contexts", () => ({
-  usePlayer: () => ({ play: vi.fn(), currentEpisode: null, isPlaying: false }),
+  usePlayer: () => ({ play: mockPlay, currentEpisode: null, isPlaying: false }),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -80,6 +81,7 @@ describe("ListeningHistory", () => {
   beforeEach(() => {
     mockUseLiveQuery.mockReset();
     mockUseQuery.mockReturnValue({ data: new Map(), isLoading: false });
+    mockPlay.mockReset();
   });
 
   it("renders the page title", () => {
@@ -187,6 +189,57 @@ describe("ListeningHistory", () => {
     await waitFor(() => {
       expect(screen.getByText("unreachable.com")).toBeInTheDocument();
     });
+  });
+
+  it("resumes playback when a card with a resolved episode is tapped", async () => {
+    setLiveQueryData(
+      [
+        {
+          episodeId: "ep-1",
+          feedUrl: "https://x.com/f",
+          position: 300,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now(),
+        },
+      ],
+      [],
+    );
+    mockUseQuery.mockReturnValue({
+      data: new Map([
+        [
+          "https://x.com/f",
+          {
+            title: "Feed X",
+            description: "",
+            image: "",
+            url: "https://x.com/f",
+            items: [
+              {
+                title: "Episode One",
+                description: "",
+                descriptionPreview: "",
+                pubDate: "",
+                enclosureUrl: "https://x.com/ep1.mp3",
+                duration: "1000",
+                image: "",
+                guid: undefined,
+              },
+            ],
+          },
+        ],
+      ]),
+      isLoading: false,
+    });
+
+    render(<ListeningHistory onBack={vi.fn()} />);
+    await waitFor(() => screen.getByText("Episode One"));
+    screen.getByTestId("history-row").click();
+
+    expect(mockPlay).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Episode One" }),
+      "https://x.com/f",
+    );
   });
 
   it("filters the list by status", async () => {
