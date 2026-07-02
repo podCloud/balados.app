@@ -193,10 +193,9 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
             <HistoryIcon size={48} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
             <p>{t("listeningHistory.empty")}</p>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">{t("listeningHistory.noResults")}</div>
         ) : (
           <>
+            {/* Stats cards - visible whenever there's any history, independent of filters */}
             {stats && (
               <div className="grid grid-cols-2 gap-3 p-4">
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -226,85 +225,122 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
               </div>
             )}
 
-            <div className="divide-y divide-gray-200">
-              {enrichedPageItems.map(({ playStatus, episode, title, image }) => {
-                const status = getEpisodeStatus(playStatus);
-                const progress =
-                  playStatus.duration > 0 ? (playStatus.position / playStatus.duration) * 100 : 0;
-
-                return (
-                  <button
-                    type="button"
-                    key={playStatus.episodeId}
-                    onClick={() => {
-                      if (episode) play(episode, playStatus.feedUrl);
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
-                    data-testid="history-row"
-                  >
-                    <div className="flex gap-3">
-                      <img
-                        src={image}
-                        alt={title}
-                        className="w-14 h-14 rounded-lg object-cover bg-gray-200 flex-shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.visibility = "hidden";
-                        }}
-                      />
+            {/* Top podcasts section - visible whenever topPodcasts is not empty */}
+            {stats && stats.topPodcasts.length > 0 && (
+              <div className="bg-white mt-2">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900">
+                    {t("listeningHistory.topPodcasts")}
+                  </h2>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {stats.topPodcasts.map((podcast, index) => (
+                    <div key={podcast.feedUrl} className="px-4 py-3 flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm font-medium flex items-center justify-center">
+                        {index + 1}
+                      </span>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm mb-0.5 line-clamp-1 text-gray-900">
-                          {title}
-                        </div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded ${statusBadgeClass[status]}`}
-                          >
-                            {t(`listeningHistory.status.${status}`)}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {formatRelativeTime(playStatus.updatedAt, t, now)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-blue-500"
-                              style={{ width: `${Math.min(progress, 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-400 flex-shrink-0">
-                            {formatPosition(playStatus.position)}
-                          </span>
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {podcast.title}
                         </div>
                       </div>
+                      <span className="text-sm text-gray-500">
+                        {t("listeningHistory.episodeCount", { count: podcast.count })}
+                      </span>
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 p-4">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="px-3 py-1.5 rounded-full text-sm bg-gray-100 disabled:opacity-40"
-                >
-                  {t("common.previous")}
-                </button>
-                <span className="text-sm text-gray-500">
-                  {t("listeningHistory.pageOf", { page, total: totalPages })}
-                </span>
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="px-3 py-1.5 rounded-full text-sm bg-gray-100 disabled:opacity-40"
-                >
-                  {t("common.next")}
-                </button>
+                  ))}
+                </div>
               </div>
+            )}
+
+            {/* Episode list and pagination - only shown if filtered results exist */}
+            {filtered.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">{t("listeningHistory.noResults")}</div>
+            ) : (
+              <>
+                <div className="divide-y divide-gray-200">
+                  {enrichedPageItems.map(({ playStatus, episode, title, image }) => {
+                    const status = getEpisodeStatus(playStatus);
+                    const progress =
+                      playStatus.duration > 0
+                        ? (playStatus.position / playStatus.duration) * 100
+                        : 0;
+
+                    return (
+                      <button
+                        type="button"
+                        key={playStatus.episodeId}
+                        onClick={() => {
+                          if (episode) play(episode, playStatus.feedUrl);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
+                        data-testid="history-row"
+                      >
+                        <div className="flex gap-3">
+                          <img
+                            src={image}
+                            alt={title}
+                            className="w-14 h-14 rounded-lg object-cover bg-gray-200 flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.visibility = "hidden";
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm mb-0.5 line-clamp-1 text-gray-900">
+                              {title}
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span
+                                className={`text-xs px-1.5 py-0.5 rounded ${statusBadgeClass[status]}`}
+                              >
+                                {t(`listeningHistory.status.${status}`)}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {formatRelativeTime(playStatus.updatedAt, t, now)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-blue-500"
+                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-400 flex-shrink-0">
+                                {formatPosition(playStatus.position)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 p-4">
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => p - 1)}
+                      className="px-3 py-1.5 rounded-full text-sm bg-gray-100 disabled:opacity-40"
+                    >
+                      {t("common.previous")}
+                    </button>
+                    <span className="text-sm text-gray-500">
+                      {t("listeningHistory.pageOf", { page, total: totalPages })}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="px-3 py-1.5 rounded-full text-sm bg-gray-100 disabled:opacity-40"
+                    >
+                      {t("common.next")}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

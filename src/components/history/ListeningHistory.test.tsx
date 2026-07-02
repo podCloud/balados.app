@@ -19,41 +19,20 @@ vi.mock("../../contexts", () => ({
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {
-      const translations: Record<string, string> = {
-        "listeningHistory.title": "Listening History",
-        "listeningHistory.empty": "No listening history yet",
-        "listeningHistory.totalTime": "Total time",
-        "listeningHistory.totalEpisodes": "Episodes",
-        "listeningHistory.completed": "Completed",
-        "listeningHistory.streak": "Streak",
-        "listeningHistory.status.completed": "Completed",
-        "listeningHistory.status.inProgress": "In progress",
-        "listeningHistory.status.notStarted": "Not started",
-        "listeningHistory.filter.allPodcasts": "All podcasts",
-        "listeningHistory.filter.allPeriods": "All time",
-        "listeningHistory.filter.week": "Week",
-        "listeningHistory.filter.month": "Month",
-        "listeningHistory.filter.year": "Year",
-        "listeningHistory.filter.allStatuses": "All",
-        "listeningHistory.noResults": "No results for these filters",
-        "listeningHistory.pageOf": "Page {{page}} of {{total}}",
-        "settings.back": "Back",
-        "common.loading": "Loading",
-        "common.previous": "Previous",
-        "common.next": "Next",
-        "syncSettings.minutesAgo": "{{count}} minute ago",
-        "syncSettings.hoursAgo": "{{count}} hour ago",
-        "syncSettings.daysAgo": "{{count}} day ago",
-        "syncSettings.justNow": "Just now",
-      };
       if (key === "listeningHistory.pageOf" && opts) {
         return (
-          translations[key]
+          mockTranslations[key]
             ?.replace("{{page}}", String(opts.page))
             .replace("{{total}}", String(opts.total)) ?? key
         );
       }
-      return translations[key] ?? `${key}${opts?.count !== undefined ? `:${opts.count}` : ""}`;
+      // Handle pluralization for episodeCount
+      if (key === "listeningHistory.episodeCount" && opts?.count) {
+        const pluralKey = opts.count === 1 ? key : `${key}_other`;
+        const template = mockTranslations[pluralKey] ?? mockTranslations[key];
+        return template?.replace("{{count}}", String(opts.count)) ?? key;
+      }
+      return mockTranslations[key] ?? `${key}${opts?.count !== undefined ? `:${opts.count}` : ""}`;
     },
   }),
 }));
@@ -75,6 +54,37 @@ const setLiveQueryData = (playStatuses: unknown, subscriptions: unknown = []) =>
     if (source.includes("getAllPlayStatuses")) return playStatuses;
     return subscriptions;
   });
+};
+
+const mockTranslations: Record<string, string> = {
+  "listeningHistory.title": "Listening History",
+  "listeningHistory.empty": "No listening history yet",
+  "listeningHistory.totalTime": "Total time",
+  "listeningHistory.totalEpisodes": "Episodes",
+  "listeningHistory.completed": "Completed",
+  "listeningHistory.streak": "Streak",
+  "listeningHistory.status.completed": "Completed",
+  "listeningHistory.status.inProgress": "In progress",
+  "listeningHistory.status.notStarted": "Not started",
+  "listeningHistory.filter.allPodcasts": "All podcasts",
+  "listeningHistory.filter.allPeriods": "All time",
+  "listeningHistory.filter.week": "Week",
+  "listeningHistory.filter.month": "Month",
+  "listeningHistory.filter.year": "Year",
+  "listeningHistory.filter.allStatuses": "All",
+  "listeningHistory.noResults": "No results for these filters",
+  "listeningHistory.pageOf": "Page {{page}} of {{total}}",
+  "listeningHistory.topPodcasts": "Top podcasts",
+  "listeningHistory.episodeCount": "{{count}} episode",
+  "listeningHistory.episodeCount_other": "{{count}} episodes",
+  "settings.back": "Back",
+  "common.loading": "Loading",
+  "common.previous": "Previous",
+  "common.next": "Next",
+  "syncSettings.minutesAgo": "{{count}} minute ago",
+  "syncSettings.hoursAgo": "{{count}} hour ago",
+  "syncSettings.daysAgo": "{{count}} day ago",
+  "syncSettings.justNow": "Just now",
 };
 
 describe("ListeningHistory", () => {
@@ -553,6 +563,126 @@ describe("ListeningHistory", () => {
         // Should reset to page 1 with the filtered results
         expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
       });
+    });
+  });
+
+  describe("top podcasts section (Finding 1)", () => {
+    it("renders top podcasts section when multiple feeds have play history", async () => {
+      // Create play statuses across 3 different feeds with different counts
+      const playStatuses = [
+        // Feed 1: 5 episodes
+        ...Array.from({ length: 5 }, (_, i) => ({
+          episodeId: `feed1-ep-${i}`,
+          feedUrl: "https://feed1.com/rss",
+          position: 100,
+          duration: 1000,
+          completed: i < 3,
+          updatedAt: Date.now() - i * 1000,
+        })),
+        // Feed 2: 3 episodes
+        ...Array.from({ length: 3 }, (_, i) => ({
+          episodeId: `feed2-ep-${i}`,
+          feedUrl: "https://feed2.com/rss",
+          position: 100,
+          duration: 1000,
+          completed: i < 2,
+          updatedAt: Date.now() - (i + 5) * 1000,
+        })),
+        // Feed 3: 2 episodes
+        ...Array.from({ length: 2 }, (_, i) => ({
+          episodeId: `feed3-ep-${i}`,
+          feedUrl: "https://feed3.com/rss",
+          position: 100,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now() - (i + 8) * 1000,
+        })),
+      ];
+
+      // Create subscriptions for these feeds
+      const subscriptions = [
+        { url: "https://feed1.com/rss", title: "Feed One" },
+        { url: "https://feed2.com/rss", title: "Feed Two" },
+        { url: "https://feed3.com/rss", title: "Feed Three" },
+      ];
+
+      setLiveQueryData(playStatuses, subscriptions);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        // Should render the top podcasts header
+        expect(screen.getByText("Top podcasts")).toBeInTheDocument();
+      });
+
+      // Check that the counts are displayed (5, 3, 2 episodes)
+      // These strings should only appear in the top podcasts section
+      expect(screen.getByText("5 episodes")).toBeInTheDocument();
+      expect(screen.getByText("3 episodes")).toBeInTheDocument();
+      expect(screen.getByText("2 episodes")).toBeInTheDocument();
+    });
+
+    it("does not render top podcasts section when no play history exists", async () => {
+      setLiveQueryData([]);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("No listening history yet")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText("Top podcasts")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("stats visibility when filters exclude results (Finding 2)", () => {
+    it("keeps stat cards visible when filters exclude all results", async () => {
+      // Create play statuses: some completed, some not
+      const playStatuses = [
+        {
+          episodeId: "a",
+          feedUrl: "https://x.com/f",
+          position: 0,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now(),
+        },
+        {
+          episodeId: "b",
+          feedUrl: "https://x.com/f",
+          position: 500,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now() - 1000,
+        },
+      ];
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      // Initially should show stats and episodes
+      await waitFor(() => {
+        expect(screen.getByText("Total time")).toBeInTheDocument();
+        expect(screen.getAllByTestId("history-row")).toHaveLength(2);
+      });
+
+      // Click "Completed" filter (no completed episodes, so filtered will be empty)
+      screen.getByRole("button", { name: "Completed" }).click();
+
+      await waitFor(() => {
+        expect(screen.getByText("No results for these filters")).toBeInTheDocument();
+      });
+
+      // CRITICAL: stat cards must still be visible
+      // Check for the stat card labels which appear in the grid
+      const totalTimeLabel = screen.getByText("Total time");
+      const episodesLabel = screen.getByText("Episodes");
+      const streakLabel = screen.getByText("Streak");
+
+      expect(totalTimeLabel).toBeInTheDocument();
+      expect(episodesLabel).toBeInTheDocument();
+      expect(streakLabel).toBeInTheDocument();
+
+      // Episode list should not be visible (no items after filter)
+      expect(screen.queryAllByTestId("history-row")).toHaveLength(0);
     });
   });
 });

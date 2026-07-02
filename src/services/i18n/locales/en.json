@@ -165,7 +165,10 @@
       "allStatuses": "All"
     },
     "noResults": "No results for these filters",
-    "pageOf": "Page {{page}} of {{total}}"
+    "pageOf": "Page {{page}} of {{total}}",
+    "topPodcasts": "Top podcasts",
+    "episodeCount": "{{count}} episode",
+    "episodeCount_other": "{{count}} episodes"
   },
   "stats": {
     "title": "Statistics",
