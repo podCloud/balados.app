@@ -3,11 +3,10 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { ChevronLeft, History as HistoryIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePlayer } from "../../contexts";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { db } from "../../services/storage";
 import { generateEpisodeId, getAllPlayStatuses } from "../../services/storage/playStatus";
-import type { Episode, PlayStatus, PodcastFeed } from "../../types";
+import type { Episode, PodcastFeed } from "../../types";
 import { formatRelativeTime, getFallbackTitle } from "../../utils/formatting";
 import {
   computeListeningStats,
@@ -41,7 +40,6 @@ const statusBadgeClass: Record<string, string> = {
 
 export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
   const { t } = useTranslation();
-  const { play } = usePlayer();
   const now = Date.now();
 
   const allPlayStatuses = useLiveQuery(() => getAllPlayStatuses(), []);

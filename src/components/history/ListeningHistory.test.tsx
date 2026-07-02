@@ -41,7 +41,7 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("../../utils/rssEncoding", () => ({
-  generateEpisodeId: vi.fn((guid: string | undefined, enclosureUrl: string) => {
+  generateEpisodeId: vi.fn((_guid: string | undefined, enclosureUrl: string) => {
     // Return predictable IDs for testing
     if (enclosureUrl === "https://x.com/ep1.mp3") return "ep-1";
     if (enclosureUrl === "https://unreachable.com/ep1.mp3") return "ep-unreachable";
