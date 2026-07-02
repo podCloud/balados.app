@@ -242,6 +242,32 @@ describe("ListeningHistory", () => {
     );
   });
 
+  it("does not play when a card with an unresolved episode is tapped (no-op guard)", async () => {
+    setLiveQueryData(
+      [
+        {
+          episodeId: "ep-unreachable",
+          feedUrl: "https://unreachable.com/f",
+          position: 0,
+          duration: 0,
+          completed: false,
+          updatedAt: Date.now(),
+        },
+      ],
+      [],
+    );
+    mockUseQuery.mockReturnValue({ data: new Map(), isLoading: false });
+
+    render(<ListeningHistory onBack={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText("unreachable.com")).toBeInTheDocument();
+    });
+
+    screen.getByTestId("history-row").click();
+
+    expect(mockPlay).not.toHaveBeenCalled();
+  });
+
   it("filters the list by status", async () => {
     setLiveQueryData(
       [
