@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { getEvents, getListeningStats } from "../../services/storage/events";
 import { getSubscription } from "../../services/storage/subscriptions";
 import type { LocalEvent } from "../../types";
+import { formatRelativeTime, getFallbackTitle } from "../../utils/formatting";
 
 type Period = "today" | "week" | "month" | "allTime";
 
@@ -17,15 +18,6 @@ interface PodcastInfo {
   playCount: number;
 }
 
-// Safe URL hostname extraction
-const getFallbackTitle = (feedUrl: string): string => {
-  try {
-    return new URL(feedUrl).hostname;
-  } catch {
-    return feedUrl.length > 50 ? `${feedUrl.slice(0, 50)}...` : feedUrl;
-  }
-};
-
 const getPeriodStart = (period: Period): number => {
   const now = Date.now();
   switch (period) {
@@ -38,22 +30,6 @@ const getPeriodStart = (period: Period): number => {
     case "allTime":
       return 0;
   }
-};
-
-const formatRelativeTime = (
-  timestamp: number,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): string => {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const minutes = Math.floor(diff / (60 * 1000));
-  const hours = Math.floor(diff / (60 * 60 * 1000));
-  const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-
-  if (minutes < 1) return t("syncSettings.justNow");
-  if (minutes < 60) return t("syncSettings.minutesAgo", { count: minutes });
-  if (hours < 24) return t("syncSettings.hoursAgo", { count: hours });
-  return t("syncSettings.daysAgo", { count: days });
 };
 
 export const Stats = ({ onBack }: StatsProps) => {

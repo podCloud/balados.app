@@ -7,7 +7,9 @@
     "save": "Save",
     "delete": "Delete",
     "confirm": "Confirm",
-    "offline": "Offline mode"
+    "offline": "Offline mode",
+    "previous": "Previous",
+    "next": "Next"
   },
   "library": {
     "title": "Podcasts",
@@ -141,6 +143,32 @@
     "empty": "No episodes in progress",
     "hide": "Hide this episode",
     "resume": "Resume listening"
+  },
+  "listeningHistory": {
+    "title": "Listening History",
+    "empty": "No listening history yet",
+    "totalTime": "Total time",
+    "totalEpisodes": "Episodes",
+    "completed": "Completed",
+    "streak": "Streak",
+    "status": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "notStarted": "Not started"
+    },
+    "filter": {
+      "allPodcasts": "All podcasts",
+      "allPeriods": "All time",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year",
+      "allStatuses": "All"
+    },
+    "noResults": "No results for these filters",
+    "pageOf": "Page {{page}} of {{total}}",
+    "topPodcasts": "Top podcasts",
+    "episodeCount": "{{count}} episode",
+    "episodeCount_other": "{{count}} episodes"
   },
   "stats": {
     "title": "Statistics",
