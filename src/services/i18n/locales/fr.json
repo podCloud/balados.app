@@ -148,7 +148,12 @@
     "totalTime": "Temps total",
     "totalEpisodes": "Épisodes",
     "completed": "Terminés",
-    "streak": "Série"
+    "streak": "Série",
+    "status": {
+      "completed": "Terminé",
+      "inProgress": "En cours",
+      "notStarted": "Non débuté"
+    }
   },
   "stats": {
     "title": "Statistiques",

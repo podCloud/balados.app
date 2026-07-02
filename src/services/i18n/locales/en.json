@@ -148,7 +148,12 @@
     "totalTime": "Total time",
     "totalEpisodes": "Episodes",
     "completed": "Completed",
-    "streak": "Streak"
+    "streak": "Streak",
+    "status": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "notStarted": "Not started"
+    }
   },
   "stats": {
     "title": "Statistics",
