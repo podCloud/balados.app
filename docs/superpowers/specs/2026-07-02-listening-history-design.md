@@ -212,6 +212,19 @@ Single component (no premature sub-component extraction), structured as:
    `getEpisodeStatus`), relative time (reuse `formatRelativeTime` from
    `Stats.tsx`). Tapping a card resumes playback via `usePlayer().play()`,
    consistent with `InProgress.tsx`'s tap-to-play behavior.
+
+   **Correction from initial draft:** `PlayStatus` rows only store
+   `episodeId, feedUrl, position, duration, completed, updatedAt` — no
+   episode title or image. `InProgress.tsx` resolves those by fetching/
+   parsing the RSS feed for each distinct `feedUrl` (`getCachedFeed` →
+   `fetchAndParseRSS` fallback, via `useQuery`) and matching
+   `playStatus.episodeId` against `feed.items` through
+   `generateEpisodeId`. This page reuses the exact same pattern, scoped to
+   only the feed URLs present on the **current page** of results (not the
+   whole history) to keep the fetch set small. If a feed fails to fetch or
+   an episode is no longer present in it, the card still renders using
+   only local data (feedUrl-derived fallback title, no image, status
+   badge, progress, relative time) — see "Error / empty states" below.
 5. **Pagination controls** — prev/next buttons + "page X of Y" label.
    `PAGE_SIZE = 50` (matches the backend's `@per_page`). Implemented as an
    in-memory slice of the already-filtered array — see "Pagination"
@@ -228,7 +241,10 @@ useMemo: stats = computeListeningStats(allPlayStatuses, subscriptions, now)
 useMemo: filtered = filterPlayStatuses(allPlayStatuses, {feedUrl: filterFeed, period: filterPeriod, status: filterStatus}, now)
 useMemo: pageItems = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
 useEffect: reset page to 1 whenever filterFeed/filterPeriod/filterStatus changes
-useMemo: enrichedPageItems = pageItems mapped with resolved podcast title/image (only the current page, not the full list — kept cheap)
+
+useMemo: pageFeedUrls = unique feedUrls in pageItems (sorted, for a stable query key — same pattern as InProgress.tsx)
+useQuery(["listening-history-feeds", pageFeedUrls.join(",")]) → Map<feedUrl, PodcastFeed>, fetched via getCachedFeed/fetchAndParseRSS per feedUrl (same as InProgress.tsx), enabled: pageFeedUrls.length > 0
+useMemo: enrichedPageItems = pageItems mapped to { playStatus, title, image } — title/image resolved by matching generateEpisodeId(episode.guid, episode.enclosureUrl) against the fetched feed's items when available, falling back to the subscription's title/image, then to getFallbackTitle(feedUrl)/no image
 ```
 
 `now` is captured once per render via a plain `Date.now()` call at the top
@@ -254,9 +270,13 @@ not implemented now.
   `allPlayStatuses.length > 0`): a distinct "no results for these filters"
   message, so the user doesn't confuse "you've never listened to anything"
   with "no results match your current filters."
-- No network calls are involved (fully local), so no network-error states
-  are needed beyond the existing image-fallback behavior already used
-  elsewhere for missing podcast art.
+- **Feed fetch failure or episode no longer in feed** (revised — this page
+  *does* make network calls, via the same feed-fetch pattern as
+  `InProgress.tsx`): the card still renders from local data alone
+  (feedUrl-derived fallback title, no image, status badge, progress bar,
+  relative time all work without the feed). No error banner — a missing
+  title/image degrades gracefully rather than blocking the row, exactly
+  like `InProgress.tsx`'s existing image `onError` fallback behavior.
 
 ## i18n
 
@@ -280,10 +300,12 @@ the existing nesting + `_other` pluralization convention (see `stats` and
     interspersed with consecutive ones
 - **`src/components/history/ListeningHistory.test.tsx`** — component test
   following `InProgress.test.tsx`'s pattern (mock `useLiveQuery`, mock
-  `playStatus`/`subscriptions` storage functions, mock `usePlayer`):
-  filter interactions update the visible list, pagination controls work
-  and reset on filter change, stat cards render the computed values, empty
-  states render correctly, tapping a card calls `play()`.
+  `useQuery` for feed data, mock `playStatus`/`subscriptions` storage
+  functions, mock `usePlayer`): filter interactions update the visible
+  list, pagination controls work and reset on filter change, stat cards
+  render the computed values, empty states render correctly, tapping a
+  card calls `play()`, a card still renders (fallback title, no image)
+  when its feed isn't in the mocked `useQuery` data.
 
 ## Files touched
 
