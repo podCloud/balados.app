@@ -7,7 +7,9 @@
     "save": "Save",
     "delete": "Delete",
     "confirm": "Confirm",
-    "offline": "Offline mode"
+    "offline": "Offline mode",
+    "previous": "Previous",
+    "next": "Next"
   },
   "library": {
     "title": "Podcasts",
@@ -153,7 +155,17 @@
       "completed": "Completed",
       "inProgress": "In progress",
       "notStarted": "Not started"
-    }
+    },
+    "filter": {
+      "allPodcasts": "All podcasts",
+      "allPeriods": "All time",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year",
+      "allStatuses": "All"
+    },
+    "noResults": "No results for these filters",
+    "pageOf": "Page {{page}} of {{total}}"
   },
   "stats": {
     "title": "Statistics",

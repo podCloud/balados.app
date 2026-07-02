@@ -7,7 +7,9 @@
     "save": "Enregistrer",
     "delete": "Supprimer",
     "confirm": "Confirmer",
-    "offline": "Mode hors-ligne"
+    "offline": "Mode hors-ligne",
+    "previous": "Précédent",
+    "next": "Suivant"
   },
   "library": {
     "title": "Podcasts",
@@ -153,7 +155,17 @@
       "completed": "Terminé",
       "inProgress": "En cours",
       "notStarted": "Non débuté"
-    }
+    },
+    "filter": {
+      "allPodcasts": "Tous les podcasts",
+      "allPeriods": "Toute la période",
+      "week": "Semaine",
+      "month": "Mois",
+      "year": "Année",
+      "allStatuses": "Tous"
+    },
+    "noResults": "Aucun résultat pour ces filtres",
+    "pageOf": "Page {{page}} sur {{total}}"
   },
   "stats": {
     "title": "Statistiques",

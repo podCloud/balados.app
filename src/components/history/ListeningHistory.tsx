@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
 import { ChevronLeft, History as HistoryIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { db } from "../../services/storage";
@@ -11,7 +11,10 @@ import { formatRelativeTime, getFallbackTitle } from "../../utils/formatting";
 import {
   computeListeningStats,
   computeStreak,
+  filterPlayStatuses,
   getEpisodeStatus,
+  type HistoryFilters,
+  type Period,
 } from "../../utils/listeningHistory";
 
 interface ListeningHistoryProps {
@@ -54,12 +57,27 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
     };
   }, [allPlayStatuses, subscriptions, now]);
 
-  // No filters yet (added in Task 11) — for now, page 1 of everything, most recent first.
-  const sorted = useMemo(
-    () => (allPlayStatuses ? [...allPlayStatuses].sort((a, b) => b.updatedAt - a.updatedAt) : []),
-    [allPlayStatuses],
-  );
-  const pageItems = sorted.slice(0, PAGE_SIZE);
+  const [filterFeed, setFilterFeed] = useState("");
+  const [filterPeriod, setFilterPeriod] = useState<Period>("");
+  const [filterStatus, setFilterStatus] = useState<HistoryFilters["status"]>("");
+  const [page, setPage] = useState(1);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset page when any filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [filterFeed, filterPeriod, filterStatus]);
+
+  const filtered = useMemo(() => {
+    if (!allPlayStatuses) return [];
+    return filterPlayStatuses(
+      allPlayStatuses,
+      { feedUrl: filterFeed, period: filterPeriod, status: filterStatus },
+      now,
+    );
+  }, [allPlayStatuses, filterFeed, filterPeriod, filterStatus, now]);
+
+  const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const pageFeedUrls = useMemo(
     () => [...new Set(pageItems.map((ps) => ps.feedUrl))].sort(),
@@ -117,6 +135,53 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
         <HistoryIcon size={20} className="text-gray-400" aria-hidden="true" />
       </div>
 
+      <div className="flex flex-col gap-2 p-4 border-b border-gray-200">
+        <select
+          value={filterFeed}
+          onChange={(e) => setFilterFeed(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-2 py-1.5"
+        >
+          <option value="">{t("listeningHistory.filter.allPodcasts")}</option>
+          {(subscriptions ?? []).map((sub) => (
+            <option key={sub.url} value={sub.url}>
+              {sub.title || getFallbackTitle(sub.url)}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex gap-2">
+          {(["", "week", "month", "year"] as const).map((p) => (
+            <button
+              type="button"
+              key={p || "all"}
+              onClick={() => setFilterPeriod(p)}
+              aria-pressed={filterPeriod === p}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                filterPeriod === p ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {p ? t(`listeningHistory.filter.${p}`) : t("listeningHistory.filter.allPeriods")}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          {(["", "completed", "inProgress", "notStarted"] as const).map((s) => (
+            <button
+              type="button"
+              key={s || "all"}
+              onClick={() => setFilterStatus(s)}
+              aria-pressed={filterStatus === s}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                filterStatus === s ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {s ? t(`listeningHistory.status.${s}`) : t("listeningHistory.filter.allStatuses")}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto pb-16">
         {isLoading ? (
           <div className="p-8 text-center text-gray-500">{t("common.loading")}</div>
@@ -125,6 +190,8 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
             <HistoryIcon size={48} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
             <p>{t("listeningHistory.empty")}</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">{t("listeningHistory.noResults")}</div>
         ) : (
           <>
             {stats && (
@@ -170,6 +237,7 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
                       /* wired in Task 12 */
                     }}
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
+                    data-testid="history-row"
                   >
                     <div className="flex gap-3">
                       <img
@@ -211,6 +279,30 @@ export const ListeningHistory = ({ onBack }: ListeningHistoryProps) => {
                 );
               })}
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 p-4">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="px-3 py-1.5 rounded-full text-sm bg-gray-100 disabled:opacity-40"
+                >
+                  {t("common.previous")}
+                </button>
+                <span className="text-sm text-gray-500">
+                  {t("listeningHistory.pageOf", { page, total: totalPages })}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-3 py-1.5 rounded-full text-sm bg-gray-100 disabled:opacity-40"
+                >
+                  {t("common.next")}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

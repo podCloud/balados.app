@@ -28,13 +28,30 @@ vi.mock("react-i18next", () => ({
         "listeningHistory.status.completed": "Completed",
         "listeningHistory.status.inProgress": "In progress",
         "listeningHistory.status.notStarted": "Not started",
+        "listeningHistory.filter.allPodcasts": "All podcasts",
+        "listeningHistory.filter.allPeriods": "All time",
+        "listeningHistory.filter.week": "Week",
+        "listeningHistory.filter.month": "Month",
+        "listeningHistory.filter.year": "Year",
+        "listeningHistory.filter.allStatuses": "All",
+        "listeningHistory.noResults": "No results for these filters",
+        "listeningHistory.pageOf": "Page {{page}} of {{total}}",
         "settings.back": "Back",
         "common.loading": "Loading",
+        "common.previous": "Previous",
+        "common.next": "Next",
         "syncSettings.minutesAgo": "{{count}} minute ago",
         "syncSettings.hoursAgo": "{{count}} hour ago",
         "syncSettings.daysAgo": "{{count}} day ago",
         "syncSettings.justNow": "Just now",
       };
+      if (key === "listeningHistory.pageOf" && opts) {
+        return (
+          translations[key]
+            ?.replace("{{page}}", String(opts.page))
+            .replace("{{total}}", String(opts.total)) ?? key
+        );
+      }
       return translations[key] ?? `${key}${opts?.count !== undefined ? `:${opts.count}` : ""}`;
     },
   }),
@@ -169,6 +186,62 @@ describe("ListeningHistory", () => {
     render(<ListeningHistory onBack={vi.fn()} />);
     await waitFor(() => {
       expect(screen.getByText("unreachable.com")).toBeInTheDocument();
+    });
+  });
+
+  it("filters the list by status", async () => {
+    setLiveQueryData(
+      [
+        {
+          episodeId: "a",
+          feedUrl: "https://x.com/f",
+          position: 0,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now(),
+        },
+        {
+          episodeId: "b",
+          feedUrl: "https://x.com/f",
+          position: 500,
+          duration: 1000,
+          completed: true,
+          updatedAt: Date.now(),
+        },
+      ],
+      [],
+    );
+    render(<ListeningHistory onBack={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getAllByTestId("history-row")).toHaveLength(2));
+    screen.getByRole("button", { name: "Completed" }).click();
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId("history-row")).toHaveLength(1);
+    });
+  });
+
+  it("shows a distinct empty state when filters exclude every entry", async () => {
+    setLiveQueryData(
+      [
+        {
+          episodeId: "a",
+          feedUrl: "https://x.com/f",
+          position: 0,
+          duration: 1000,
+          completed: false,
+          updatedAt: Date.now(),
+        },
+      ],
+      [],
+    );
+    render(<ListeningHistory onBack={vi.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId("history-row")).toHaveLength(1));
+
+    screen.getByRole("button", { name: "Completed" }).click();
+
+    await waitFor(() => {
+      expect(screen.getByText("No results for these filters")).toBeInTheDocument();
     });
   });
 });
