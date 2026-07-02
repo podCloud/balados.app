@@ -317,4 +317,11 @@ the existing nesting + `_other` pluralization convention (see `stats` and
 - `src/services/storage/playStatus.ts` — add `getAllPlayStatuses`
 - `src/utils/listeningHistory.ts` (new)
 - `src/utils/listeningHistory.test.ts` (new)
+- `src/utils/formatting.ts` (new) — `getFallbackTitle`/`formatRelativeTime`
+  extracted out of `Stats.tsx` (both were private, unexported helpers there)
+  so `listeningHistory.ts` and `ListeningHistory.tsx` can reuse them instead
+  of duplicating; DRY-driven, decided while writing the implementation plan
+- `src/utils/formatting.test.ts` (new)
+- `src/components/stats/Stats.tsx` — updated to import from `utils/formatting`
+  instead of its own local copies (no behavior change)
 - `src/services/i18n/locales/fr.json`, `en.json` — new `listeningHistory` keys
