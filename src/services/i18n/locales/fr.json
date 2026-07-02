@@ -144,7 +144,11 @@
   },
   "listeningHistory": {
     "title": "Historique d'écoute",
-    "empty": "Aucun historique d'écoute"
+    "empty": "Aucun historique d'écoute",
+    "totalTime": "Temps total",
+    "totalEpisodes": "Épisodes",
+    "completed": "Terminés",
+    "streak": "Série"
   },
   "stats": {
     "title": "Statistiques",

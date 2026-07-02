@@ -20,7 +20,12 @@ vi.mock("react-i18next", () => ({
       const translations: Record<string, string> = {
         "listeningHistory.title": "Listening History",
         "listeningHistory.empty": "No listening history yet",
+        "listeningHistory.totalTime": "Total time",
+        "listeningHistory.totalEpisodes": "Episodes",
+        "listeningHistory.completed": "Completed",
+        "listeningHistory.streak": "Streak",
         "settings.back": "Back",
+        "common.loading": "Loading",
       };
       return translations[key] ?? `${key}${opts?.count !== undefined ? `:${opts.count}` : ""}`;
     },
@@ -29,19 +34,27 @@ vi.mock("react-i18next", () => ({
 
 import { ListeningHistory } from "./ListeningHistory";
 
+const setLiveQueryData = (playStatuses: unknown, subscriptions: unknown = []) => {
+  mockUseLiveQuery.mockImplementation((fn: () => unknown) => {
+    const source = fn.toString();
+    if (source.includes("getAllPlayStatuses")) return playStatuses;
+    return subscriptions;
+  });
+};
+
 describe("ListeningHistory", () => {
   beforeEach(() => {
     mockUseLiveQuery.mockReset();
   });
 
   it("renders the page title", () => {
-    mockUseLiveQuery.mockReturnValue([]);
+    setLiveQueryData([]);
     render(<ListeningHistory onBack={vi.fn()} />);
     expect(screen.getByText("Listening History")).toBeInTheDocument();
   });
 
   it("shows the empty state when there is no history", async () => {
-    mockUseLiveQuery.mockReturnValue([]);
+    setLiveQueryData([]);
     render(<ListeningHistory onBack={vi.fn()} />);
     await waitFor(() => {
       expect(screen.getByText("No listening history yet")).toBeInTheDocument();
@@ -49,10 +62,30 @@ describe("ListeningHistory", () => {
   });
 
   it("calls onBack when the back button is clicked", () => {
-    mockUseLiveQuery.mockReturnValue([]);
+    setLiveQueryData([]);
     const onBack = vi.fn();
     render(<ListeningHistory onBack={onBack} />);
     screen.getByLabelText("Back").click();
     expect(onBack).toHaveBeenCalled();
+  });
+
+  it("renders stats computed from play statuses", async () => {
+    setLiveQueryData(
+      [
+        {
+          episodeId: "a",
+          feedUrl: "https://x.com/f",
+          position: 120,
+          duration: 1000,
+          completed: true,
+          updatedAt: Date.now(),
+        },
+      ],
+      [],
+    );
+    render(<ListeningHistory onBack={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByText("Streak")).toBeInTheDocument();
+    });
   });
 });
