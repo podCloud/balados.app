@@ -244,4 +244,236 @@ describe("ListeningHistory", () => {
       expect(screen.getByText("No results for these filters")).toBeInTheDocument();
     });
   });
+
+  describe("pagination", () => {
+    it("does not show pagination controls when there are fewer than 50 entries", async () => {
+      // Create 30 entries (less than PAGE_SIZE)
+      const playStatuses = Array.from({ length: 30 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(30);
+      });
+
+      // Verify pagination controls are not rendered
+      expect(screen.queryByRole("button", { name: "Previous" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();
+    });
+
+    it("shows pagination controls when there are more than 50 entries", async () => {
+      // Create 55 entries (more than PAGE_SIZE)
+      const playStatuses = Array.from({ length: 55 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      // Verify pagination controls are shown
+      expect(screen.getByRole("button", { name: "Previous" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
+      expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+    });
+
+    it("disables Previous button on first page", async () => {
+      const playStatuses = Array.from({ length: 55 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      const prevButton = screen.getByRole("button", { name: "Previous" });
+      expect(prevButton).toBeDisabled();
+    });
+
+    it("disables Next button on last page", async () => {
+      const playStatuses = Array.from({ length: 55 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      // Navigate to last page
+      const nextButton = screen.getByRole("button", { name: "Next" });
+      expect(nextButton).not.toBeDisabled();
+
+      nextButton.click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+      });
+
+      const nextButtonOnLastPage = screen.getByRole("button", { name: "Next" });
+      expect(nextButtonOnLastPage).toBeDisabled();
+    });
+
+    it("navigates to the next page and shows remaining items", async () => {
+      const playStatuses = Array.from({ length: 55 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+
+      // Click Next button
+      screen.getByRole("button", { name: "Next" }).click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+      });
+
+      // Should show only 5 items on page 2
+      expect(screen.getAllByTestId("history-row")).toHaveLength(5);
+    });
+
+    it("enables Previous button after navigating to the next page", async () => {
+      const playStatuses = Array.from({ length: 55 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      const prevButtonInitial = screen.getByRole("button", { name: "Previous" });
+      expect(prevButtonInitial).toBeDisabled();
+
+      // Click Next button
+      screen.getByRole("button", { name: "Next" }).click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+      });
+
+      const prevButtonOnPage2 = screen.getByRole("button", { name: "Previous" });
+      expect(prevButtonOnPage2).not.toBeDisabled();
+    });
+
+    it("navigates back to the previous page", async () => {
+      const playStatuses = Array.from({ length: 55 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: 0,
+        duration: 1000,
+        completed: false,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      // Navigate to page 2
+      screen.getByRole("button", { name: "Next" }).click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+      });
+
+      // Navigate back to page 1
+      screen.getByRole("button", { name: "Previous" }).click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+      });
+
+      // Should show 50 items again
+      expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+    });
+
+    it("resets pagination to page 1 when filters change", async () => {
+      // Create 105 entries so filtering to completed still has > 50 items
+      const playStatuses = Array.from({ length: 105 }, (_, i) => ({
+        episodeId: `ep-${i}`,
+        feedUrl: "https://x.com/f",
+        position: i % 2 === 0 ? 0 : 500,
+        duration: 1000,
+        completed: i % 2 !== 0,
+        updatedAt: Date.now() - i * 1000,
+      }));
+
+      setLiveQueryData(playStatuses, []);
+      render(<ListeningHistory onBack={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("history-row")).toHaveLength(50);
+      });
+
+      // Navigate to page 2
+      screen.getByRole("button", { name: "Next" }).click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 2 of 3")).toBeInTheDocument();
+      });
+
+      // Apply a filter (completed status - results in ~52 items, still > 50)
+      screen.getByRole("button", { name: "Completed" }).click();
+
+      await waitFor(() => {
+        // Should reset to page 1 with the filtered results
+        expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+      });
+    });
+  });
 });
