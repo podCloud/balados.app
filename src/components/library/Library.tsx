@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Clock, Headphones, Plus, Settings, X } from "lucide-react";
+import { Clock, Headphones, History, Plus, Settings, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../services/storage";
@@ -80,6 +80,15 @@ export const Library = ({ onNavigate }: LibraryProps) => {
                 </span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => onNavigate("listeningHistory")}
+              className="text-gray-500 w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg"
+              title={t("listeningHistory.title")}
+              aria-label={t("listeningHistory.title")}
+            >
+              <History size={20} />
+            </button>
             <button
               type="button"
               onClick={() => setShowAddForm(!showAddForm)}

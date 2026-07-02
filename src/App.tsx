@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Debug } from "./components/debug/Debug";
 import { Explorer } from "./components/explorer/Explorer";
+import { ListeningHistory } from "./components/history/ListeningHistory";
 import { InProgress } from "./components/inProgress/InProgress";
 import { Library } from "./components/library/Library";
 import { EpisodePlayer } from "./components/player/EpisodePlayer";
@@ -68,6 +69,10 @@ const AppContent = () => {
 
     if (currentView === "inProgress") {
       return <InProgress onBack={() => handleNavigate("library")} />;
+    }
+
+    if (currentView === "listeningHistory") {
+      return <ListeningHistory onBack={() => handleNavigate("library")} />;
     }
 
     if (currentView === "podcast" && selectedFeedUrl) {
