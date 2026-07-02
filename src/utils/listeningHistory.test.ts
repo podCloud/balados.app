@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { PlayStatus } from "../types";
-import { filterPlayStatuses, getEpisodeStatus, isWithinPeriod } from "./listeningHistory";
+import type { PlayStatus, Subscription } from "../types";
+import {
+  computeListeningStats,
+  filterPlayStatuses,
+  getEpisodeStatus,
+  isWithinPeriod,
+} from "./listeningHistory";
 
 const basePlayStatus: PlayStatus = {
   episodeId: "ep1",
@@ -130,5 +135,97 @@ describe("filterPlayStatuses", () => {
       now,
     );
     expect(result.map((i) => i.episodeId)).toEqual(["a"]);
+  });
+});
+
+describe("computeListeningStats", () => {
+  const subs: Subscription[] = [
+    { url: "https://x.com/f", addedAt: 0, title: "Podcast X" },
+    // https://y.com/f intentionally has no subscription row, to exercise the fallback title
+  ];
+
+  it("returns zeroed stats for an empty history", () => {
+    expect(computeListeningStats([], subs)).toEqual({
+      totalTimeSeconds: 0,
+      totalEpisodes: 0,
+      completedCount: 0,
+      topPodcasts: [],
+    });
+  });
+
+  it("sums position, counts episodes and completions", () => {
+    const items: PlayStatus[] = [
+      {
+        episodeId: "a",
+        feedUrl: "https://x.com/f",
+        position: 300,
+        duration: 1000,
+        completed: true,
+        updatedAt: 1,
+      },
+      {
+        episodeId: "b",
+        feedUrl: "https://x.com/f",
+        position: 200,
+        duration: 1000,
+        completed: false,
+        updatedAt: 2,
+      },
+    ];
+    const stats = computeListeningStats(items, subs);
+    expect(stats.totalTimeSeconds).toBe(500);
+    expect(stats.totalEpisodes).toBe(2);
+    expect(stats.completedCount).toBe(1);
+  });
+
+  it("resolves subscription titles and falls back to hostname when unsubscribed", () => {
+    const items: PlayStatus[] = [
+      {
+        episodeId: "a",
+        feedUrl: "https://x.com/f",
+        position: 1,
+        duration: 1,
+        completed: false,
+        updatedAt: 1,
+      },
+      {
+        episodeId: "b",
+        feedUrl: "https://y.com/f",
+        position: 1,
+        duration: 1,
+        completed: false,
+        updatedAt: 1,
+      },
+    ];
+    const stats = computeListeningStats(items, subs);
+    const titles = stats.topPodcasts.map((p) => p.title).sort();
+    expect(titles).toEqual(["Podcast X", "y.com"]);
+  });
+
+  it("ranks top podcasts by episode count, descending, capped at 5", () => {
+    const items: PlayStatus[] = Array.from({ length: 7 }, (_, i) => ({
+      episodeId: `ep${i}`,
+      feedUrl: `https://feed${i % 7}.com/f`,
+      position: 1,
+      duration: 1,
+      completed: false,
+      updatedAt: i,
+    }));
+    // feed0 gets 2 episodes by adding one more
+    items.push({
+      episodeId: "extra",
+      feedUrl: "https://feed0.com/f",
+      position: 1,
+      duration: 1,
+      completed: false,
+      updatedAt: 99,
+    });
+    const stats = computeListeningStats(items, []);
+    expect(stats.topPodcasts).toHaveLength(5);
+    expect(stats.topPodcasts[0]).toEqual({
+      feedUrl: "https://feed0.com/f",
+      title: "feed0.com",
+      count: 2,
+    });
   });
 });
