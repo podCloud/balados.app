@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUseLiveQuery = vi.fn();
@@ -197,7 +197,8 @@ describe("ListeningHistory", () => {
 
     render(<ListeningHistory onBack={vi.fn()} />);
     await waitFor(() => {
-      expect(screen.getByText("unreachable.com")).toBeInTheDocument();
+      const historyRow = screen.getByTestId("history-row");
+      expect(within(historyRow).getByText("unreachable.com")).toBeInTheDocument();
     });
   });
 
@@ -270,7 +271,8 @@ describe("ListeningHistory", () => {
 
     render(<ListeningHistory onBack={vi.fn()} />);
     await waitFor(() => {
-      expect(screen.getByText("unreachable.com")).toBeInTheDocument();
+      const historyRow = screen.getByTestId("history-row");
+      expect(within(historyRow).getByText("unreachable.com")).toBeInTheDocument();
     });
 
     screen.getByTestId("history-row").click();
