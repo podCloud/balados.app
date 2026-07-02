@@ -18,3 +18,20 @@ export const isWithinPeriod = (updatedAt: number, period: Period, now: number): 
   const cutoff = now - PERIOD_DAYS[period] * DAY_MS;
   return updatedAt >= cutoff;
 };
+
+export interface HistoryFilters {
+  feedUrl: string; // "" = all
+  period: Period; // "" = all
+  status: HistoryStatus | ""; // "" = all
+}
+
+export const filterPlayStatuses = (
+  all: PlayStatus[],
+  filters: HistoryFilters,
+  now: number,
+): PlayStatus[] =>
+  all
+    .filter((ps) => !filters.feedUrl || ps.feedUrl === filters.feedUrl)
+    .filter((ps) => isWithinPeriod(ps.updatedAt, filters.period, now))
+    .filter((ps) => !filters.status || getEpisodeStatus(ps) === filters.status)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
