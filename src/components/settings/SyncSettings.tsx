@@ -9,7 +9,7 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSyncQueue } from "../../hooks/useSyncQueue";
 import { getSettings, saveSettings } from "../../services/storage";
@@ -37,6 +37,9 @@ export const SyncSettings = () => {
   });
   const [serverInput, setServerInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  // Bumped by Disconnect so a connect attempt still awaiting /health does not
+  // reconnect the user right after they asked to leave.
+  const attemptRef = useRef(0);
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
 
@@ -162,7 +165,9 @@ export const SyncSettings = () => {
     try {
       // Test if server is reachable
       const client = new SyncClient(url);
+      const attempt = attemptRef.current;
       const isReachable = await client.testConnection();
+      if (attempt !== attemptRef.current) return; // disconnected meanwhile
 
       if (!isReachable) {
         setState((prev) => ({
@@ -202,7 +207,9 @@ export const SyncSettings = () => {
 
     try {
       const client = new SyncClient(url, tokenInput.trim());
+      const attempt = attemptRef.current;
       const isValid = await client.testConnection();
+      if (attempt !== attemptRef.current) return; // disconnected meanwhile
 
       if (!isValid) {
         setState((prev) => ({
@@ -239,6 +246,7 @@ export const SyncSettings = () => {
   // Disconnect from server
   const handleDisconnect = useCallback(async () => {
     if (!window.confirm(t("syncSettings.disconnectConfirm"))) return;
+    attemptRef.current += 1;
 
     const client = await SyncClient.fromSettings();
     if (client) {

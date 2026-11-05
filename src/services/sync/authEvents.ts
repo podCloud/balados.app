@@ -39,13 +39,13 @@ const patchSettings = (
  */
 export const notifySyncAuthError = async (
   failedToken: string,
-  serverUrl?: string,
+  serverUrl: string,
 ): Promise<void> => {
   let flagged = false;
   try {
     flagged = await patchSettings((current) => {
       if (current.syncToken !== failedToken) return false;
-      if (serverUrl !== undefined && current.syncServerUrl !== serverUrl) return false;
+      if (current.syncServerUrl !== serverUrl) return false;
       current.syncAuthExpired = true;
       return true;
     });

@@ -366,7 +366,29 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
 
     expect(mockTryRefresh).not.toHaveBeenCalled();
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(notifySyncAuthError).toHaveBeenCalledTimes(1);
+    expect(notifySyncAuthError).toHaveBeenCalledWith("test-jwt-token", "https://sync.example.com");
+  });
+
+  it("replays against the server stored after the refresh, not the old one", async () => {
+    mockTryRefresh.mockImplementation(async () => {
+      mockGetSettings.mockResolvedValue({
+        ...SYNC_SETTINGS,
+        syncServerUrl: "https://other.example.com",
+        syncToken: "other-token",
+      });
+      return true;
+    });
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401))
+      .mockImplementationOnce(() => statusResponse(403));
+
+    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+
+    expect(String(mockFetch.mock.calls[2][0])).toContain(
+      "https://other.example.com/api/v1/rss/proxy/",
+    );
+    expect(notifySyncAuthError).toHaveBeenCalledWith("other-token", "https://other.example.com");
   });
 
   it("throws SyncProxyRateLimitError when the replay after refresh is rate limited", async () => {

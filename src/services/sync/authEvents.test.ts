@@ -12,7 +12,7 @@ describe("authEvents", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeSyncAuthError(listener);
 
-    await notifySyncAuthError("current");
+    await notifySyncAuthError("current", "https://sync.example.com");
 
     expect((await getSettings()).syncAuthExpired).toBe(true);
     expect(listener).toHaveBeenCalledWith(true);
@@ -23,7 +23,7 @@ describe("authEvents", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeSyncAuthError(listener);
 
-    await notifySyncAuthError("stale");
+    await notifySyncAuthError("stale", "https://sync.example.com");
 
     expect((await getSettings()).syncAuthExpired).toBeFalsy();
     expect((await getSettings()).syncToken).toBe("current");
@@ -32,9 +32,12 @@ describe("authEvents", () => {
   });
 
   it("does not overwrite credentials saved while the notification was in flight", async () => {
-    // Save first so its read lands before the notify transaction: without the
-    // transactional saveSettings the stale read would be written back.
-    await Promise.all([saveSettings({ syncToken: "fresh" }), notifySyncAuthError("current")]);
+    // Save first so its read lands before the notify transaction; this pins the
+    // notify-side transaction (the saveSettings one is pinned by the 20-round test).
+    await Promise.all([
+      saveSettings({ syncToken: "fresh" }),
+      notifySyncAuthError("current", "https://sync.example.com"),
+    ]);
 
     const settings = await getSettings();
     expect(settings.syncToken).toBe("fresh");
@@ -42,10 +45,14 @@ describe("authEvents", () => {
 
   it("never loses the flag or the token under concurrent writers", async () => {
     for (let round = 0; round < 20; round++) {
-      await saveSettings({ syncServerUrl: "https://sync.example.com", syncToken: "current" });
+      await saveSettings({
+        syncServerUrl: "https://sync.example.com",
+        syncToken: "current",
+        syncAuthExpired: false,
+      });
       await Promise.all([
         saveSettings({ lastSyncAt: round }),
-        notifySyncAuthError("current"),
+        notifySyncAuthError("current", "https://sync.example.com"),
         saveSettings({ locale: "en" }),
       ]);
       const settings = await getSettings();
@@ -82,7 +89,7 @@ describe("authEvents", () => {
     const listener = vi.fn();
     subscribeSyncAuthError(listener)();
 
-    await notifySyncAuthError("current");
+    await notifySyncAuthError("current", "https://sync.example.com");
 
     expect(listener).not.toHaveBeenCalled();
   });

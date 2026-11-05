@@ -45,6 +45,7 @@ vi.mock("../services/storage", () => ({
     proxies: [],
   }),
   saveSettings: vi.fn().mockResolvedValue(undefined),
+  SETTINGS_ID: "app_settings",
   db: {
     transaction: vi.fn(async (_mode: string, _table: unknown, fn: () => Promise<unknown>) => fn()),
     settings: {
@@ -120,6 +121,7 @@ vi.mock("../services/sync/authEvents", async (importOriginal) => {
 describe("useSync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFromSettings.mockReset().mockResolvedValue(null); // drop queued *Once values
     mockTestConnection.mockResolvedValue(true);
     mockFromSettings.mockResolvedValue(null);
     // Reset getSettings to default (no sync credentials)
@@ -170,7 +172,7 @@ describe("useSync", () => {
     await waitFor(() => expect(result.current.status).toBe("connected"));
 
     await act(async () => {
-      await notifySyncAuthError("token");
+      await notifySyncAuthError("token", "https://sync.example.com");
     });
 
     await waitFor(() => expect(result.current.status).toBe("error"));
@@ -211,7 +213,7 @@ describe("useSync", () => {
     const { result } = renderHook(() => useSync());
     await waitFor(() => expect(result.current.status).toBe("connected"));
     await act(async () => {
-      await notifySyncAuthError("token");
+      await notifySyncAuthError("token", "https://sync.example.com");
     });
     await waitFor(() => expect(result.current.status).toBe("error"));
 
@@ -237,7 +239,7 @@ describe("useSync", () => {
     await waitFor(() => expect(result.current.status).toBe("disconnected"));
 
     await act(async () => {
-      await notifySyncAuthError("token");
+      await notifySyncAuthError("token", "https://sync.example.com");
     });
 
     expect(result.current.status).toBe("disconnected");
@@ -271,7 +273,7 @@ describe("useSync", () => {
       syncAuthExpired: true,
     });
     await act(async () => {
-      await notifySyncAuthError("token");
+      await notifySyncAuthError("token", "https://sync.example.com");
     });
     await act(async () => {
       resolveHealth(true);
@@ -312,7 +314,7 @@ describe("useSync", () => {
     const { result } = renderHook(() => useSync());
     await waitFor(() => expect(result.current.status).toBe("connected"));
     await act(async () => {
-      await notifySyncAuthError("old");
+      await notifySyncAuthError("old", "https://sync.example.com");
     });
     await waitFor(() => expect(result.current.status).toBe("error"));
 

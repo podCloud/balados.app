@@ -33,6 +33,11 @@ const mockSaveSettings = vi.fn().mockResolvedValue(undefined);
 vi.mock("../../services/storage", () => ({
   getSettings: (...args: unknown[]) => mockGetSettings(...args),
   saveSettings: (...args: unknown[]) => mockSaveSettings(...args),
+  SETTINGS_ID: "app_settings",
+  db: {
+    transaction: vi.fn(async (_mode: string, _table: unknown, fn: () => Promise<unknown>) => fn()),
+    settings: { put: vi.fn().mockResolvedValue(undefined) },
+  },
 }));
 
 // Mock useSyncQueue
@@ -150,7 +155,7 @@ describe("SyncSettings", () => {
     expect(await screen.findByText("Connected")).toBeInTheDocument();
 
     await act(async () => {
-      await notifySyncAuthError("token");
+      await notifySyncAuthError("token", "https://sync.example.com");
     });
 
     expect(
@@ -184,7 +189,7 @@ describe("SyncSettings", () => {
       syncAuthExpired: true,
     });
     await act(async () => {
-      await notifySyncAuthError("token");
+      await notifySyncAuthError("token", "https://sync.example.com");
     });
     await act(async () => {
       resolveHealth(true);
@@ -217,6 +222,40 @@ describe("SyncSettings", () => {
       screen.queryByText("Session expired, reconnect the sync server"),
     ).not.toBeInTheDocument();
     expect(mockSaveCredentials).toHaveBeenCalled();
+  });
+
+  it("does not reconnect when Disconnect is clicked while a manual-token connect is pending", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    let resolveHealth: (ok: boolean) => void = () => {};
+
+    render(<SyncSettings />);
+    await screen.findByText("Session expired, reconnect the sync server");
+    mockTestConnection.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveHealth = resolve;
+        }),
+    );
+
+    fireEvent.click(screen.getByText("Manual token"));
+    await userEvent.type(screen.getByPlaceholderText("Paste token here"), "fresh-token");
+    fireEvent.click(screen.getByText("Connect with token"));
+    await waitFor(() => expect(mockTestConnection).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /Disconnect/ }));
+    await waitFor(() => expect(mockClearCredentials).toHaveBeenCalled());
+    await act(async () => {
+      resolveHealth(true);
+    });
+
+    expect(mockSaveCredentials).not.toHaveBeenCalled();
+    expect(screen.getByText("Disconnected")).toBeInTheDocument();
   });
 
   it("shows loading state initially", () => {
