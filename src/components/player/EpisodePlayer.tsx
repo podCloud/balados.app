@@ -1,54 +1,20 @@
-import DOMPurify from "dompurify";
 import { ChevronDown, ChevronUp, ExternalLink, Play } from "lucide-react";
-import { Marked } from "marked";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";
 import { DownloadButton } from "../ui/DownloadButton";
 import { PlayerControls } from "./PlayerControls";
-
-const markedInstance = new Marked({ breaks: true, gfm: true });
-
-// Note: DOMPurify requires a browser DOM. In jsdom test environments, sanitize()
-// may return empty strings. Component tests should mock DOMPurify if needed.
-const PURIFY_CONFIG = {
-  ALLOWED_TAGS: [
-    "p",
-    "br",
-    "strong",
-    "em",
-    "b",
-    "i",
-    "ul",
-    "ol",
-    "li",
-    "a",
-    "img",
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",
-    "blockquote",
-    "code",
-    "pre",
-    "hr",
-  ],
-  ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "width", "height"],
-  FORCE_BODY: true,
-};
+import { renderShowNotes } from "./renderShowNotes";
 
 export const EpisodePlayer = () => {
   const { t } = useTranslation();
   const { currentEpisode, feedUrl } = usePlayer();
   const [showNotesOpen, setShowNotesOpen] = useState(false);
 
-  const renderedNotes = useMemo(() => {
-    if (!currentEpisode?.description) return "";
-    const rawHtml = markedInstance.parse(currentEpisode.description) as string;
-    return DOMPurify.sanitize(rawHtml, { ...PURIFY_CONFIG, RETURN_TRUSTED_TYPE: false }) as string;
-  }, [currentEpisode?.description]);
+  const renderedNotes = useMemo(
+    () => renderShowNotes(currentEpisode?.description ?? ""),
+    [currentEpisode?.description],
+  );
 
   if (!currentEpisode) {
     return (
