@@ -9,10 +9,11 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSyncQueue } from "../../hooks/useSyncQueue";
 import { getSettings, saveSettings } from "../../services/storage";
+import { subscribeSyncAuthError } from "../../services/sync/authEvents";
 import { SyncClient } from "../../services/sync/client";
 
 type ConnectionStatus = "disconnected" | "connected" | "connecting" | "error";
@@ -36,6 +37,9 @@ export const SyncSettings = () => {
   });
   const [serverInput, setServerInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  // Bumped by Disconnect so a connect attempt still awaiting /health does not
+  // reconnect the user right after they asked to leave.
+  const attemptRef = useRef(0);
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
 
@@ -43,10 +47,36 @@ export const SyncSettings = () => {
   useEffect(() => {
     const loadSettings = async () => {
       const settings = await getSettings();
+      if (settings.syncServerUrl && settings.syncToken && settings.syncAuthExpired) {
+        // The server rejected the token: /health would still answer, so skip
+        // the connection test and ask the user to reconnect.
+        setServerInput(settings.syncServerUrl);
+        setState({
+          status: "error",
+          serverUrl: settings.syncServerUrl,
+          lastSyncAt: settings.lastSyncAt ?? null,
+          error: t("syncSettings.sessionExpired"),
+        });
+        setIsLoading(false);
+        return;
+      }
       if (settings.syncServerUrl && settings.syncToken) {
         // Test connection to see if still valid
         const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
         const isConnected = await client.testConnection();
+
+        if ((await getSettings()).syncAuthExpired) {
+          // The token was rejected while /health was pending: the flag wins.
+          setServerInput(settings.syncServerUrl);
+          setState({
+            status: "error",
+            serverUrl: settings.syncServerUrl,
+            lastSyncAt: settings.lastSyncAt ?? null,
+            error: t("syncSettings.sessionExpired"),
+          });
+          setIsLoading(false);
+          return;
+        }
 
         setState({
           status: isConnected ? "connected" : "error",
@@ -59,6 +89,18 @@ export const SyncSettings = () => {
     };
 
     loadSettings();
+  }, [t]);
+
+  // React to auth failures raised while this screen is open
+  useEffect(() => {
+    return subscribeSyncAuthError((expired) => {
+      if (!expired) return;
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        error: t("syncSettings.sessionExpired"),
+      }));
+    });
   }, [t]);
 
   // Handle OAuth callback via postMessage
@@ -123,7 +165,9 @@ export const SyncSettings = () => {
     try {
       // Test if server is reachable
       const client = new SyncClient(url);
+      const attempt = attemptRef.current;
       const isReachable = await client.testConnection();
+      if (attempt !== attemptRef.current) return; // disconnected meanwhile
 
       if (!isReachable) {
         setState((prev) => ({
@@ -163,7 +207,9 @@ export const SyncSettings = () => {
 
     try {
       const client = new SyncClient(url, tokenInput.trim());
+      const attempt = attemptRef.current;
       const isValid = await client.testConnection();
+      if (attempt !== attemptRef.current) return; // disconnected meanwhile
 
       if (!isValid) {
         setState((prev) => ({
@@ -175,6 +221,7 @@ export const SyncSettings = () => {
       }
 
       await client.saveCredentials();
+      if (attempt !== attemptRef.current) return; // disconnected during the save
 
       setState({
         status: "connected",
@@ -200,6 +247,7 @@ export const SyncSettings = () => {
   // Disconnect from server
   const handleDisconnect = useCallback(async () => {
     if (!window.confirm(t("syncSettings.disconnectConfirm"))) return;
+    attemptRef.current += 1;
 
     const client = await SyncClient.fromSettings();
     if (client) {
@@ -294,7 +342,7 @@ export const SyncSettings = () => {
             </div>
           </div>
 
-          {state.status === "connected" && (
+          {state.serverUrl && state.status !== "disconnected" && (
             <button
               type="button"
               onClick={handleDisconnect}

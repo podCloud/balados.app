@@ -1,6 +1,7 @@
 import type { PlayStatus, Subscription } from "../../types";
 import { decodeRssFeed, encodeRssFeed } from "../../utils/rssEncoding";
 import { getSettings, saveSettings } from "../storage";
+import { clearSyncAuthError } from "./authEvents";
 
 // API Response types
 export interface SyncConfig {
@@ -175,7 +176,9 @@ export class SyncClient {
     await saveSettings({
       syncServerUrl: this.serverUrl,
       syncToken: this.token ?? undefined,
+      syncAuthExpired: false, // same transaction as the token: never a flagged fresh token
     });
+    await clearSyncAuthError(); // idempotent persist + listeners told
   }
 
   /**
@@ -185,7 +188,9 @@ export class SyncClient {
     await saveSettings({
       syncServerUrl: undefined,
       syncToken: undefined,
+      syncAuthExpired: false,
     });
+    await clearSyncAuthError();
   }
 
   /**
@@ -285,6 +290,14 @@ export class SyncClient {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Try to refresh the access token. Public entry point used by the RSS proxy
+   * cascade; returns false when no refresh token is available.
+   */
+  async tryRefresh(): Promise<boolean> {
+    return this.refreshAccessToken();
   }
 
   /**

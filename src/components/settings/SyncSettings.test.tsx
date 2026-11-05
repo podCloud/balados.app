@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { notifySyncAuthError } from "../../services/sync/authEvents";
 import { SyncSettings } from "./SyncSettings";
 
 // Mock SyncClient - vi.hoisted ensures these are available before vi.mock hoisting
@@ -32,6 +33,11 @@ const mockSaveSettings = vi.fn().mockResolvedValue(undefined);
 vi.mock("../../services/storage", () => ({
   getSettings: (...args: unknown[]) => mockGetSettings(...args),
   saveSettings: (...args: unknown[]) => mockSaveSettings(...args),
+  SETTINGS_ID: "app_settings",
+  db: {
+    transaction: vi.fn(async (_mode: string, _table: unknown, fn: () => Promise<unknown>) => fn()),
+    settings: { put: vi.fn().mockResolvedValue(undefined) },
+  },
 }));
 
 // Mock useSyncQueue
@@ -48,53 +54,245 @@ vi.mock("../../hooks/useSyncQueue", () => ({
 }));
 
 // Mock i18n
+// A stable `t` like react-i18next's (re-created only on language change),
+// so `[t]` effects do not re-run on every render in tests.
+const stableT = (key: string, opts?: Record<string, unknown>) => translate(key, opts);
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
-      const translations: Record<string, string> = {
-        "syncSettings.title": "Synchronisation",
-        "syncSettings.connected": "Connected",
-        "syncSettings.connecting": "Connecting...",
-        "syncSettings.disconnected": "Disconnected",
-        "syncSettings.error": "Error",
-        "syncSettings.connect": "Connect",
-        "syncSettings.disconnect": "Disconnect",
-        "syncSettings.disconnectConfirm": "Are you sure?",
-        "syncSettings.serverUrl": "Server URL",
-        "syncSettings.serverUnreachable": "Server unreachable",
-        "syncSettings.connectionError": "Connection error",
-        "syncSettings.connectionFailed": "Connection failed",
-        "syncSettings.invalidToken": "Invalid token",
-        "syncSettings.invalidServerUrl": "Invalid server URL",
-        "syncSettings.syncNow": "Sync now",
-        "syncSettings.lastSync": "Last sync",
-        "syncSettings.never": "Never",
-        "syncSettings.justNow": "Just now",
-        "syncSettings.minutesAgo": `${opts?.count} min ago`,
-        "syncSettings.hoursAgo": `${opts?.count}h ago`,
-        "syncSettings.daysAgo": `${opts?.count}d ago`,
-        "syncSettings.manualToken": "Manual token",
-        "syncSettings.hideToken": "Hide token",
-        "syncSettings.tokenPlaceholder": "Paste token here",
-        "syncSettings.connectWithToken": "Connect with token",
-        "sync.syncing": "Syncing...",
-        "sync.pending": `${opts?.count} pending`,
-        "sync.syncError": "Sync error",
-      };
-      return translations[key] || key;
-    },
-  }),
+  useTranslation: () => ({ t: stableT }),
 }));
+const translate = (key: string, opts?: Record<string, unknown>) => {
+  const translations: Record<string, string> = {
+    "syncSettings.title": "Synchronisation",
+    "syncSettings.connected": "Connected",
+    "syncSettings.connecting": "Connecting...",
+    "syncSettings.disconnected": "Disconnected",
+    "syncSettings.error": "Error",
+    "syncSettings.connect": "Connect",
+    "syncSettings.disconnect": "Disconnect",
+    "syncSettings.disconnectConfirm": "Are you sure?",
+    "syncSettings.serverUrl": "Server URL",
+    "syncSettings.serverUnreachable": "Server unreachable",
+    "syncSettings.connectionError": "Connection error",
+    "syncSettings.connectionFailed": "Connection failed",
+    "syncSettings.invalidToken": "Invalid token",
+    "syncSettings.invalidServerUrl": "Invalid server URL",
+    "syncSettings.syncNow": "Sync now",
+    "syncSettings.lastSync": "Last sync",
+    "syncSettings.never": "Never",
+    "syncSettings.justNow": "Just now",
+    "syncSettings.minutesAgo": `${opts?.count} min ago`,
+    "syncSettings.hoursAgo": `${opts?.count}h ago`,
+    "syncSettings.daysAgo": `${opts?.count}d ago`,
+    "syncSettings.manualToken": "Manual token",
+    "syncSettings.hideToken": "Hide token",
+    "syncSettings.tokenPlaceholder": "Paste token here",
+    "syncSettings.connectWithToken": "Connect with token",
+    "syncSettings.sessionExpired": "Session expired, reconnect the sync server",
+    "sync.syncing": "Syncing...",
+    "sync.pending": `${opts?.count} pending`,
+    "sync.syncError": "Sync error",
+  };
+  return translations[key] || key;
+};
 
 describe("SyncSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
+    // Implementations set by individual tests (deferred health/save) must not leak
+    mockTestConnection.mockReset();
+    mockSaveCredentials.mockReset().mockResolvedValue(undefined);
+    mockClearCredentials.mockReset().mockResolvedValue(undefined);
     mockGetSettings.mockResolvedValue({
       locale: "fr",
       proxies: [],
     });
     mockTestConnection.mockResolvedValue(true);
+  });
+
+  it("shows the session-expired banner and the connect form when the sync token was rejected", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+
+    render(<SyncSettings />);
+
+    expect(
+      await screen.findByText("Session expired, reconnect the sync server"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
+    expect(mockTestConnection).not.toHaveBeenCalled();
+  });
+
+  it("lets the user disconnect from the session-expired state", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<SyncSettings />);
+    await screen.findByText("Session expired, reconnect the sync server");
+
+    await userEvent.click(screen.getByRole("button", { name: /Disconnect/ }));
+
+    await waitFor(() => expect(mockClearCredentials).toHaveBeenCalled());
+    expect(await screen.findByText("Disconnected")).toBeInTheDocument();
+  });
+
+  it("shows the banner when the token is rejected while the screen is open", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+    });
+
+    render(<SyncSettings />);
+    expect(await screen.findByText("Connected")).toBeInTheDocument();
+
+    await act(async () => {
+      await notifySyncAuthError("token", "https://sync.example.com");
+    });
+
+    expect(
+      await screen.findByText("Session expired, reconnect the sync server"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Disconnect/ })).toBeInTheDocument();
+  });
+
+  it("does not lose a rejection raised during the startup health check", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+    });
+    let resolveHealth: (ok: boolean) => void = () => {};
+    mockTestConnection.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveHealth = resolve;
+        }),
+    );
+
+    render(<SyncSettings />);
+    await waitFor(() => expect(mockTestConnection).toHaveBeenCalled());
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+      syncAuthExpired: true,
+    });
+    await act(async () => {
+      await notifySyncAuthError("token", "https://sync.example.com");
+    });
+    await act(async () => {
+      resolveHealth(true);
+    });
+
+    expect(
+      await screen.findByText("Session expired, reconnect the sync server"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Connected")).not.toBeInTheDocument();
+  });
+
+  it("clears the banner after reconnecting with a manual token", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+
+    render(<SyncSettings />);
+    await screen.findByText("Session expired, reconnect the sync server");
+
+    fireEvent.click(screen.getByText("Manual token"));
+    await userEvent.type(screen.getByPlaceholderText("Paste token here"), "fresh-token");
+    fireEvent.click(screen.getByText("Connect with token"));
+
+    expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Session expired, reconnect the sync server"),
+    ).not.toBeInTheDocument();
+    expect(mockSaveCredentials).toHaveBeenCalled();
+  });
+
+  it("does not reconnect when Disconnect is clicked while a manual-token connect is pending", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    let resolveHealth: (ok: boolean) => void = () => {};
+
+    render(<SyncSettings />);
+    await screen.findByText("Session expired, reconnect the sync server");
+    mockTestConnection.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveHealth = resolve;
+        }),
+    );
+
+    fireEvent.click(screen.getByText("Manual token"));
+    await userEvent.type(screen.getByPlaceholderText("Paste token here"), "fresh-token");
+    fireEvent.click(screen.getByText("Connect with token"));
+    await waitFor(() => expect(mockTestConnection).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /Disconnect/ }));
+    await waitFor(() => expect(mockClearCredentials).toHaveBeenCalled());
+    await act(async () => {
+      resolveHealth(true);
+    });
+
+    expect(mockSaveCredentials).not.toHaveBeenCalled();
+    expect(screen.getByText("Disconnected")).toBeInTheDocument();
+  });
+
+  it("does not show connected when Disconnect is clicked while the credentials are being saved", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    let resolveSave: () => void = () => {};
+    mockSaveCredentials.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    render(<SyncSettings />);
+    await screen.findByText("Session expired, reconnect the sync server");
+    fireEvent.click(screen.getByText("Manual token"));
+    await userEvent.type(screen.getByPlaceholderText("Paste token here"), "fresh-token");
+    fireEvent.click(screen.getByText("Connect with token"));
+    await waitFor(() => expect(mockSaveCredentials).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: /Disconnect/ }));
+    await waitFor(() => expect(mockClearCredentials).toHaveBeenCalled());
+    await act(async () => {
+      resolveSave();
+    });
+
+    expect(screen.getByText("Disconnected")).toBeInTheDocument();
+    expect(screen.queryByText("Connected")).not.toBeInTheDocument();
   });
 
   it("shows loading state initially", () => {

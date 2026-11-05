@@ -173,8 +173,8 @@ Phase 5: Tendances & Social  █████████████████
 
 #### Phase A — MAINTENANT (s'aligner sur l'enforcement serveur)
 
-- [ ] Gérer proprement un **401** renvoyé par le proxy serveur (token invalide/expiré) : tenter un refresh token, sinon surfacer une ré-auth — **ne pas** retomber silencieusement sur les proxies publics avec un token mort.
-- [ ] Vérifier que la cascade `proxyManager.ts` (direct → serveur → proxies publics) reste cohérente quand le serveur exige le JWT.
+- [x] Gérer proprement un **401** renvoyé par le proxy serveur (token invalide/expiré) : tenter un refresh token, sinon surfacer une ré-auth — **ne pas** retomber silencieusement sur les proxies publics avec un token mort. — refresh effectif : [#73](https://github.com/podCloud/balados.app/issues/73), aucun refresh token n'est persisté aujourd'hui.
+- [x] Vérifier que la cascade `proxyManager.ts` (direct → serveur → proxies publics) reste cohérente quand le serveur exige le JWT.
 
 #### Phase B — FUTUR (proxy d'images HMAC, si on l'active un jour)
 

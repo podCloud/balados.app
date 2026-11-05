@@ -198,15 +198,34 @@ Quand connecté, utiliser le proxy du serveur:
 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`
 
 // Avec serveur
-const proxyUrl = `${serverUrl}/api/v1/rss/proxy/${btoa(feedUrl)}`
+const proxyUrl = `${serverUrl}/api/v1/rss/proxy/${encodeRssFeed(feedUrl)}` // base64url sans padding, header Authorization: Bearer
 ```
 
 ### Avantages du proxy serveur
 
 - Cache LRU côté serveur (5 min)
-- Pas de limite de rate
+- Quota par utilisateur (le serveur renvoie `429` + `Retry-After` au-delà)
 - Fiabilité garantie
 - Headers CORS corrects
+
+### Cascade et erreurs d'authentification
+
+`fetchWithProxy` (`src/services/rss/proxyManager.ts`) essaie dans l'ordre : fetch direct → proxy serveur (avec `Authorization: Bearer`) → proxies publics. Le proxy serveur exige le JWT ; trois statuts sortent de la cascade au lieu de retomber en silence sur les proxies publics (ce qui ferait fuir la bibliothèque vers un tiers avec un token mort) :
+
+| Statut serveur | Comportement |
+|----------------|--------------|
+| `401` | D'abord : si les settings n'ont plus de serveur ou de token (déconnexion pendant la requête), cascade silencieuse vers les proxies publics, sans erreur. Sinon, si les settings contiennent déjà un token plus récent que celui envoyé (un autre appel a rafraîchi entre-temps), la requête est rejouée directement. Sinon une tentative de refresh (`SyncClient.tryRefresh()`, une seule en vol pour tous les appels parallèles). Succès → requête rejouée avec le nouveau token (un `429` au rejeu est traité comme ci-dessous, un `5xx`/erreur réseau retombe sur les proxies publics). Échec, ou `401`/`403` au rejeu → `SyncProxyAuthError`. |
+| `403` | Token valide mais scope insuffisant : `SyncProxyAuthError` immédiate, sans refresh. |
+| `429` | `SyncProxyRateLimitError` portant `retryAfterSeconds` (header `Retry-After` en delta-secondes ou date IMF-fixdate, 60 s par défaut si absent, nul ou mal formé). Aucun appel aux proxies publics. |
+| autre non-ok, erreur réseau | Cascade vers les proxies publics (inchangé). |
+
+**Disjoncteur.** `SyncProxyAuthError` appelle `notifySyncAuthError(tokenRefusé, urlServeur)` (`src/services/sync/authEvents.ts`) qui, dans une transaction Dexie, persiste `syncAuthExpired: true` **seulement si le couple token/serveur stocké est encore celui qui a été refusé** (un `401` tardif après une reconnexion est ignoré et ne peut pas écraser les nouveaux identifiants), puis prévient les abonnés. Tant que ce drapeau est levé, `fetchWithProxy` ne contacte plus le serveur et lève directement l'erreur. `SyncClient.saveCredentials()` (reconnexion : popup OAuth, token manuel, `useSync.connect`) et `SyncClient.clearCredentials()` (déconnexion) écrivent le drapeau à `false` dans la même transaction que les identifiants, puis notifient. `saveSettings()` est lui-même transactionnel, donc deux écrivains concurrents ne s'écrasent plus.
+
+**UI.** `useSync` relit les settings à chaque notification : passage en `error` (« Sync session expired, reconnect the sync server ») si un serveur est configuré, y compris si la notification arrive pendant le `/health` de démarrage ; au retrait du drapeau il revient en `connected` (nouvelle URL serveur relue, client reconstruit, sync périodique réenregistrée) ou `disconnected`. `SyncStatusIcon` affiche l'icône rouge. `SyncSettings` affiche le message i18n `syncSettings.sessionExpired` avec le formulaire de connexion pré-rempli, sans tester `/health` (qui répondrait OK sans auth), et garde le bouton **Déconnexion** disponible pour repasser en mode autonome.
+
+**Retries TanStack Query.** Les `useQuery` de flux (`PodcastDetail`, `SubscriptionItem`) utilisent `rssQueryRetry` (jamais de retry sur `SyncProxyAuthError`, pas de retry si `Retry-After` dépasse 60 s, sinon 2 retries) et `rssQueryRetryDelay` (`Retry-After` plafonné à 60 s, sinon backoff exponentiel plafonné à 30 s).
+
+Note : le flux d'autorisation actuel (`/authorize?response_type=token`) ne fournit pas de refresh token, donc `tryRefresh()` renvoie `false` et un `401` mène directement à la reconnexion.
 
 ## UI de synchronisation
 

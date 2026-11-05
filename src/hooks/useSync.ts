@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { db, getSettings, saveSettings } from "../services/storage";
 import { getSubscriptions } from "../services/storage/subscriptions";
+import { subscribeSyncAuthError } from "../services/sync/authEvents";
 import { registerPeriodicSync, unregisterPeriodicSync } from "../services/sync/backgroundSync";
 import type { LikeSync } from "../services/sync/client";
 import { SyncClient } from "../services/sync/client";
@@ -58,6 +59,8 @@ interface SyncState {
  * - Pending action count from syncQueue
  * - Error handling
  */
+const AUTH_EXPIRED_ERROR = "Sync session expired, reconnect the sync server";
+
 export function useSync(): UseSyncReturn {
   const [state, setState] = useState<SyncState>({
     status: "disconnected",
@@ -70,6 +73,7 @@ export function useSync(): UseSyncReturn {
   const { pendingCount, processQueue, refreshCount } = useSyncQueue();
   const isMounted = useRef(true);
   const clientRef = useRef<SyncClient | null>(null);
+  const authExpiredRef = useRef(false);
 
   // Load initial state from settings
   useEffect(() => {
@@ -82,6 +86,19 @@ export function useSync(): UseSyncReturn {
       if (!isMounted.current) return;
 
       if (settings.syncServerUrl && settings.syncToken) {
+        if (settings.syncAuthExpired) {
+          // Token known dead: no point testing the connection (health needs no auth).
+          setState({
+            status: "error",
+            serverUrl: settings.syncServerUrl,
+            lastSyncAt: settings.lastSyncAt ? new Date(settings.lastSyncAt) : null,
+            error: AUTH_EXPIRED_ERROR,
+            isSyncing: false,
+          });
+          authExpiredRef.current = true;
+          return;
+        }
+
         // Create client and test connection
         const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
         clientRef.current = client;
@@ -89,6 +106,22 @@ export function useSync(): UseSyncReturn {
         if (!isMounted.current) return;
 
         const isConnected = await client.testConnection();
+
+        // A feed fetch may have tripped the circuit breaker while /health was
+        // pending: the persisted flag wins over the health check.
+        if ((await getSettings()).syncAuthExpired) {
+          if (isMounted.current) {
+            setState({
+              status: "error",
+              serverUrl: settings.syncServerUrl,
+              lastSyncAt: settings.lastSyncAt ? new Date(settings.lastSyncAt) : null,
+              error: AUTH_EXPIRED_ERROR,
+              isSyncing: false,
+            });
+          }
+          authExpiredRef.current = true;
+          return;
+        }
 
         if (isMounted.current) {
           setState({
@@ -112,6 +145,52 @@ export function useSync(): UseSyncReturn {
     return () => {
       isMounted.current = false;
     };
+  }, []);
+
+  // Surface auth failures raised by the RSS proxy cascade (token rejected,
+  // refresh impossible): the user must reconnect the sync server.
+  useEffect(() => {
+    const onExpired = async () => {
+      // Settings are the source of truth: a late 401 after a disconnect finds
+      // no credentials and is ignored; during startup they are already there.
+      const settings = await getSettings();
+      if (!isMounted.current || !settings.syncServerUrl || !settings.syncToken) return;
+      const serverUrl = settings.syncServerUrl;
+      authExpiredRef.current = true;
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        serverUrl,
+        isSyncing: false,
+        error: AUTH_EXPIRED_ERROR,
+      }));
+    };
+
+    const onRecovered = async () => {
+      const settings = await getSettings();
+      if (!isMounted.current) return;
+      const serverUrl =
+        settings.syncServerUrl && settings.syncToken ? settings.syncServerUrl : null;
+      const recovered = authExpiredRef.current;
+      authExpiredRef.current = false;
+      clientRef.current = null; // credentials changed: sync() rebuilds the client
+      setState((prev) => {
+        if (prev.error !== AUTH_EXPIRED_ERROR) return prev;
+        return {
+          ...prev,
+          status: serverUrl ? "connected" : "disconnected",
+          serverUrl,
+          error: null,
+        };
+      });
+      // Periodic sync was skipped while expired: re-register only on a real recovery
+      if (recovered && serverUrl) await registerPeriodicSync();
+    };
+
+    return subscribeSyncAuthError((expired) => {
+      if (!isMounted.current) return;
+      void (expired ? onExpired() : onRecovered());
+    });
   }, []);
 
   // Update status based on pending count
@@ -194,10 +273,13 @@ export function useSync(): UseSyncReturn {
    * Disconnect from current server
    */
   const disconnect = useCallback(async (): Promise<void> => {
-    if (clientRef.current) {
-      await clientRef.current.clearCredentials();
-      clientRef.current = null;
+    // No client is built when the hook loaded in the expired state: clear
+    // through a client rebuilt from settings so credentials and flag go away.
+    const client = clientRef.current ?? (await SyncClient.fromSettings());
+    if (client) {
+      await client.clearCredentials();
     }
+    clientRef.current = null;
 
     await unregisterPeriodicSync();
     await saveSettings({ lastSyncAt: undefined });

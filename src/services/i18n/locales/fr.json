@@ -120,7 +120,8 @@
     "invalidServerUrl": "URL du serveur invalide dans les paramètres",
     "manualToken": "Entrer un token manuellement",
     "hideToken": "Masquer",
-    "tokenPlaceholder": "Token JWT"
+    "tokenPlaceholder": "Token JWT",
+    "sessionExpired": "Session expirée : le serveur de sync a refusé votre jeton ou ses autorisations sont insuffisantes. Reconnectez-vous pour reprendre la synchronisation."
   },
   "downloads": {
     "storage": "Stockage",

@@ -121,7 +121,7 @@ class BaladosDatabase extends Dexie {
 export const db = new BaladosDatabase();
 
 // Settings helpers
-const SETTINGS_ID = "app_settings";
+export const SETTINGS_ID = "app_settings";
 
 export const getSettings = async (): Promise<AppSettings> => {
   const settings = await db.settings.get(SETTINGS_ID);
@@ -149,8 +149,12 @@ export const getSettings = async (): Promise<AppSettings> => {
 };
 
 export const saveSettings = async (settings: Partial<AppSettings>): Promise<void> => {
-  const current = await getSettings();
-  await db.settings.put({ id: SETTINGS_ID, ...current, ...settings });
+  // Read-modify-write in one transaction so concurrent writers (sync
+  // timestamps, credentials, auth flag) cannot overwrite each other.
+  await db.transaction("rw", db.settings, async () => {
+    const current = await getSettings();
+    await db.settings.put({ id: SETTINGS_ID, ...current, ...settings });
+  });
 };
 
 // Feed cache helpers

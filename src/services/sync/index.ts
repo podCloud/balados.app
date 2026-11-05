@@ -1,3 +1,4 @@
+export { subscribeSyncAuthError } from "./authEvents";
 export type {
   PlayStatusSync,
   SubscriptionSync,

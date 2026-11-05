@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PlayStatus, Subscription } from "../../types";
+import { saveSettings } from "../storage";
+import { clearSyncAuthError } from "./authEvents";
+
+vi.mock("./authEvents", () => ({
+  clearSyncAuthError: vi.fn().mockResolvedValue(undefined),
+}));
+
 import {
   decodeRssFeed,
   decodeRssItem,
@@ -511,5 +518,29 @@ describe("SyncClient", () => {
       client.setToken("token", undefined, -1); // Already expired
       expect(client.hasValidToken()).toBe(false);
     });
+  });
+});
+
+describe("SyncClient credentials and auth-expired flag", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("saveCredentials resets syncAuthExpired", async () => {
+    const client = new SyncClient("https://sync.example.com", "tok");
+
+    await client.saveCredentials();
+
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ syncToken: "tok" }));
+    expect(clearSyncAuthError).toHaveBeenCalledTimes(1);
+  });
+
+  it("clearCredentials resets syncAuthExpired", async () => {
+    const client = new SyncClient("https://sync.example.com", "tok");
+
+    await client.clearCredentials();
+
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ syncToken: undefined }));
+    expect(clearSyncAuthError).toHaveBeenCalledTimes(1);
   });
 });

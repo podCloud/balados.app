@@ -92,6 +92,8 @@ export interface AppSettings {
   proxies: ProxyConfig[];
   syncServerUrl?: string;
   syncToken?: string;
+  /** Set when the sync server rejected the token and it could not be refreshed. */
+  syncAuthExpired?: boolean;
   lastSyncAt?: number;
 }
 
