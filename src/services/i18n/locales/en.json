@@ -121,7 +121,7 @@
     "manualToken": "Enter token manually",
     "hideToken": "Hide",
     "tokenPlaceholder": "JWT token",
-    "sessionExpired": "Session expired: the sync server rejected your token. Reconnect to resume syncing."
+    "sessionExpired": "Session expired: the sync server rejected your token or it lacks the required permissions. Reconnect to resume syncing."
   },
   "downloads": {
     "storage": "Storage",

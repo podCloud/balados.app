@@ -121,7 +121,7 @@ class BaladosDatabase extends Dexie {
 export const db = new BaladosDatabase();
 
 // Settings helpers
-const SETTINGS_ID = "app_settings";
+export const SETTINGS_ID = "app_settings";
 
 export const getSettings = async (): Promise<AppSettings> => {
   const settings = await db.settings.get(SETTINGS_ID);

@@ -116,6 +116,28 @@ describe("SyncSettings", () => {
     expect(mockTestConnection).not.toHaveBeenCalled();
   });
 
+  it("lets the user disconnect from the session-expired state", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    mockClearCredentials.mockImplementation(async () => {
+      mockGetSettings.mockResolvedValue({ locale: "fr", proxies: [] });
+    });
+
+    render(<SyncSettings />);
+    await screen.findByText("Session expired, reconnect the sync server");
+
+    await userEvent.click(screen.getByRole("button", { name: /Disconnect/ }));
+
+    await waitFor(() => expect(mockClearCredentials).toHaveBeenCalled());
+    expect(await screen.findByText("Disconnected")).toBeInTheDocument();
+  });
+
   it("shows loading state initially", () => {
     render(<SyncSettings />);
     // The loading spinner should be present briefly

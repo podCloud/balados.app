@@ -49,7 +49,11 @@ export const rssQueryRetry = (failureCount: number, error: unknown): boolean => 
   return failureCount < MAX_QUERY_RETRIES;
 };
 
-/** TanStack Query `retryDelay` honouring Retry-After (capped) for proxy rate limits. */
+/**
+ * TanStack Query `retryDelay` honouring Retry-After for proxy rate limits.
+ * The cap mirrors `rssQueryRetry` (which already refuses longer waits) so the
+ * delay stays bounded for any caller that wires only `retryDelay`.
+ */
 export const rssQueryRetryDelay = (failureCount: number, error: unknown): number => {
   if (error instanceof SyncProxyRateLimitError) {
     return Math.min(error.retryAfterSeconds * 1000, MAX_RETRY_AFTER_MS);
@@ -57,16 +61,19 @@ export const rssQueryRetryDelay = (failureCount: number, error: unknown): number
   return Math.min(1000 * 2 ** failureCount, MAX_BACKOFF_MS);
 };
 
-/** Retry-After is either delta-seconds or an HTTP-date (RFC 9110 §10.2.3). */
+// IMF-fixdate, the only date form Retry-After may use (RFC 9110 §5.6.7), e.g.
+// "Wed, 21 Oct 2026 07:28:00 GMT". Anything else is treated as malformed.
+const IMF_FIXDATE = /^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+
+/** Retry-After is either delta-seconds or an IMF-fixdate (RFC 9110 §10.2.3). */
 const parseRetryAfter = (response: Response): number => {
-  const header = response.headers.get("retry-after")?.trim() ?? "";
+  const header = response.headers.get("retry-after") ?? "";
   if (/^\d+$/.test(header)) {
     const seconds = Number.parseInt(header, 10);
     return seconds > 0 ? seconds : DEFAULT_RETRY_AFTER_SECONDS;
   }
-  const at = Date.parse(header);
-  if (!Number.isNaN(at)) {
-    const seconds = Math.ceil((at - Date.now()) / 1000);
+  if (IMF_FIXDATE.test(header)) {
+    const seconds = Math.ceil((Date.parse(header) - Date.now()) / 1000);
     return seconds > 0 ? seconds : DEFAULT_RETRY_AFTER_SECONDS;
   }
   return DEFAULT_RETRY_AFTER_SECONDS;
@@ -97,8 +104,8 @@ const fetchFromSyncProxy = (serverUrl: string, token: string, url: string): Prom
   return fetch(syncProxyUrl, { headers: { Authorization: `Bearer ${token}` } });
 };
 
-const authFailure = (): never => {
-  notifySyncAuthError();
+const authFailure = (failedToken: string): never => {
+  void notifySyncAuthError(failedToken);
   throw new SyncProxyAuthError();
 };
 
@@ -120,26 +127,27 @@ const trySyncProxy = async (
     return null; // network error: fall back to public proxies
   }
 
-  if (response.status === 403) return authFailure();
+  if (response.status === 403) return authFailure(token);
 
   if (response.status === 401) {
-    // Another caller may already have refreshed while our request was in
-    // flight: in that case replay with the newer token, no second refresh.
     let fresh = await getSettings();
-    const tokenChanged = fresh.syncToken !== undefined && fresh.syncToken !== token;
-    if (!tokenChanged) {
-      if (!(await refreshSyncToken())) return authFailure();
-      fresh = await getSettings();
-    }
     if (!fresh.syncServerUrl || !fresh.syncToken) {
       return null; // user disconnected meanwhile: standalone mode, no error
     }
+    // Another caller may already have refreshed while our request was in
+    // flight: in that case replay with the newer token, no second refresh.
+    if (fresh.syncToken === token) {
+      if (!(await refreshSyncToken())) return authFailure(token);
+      fresh = await getSettings();
+      if (!fresh.syncServerUrl || !fresh.syncToken) return null;
+    }
+    const replayToken = fresh.syncToken;
     try {
-      response = await fetchFromSyncProxy(fresh.syncServerUrl, fresh.syncToken, url);
+      response = await fetchFromSyncProxy(fresh.syncServerUrl, replayToken, url);
     } catch {
       return null;
     }
-    if (response.status === 401 || response.status === 403) return authFailure();
+    if (response.status === 401 || response.status === 403) return authFailure(replayToken);
   }
 
   if (response.status === 429) {

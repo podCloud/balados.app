@@ -90,6 +90,29 @@ vi.mock("../services/sync/merger", () => ({
 import { getSettings, saveSettings } from "../services/storage";
 import { clearSyncAuthError, notifySyncAuthError } from "../services/sync/authEvents";
 
+// Wrap the real subscribe so tests can assert the unsubscribe is invoked
+const { mockUnsubscribe, mockRegisterPeriodicSync } = vi.hoisted(() => ({
+  mockUnsubscribe: vi.fn(),
+  mockRegisterPeriodicSync: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../services/sync/backgroundSync", () => ({
+  registerPeriodicSync: mockRegisterPeriodicSync,
+  unregisterPeriodicSync: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../services/sync/authEvents", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../services/sync/authEvents")>();
+  return {
+    ...actual,
+    subscribeSyncAuthError: (listener: (expired: boolean) => void) => {
+      const off = actual.subscribeSyncAuthError(listener);
+      return () => {
+        mockUnsubscribe();
+        off();
+      };
+    },
+  };
+});
+
 describe("useSync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -155,7 +178,7 @@ describe("useSync", () => {
     await waitFor(() => expect(result.current.status).toBe("disconnected"));
     unmount();
 
-    expect(() => notifySyncAuthError()).not.toThrow();
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it("starts in error status when the sync session is flagged expired in settings", async () => {
@@ -188,11 +211,31 @@ describe("useSync", () => {
     });
     expect(result.current.status).toBe("error");
 
-    act(() => {
-      clearSyncAuthError();
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://other.example.com",
+      syncToken: "token2",
+    });
+    await act(async () => {
+      await clearSyncAuthError();
     });
 
-    expect(result.current.status).toBe("connected");
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+    expect(result.current.error).toBeNull();
+    expect(result.current.serverUrl).toBe("https://other.example.com");
+    expect(mockRegisterPeriodicSync).toHaveBeenCalled();
+  });
+
+  it("ignores an auth error while no server is configured", async () => {
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("disconnected"));
+
+    act(() => {
+      void notifySyncAuthError();
+    });
+
+    expect(result.current.status).toBe("disconnected");
     expect(result.current.error).toBeNull();
   });
 

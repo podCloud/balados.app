@@ -132,15 +132,35 @@ export function useSync(): UseSyncReturn {
   // Surface auth failures raised by the RSS proxy cascade (token rejected,
   // refresh impossible): the user must reconnect the sync server.
   useEffect(() => {
+    const onRecovered = async () => {
+      const settings = await getSettings();
+      if (!isMounted.current) return;
+      const serverUrl =
+        settings.syncServerUrl && settings.syncToken ? settings.syncServerUrl : null;
+      setState((prev) => {
+        if (prev.error !== AUTH_EXPIRED_ERROR) return prev;
+        return {
+          ...prev,
+          status: serverUrl ? "connected" : "disconnected",
+          serverUrl,
+          error: null,
+        };
+      });
+      if (serverUrl) await registerPeriodicSync();
+    };
+
     return subscribeSyncAuthError((expired) => {
       if (!isMounted.current) return;
-      setState((prev) => {
-        if (expired) {
-          return { ...prev, status: "error", isSyncing: false, error: AUTH_EXPIRED_ERROR };
-        }
-        if (prev.error !== AUTH_EXPIRED_ERROR) return prev;
-        return { ...prev, status: prev.serverUrl ? "connected" : "disconnected", error: null };
-      });
+      if (expired) {
+        // Nothing to expire while no server is configured (late 401 after a disconnect)
+        setState((prev) =>
+          prev.serverUrl
+            ? { ...prev, status: "error", isSyncing: false, error: AUTH_EXPIRED_ERROR }
+            : prev,
+        );
+        return;
+      }
+      void onRecovered();
     });
   }, []);
 

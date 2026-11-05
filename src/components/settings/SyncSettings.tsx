@@ -320,7 +320,7 @@ export const SyncSettings = () => {
             </div>
           </div>
 
-          {state.status === "connected" && (
+          {(state.status === "connected" || (state.status === "error" && state.serverUrl)) && (
             <button
               type="button"
               onClick={handleDisconnect}

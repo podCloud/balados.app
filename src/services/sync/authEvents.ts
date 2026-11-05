@@ -6,7 +6,7 @@
  * as a circuit breaker: while set, `fetchWithProxy` does not call the server.
  */
 
-import { saveSettings } from "../storage";
+import { db, getSettings, SETTINGS_ID } from "../storage";
 
 type Listener = (expired: boolean) => void;
 
@@ -18,20 +18,50 @@ const emit = (expired: boolean): void => {
   }
 };
 
-/** The sync server rejected our token and a refresh was impossible. */
-export const notifySyncAuthError = (): void => {
-  emit(true);
-  void saveSettings({ syncAuthExpired: true }).catch(() => {
-    // Settings unavailable: listeners were still told, the flag is best effort.
+/** Atomically patch the settings record (read-modify-write in one transaction). */
+const patchSettings = (
+  patch: (current: Awaited<ReturnType<typeof getSettings>>) => boolean,
+): Promise<boolean> =>
+  db.transaction("rw", db.settings, async () => {
+    const current = await getSettings();
+    const apply = patch(current);
+    if (apply) {
+      await db.settings.put({ id: SETTINGS_ID, ...current });
+    }
+    return apply;
   });
+
+/**
+ * The sync server rejected `failedToken` and a refresh was impossible.
+ * Ignored when the stored token has already changed (the user reconnected
+ * while the failing request was in flight), so a late 401 cannot poison a
+ * fresh session.
+ */
+export const notifySyncAuthError = async (failedToken?: string): Promise<void> => {
+  let flagged = false;
+  try {
+    flagged = await patchSettings((current) => {
+      if (failedToken !== undefined && current.syncToken !== failedToken) return false;
+      current.syncAuthExpired = true;
+      return true;
+    });
+  } catch {
+    flagged = true; // storage unavailable: still tell the UI
+  }
+  if (flagged) emit(true);
 };
 
-/** New credentials were saved: the session is valid again. */
-export const clearSyncAuthError = (): void => {
+/** New credentials were saved (or cleared): the dead-token state is over. */
+export const clearSyncAuthError = async (): Promise<void> => {
+  try {
+    await patchSettings((current) => {
+      current.syncAuthExpired = false;
+      return true;
+    });
+  } catch {
+    // best effort, listeners are still told
+  }
   emit(false);
-  void saveSettings({ syncAuthExpired: false }).catch(() => {
-    // Same best-effort semantics as above.
-  });
 };
 
 /** Subscribe to sync auth state changes. Returns an unsubscribe function. */
