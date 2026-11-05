@@ -1,6 +1,6 @@
 import { render, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../../services/storage";
 import { Library } from "./Library";
 
@@ -25,6 +25,10 @@ describe("Library default feed seeding", () => {
     await db.syncQueue.clear();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("seeds exactly one default subscription on an empty DB under StrictMode", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { findAllByTestId } = render(
@@ -41,12 +45,15 @@ describe("Library default feed seeding", () => {
     expect(await db.subscriptions.count()).toBe(1);
     expect(await db.events.where("type").equals("subscription_added").count()).toBe(1);
     expect(errorSpy).not.toHaveBeenCalled();
-    errorSpy.mockRestore();
   });
 
   it("does not seed when a subscription already exists", async () => {
     await db.subscriptions.add({ url: "https://example.com/feed.xml", addedAt: 1 });
-    const { findAllByTestId } = render(<Library onNavigate={vi.fn()} />);
+    const { findAllByTestId } = render(
+      <StrictMode>
+        <Library onNavigate={vi.fn()} />
+      </StrictMode>,
+    );
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(await findAllByTestId("sub")).toHaveLength(1);
     expect(await db.subscriptions.count()).toBe(1);
