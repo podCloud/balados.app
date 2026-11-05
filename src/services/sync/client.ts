@@ -176,9 +176,9 @@ export class SyncClient {
     await saveSettings({
       syncServerUrl: this.serverUrl,
       syncToken: this.token ?? undefined,
+      syncAuthExpired: false, // same transaction as the token: never a flagged fresh token
     });
-    // Single writer for the flag (atomic patch) + listeners told
-    await clearSyncAuthError();
+    await clearSyncAuthError(); // idempotent persist + listeners told
   }
 
   /**
@@ -188,6 +188,7 @@ export class SyncClient {
     await saveSettings({
       syncServerUrl: undefined,
       syncToken: undefined,
+      syncAuthExpired: false,
     });
     await clearSyncAuthError();
   }

@@ -362,8 +362,10 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
       .mockImplementationOnce(networkError)
       .mockImplementationOnce(() => statusResponse(403));
 
-    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+    const error = await fetchWithProxy(FEED_URL).catch((e: unknown) => e);
 
+    expect(error).toBeInstanceOf(SyncProxyAuthError);
+    expect((error as SyncProxyAuthError).statusCode).toBe(403);
     expect(mockTryRefresh).not.toHaveBeenCalled();
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(notifySyncAuthError).toHaveBeenCalledWith("test-jwt-token", "https://sync.example.com");

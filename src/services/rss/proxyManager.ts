@@ -11,11 +11,12 @@ export interface FetchResult {
 
 /** The sync server rejected our token (401/403) and it could not be refreshed. */
 export class SyncProxyAuthError extends SyncApiError {
-  readonly status = 401;
+  readonly status: 401 | 403;
 
-  constructor() {
-    super("Sync server rejected the token; reconnect the sync server", 401, false);
+  constructor(status: 401 | 403 = 401) {
+    super("Sync server rejected the token; reconnect the sync server", status, false);
     this.name = "SyncProxyAuthError";
+    this.status = status;
   }
 }
 
@@ -104,9 +105,9 @@ const fetchFromSyncProxy = (serverUrl: string, token: string, url: string): Prom
   return fetch(syncProxyUrl, { headers: { Authorization: `Bearer ${token}` } });
 };
 
-const authFailure = (failedToken: string, serverUrl: string): never => {
+const authFailure = (failedToken: string, serverUrl: string, status: 401 | 403): never => {
   void notifySyncAuthError(failedToken, serverUrl);
-  throw new SyncProxyAuthError();
+  throw new SyncProxyAuthError(status);
 };
 
 /**
@@ -127,7 +128,7 @@ const trySyncProxy = async (
     return null; // network error: fall back to public proxies
   }
 
-  if (response.status === 403) return authFailure(token, serverUrl);
+  if (response.status === 403) return authFailure(token, serverUrl, 403);
 
   if (response.status === 401) {
     let fresh = await getSettings();
@@ -137,7 +138,7 @@ const trySyncProxy = async (
     // Another caller may already have refreshed while our request was in
     // flight: in that case replay with the newer token, no second refresh.
     if (fresh.syncToken === token) {
-      if (!(await refreshSyncToken())) return authFailure(token, serverUrl);
+      if (!(await refreshSyncToken())) return authFailure(token, serverUrl, 401);
       fresh = await getSettings();
       if (!fresh.syncServerUrl || !fresh.syncToken) return null;
     }
@@ -148,7 +149,7 @@ const trySyncProxy = async (
       return null;
     }
     if (response.status === 401 || response.status === 403)
-      return authFailure(replayToken, fresh.syncServerUrl);
+      return authFailure(replayToken, fresh.syncServerUrl, response.status === 403 ? 403 : 401);
   }
 
   if (response.status === 429) {
