@@ -221,6 +221,7 @@ export const SyncSettings = () => {
       }
 
       await client.saveCredentials();
+      if (attempt !== attemptRef.current) return; // disconnected during the save
 
       setState({
         status: "connected",

@@ -198,7 +198,7 @@ Quand connecté, utiliser le proxy du serveur:
 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`
 
 // Avec serveur
-const proxyUrl = `${serverUrl}/api/v1/rss/proxy/${btoa(feedUrl)}`
+const proxyUrl = `${serverUrl}/api/v1/rss/proxy/${encodeRssFeed(feedUrl)}` // base64url sans padding, header Authorization: Bearer
 ```
 
 ### Avantages du proxy serveur
