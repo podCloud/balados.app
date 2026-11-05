@@ -101,7 +101,7 @@ npx vitest run
 
 Lint, build and tests all run even if one of them fails, so a single run reports every red reason.
 
-**Node version**: `.nvmrc` and `.tool-versions` both pin the same Node 24.x patch (`nvm`/`fnm` read the first, `asdf` reads the second; `asdf` ignores `.nvmrc` unless `legacy_version_file = yes`). `package.json` declares `engines.node >= 24`. Reproduce CI locally by selecting that Node, then running the same four commands.
+**Node version**: `.nvmrc` and `.tool-versions` both pin the same Node 24.x patch (`nvm`/`fnm` read the first, `asdf` reads the second; `asdf` ignores `.nvmrc` unless `legacy_version_file = yes`). `package.json` declares `engines.node >= 24` (advisory: npm only warns unless `engine-strict` is set). Reproduce CI locally by selecting that Node, then running the same four commands.
 
 **Merge rule**: GitHub does not enforce the check on `main` yet (no branch protection), so the merger checks it: a PR is merged only when the `Tests` workflow is green on its head commit (`~/.config/podclaude/gh.sh pr checks <number>`). A failure unrelated to the PR gets its own issue, or a comment on the existing one (the known flaky suite is [#76](https://github.com/podCloud/balados.app/issues/76)); see "Never ignore failing tests".
 
