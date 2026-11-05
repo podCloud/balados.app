@@ -25,10 +25,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **POUR TOUT LE RESTE (code, tests, features), CRÉER UNE BRANCHE:**
 
 ```bash
-# 1. TOUJOURS créer une branche AVANT de modifier quoi que ce soit
-git checkout -b feature/issue-<number>-<slug>
-# ou
-git checkout -b fix/issue-<number>-<slug>
+# 1. TOUJOURS créer une branche AVANT de modifier quoi que ce soit,
+#    dans un worktree isolé (.worktrees/ est gitignoré)
+git worktree add .worktrees/feature/issue-<number>-<slug> -b feature/issue-<number>-<slug>
+# ou fix/issue-<number>-<slug>
 
 # 2. Faire les modifications et commits sur la branche
 
@@ -308,20 +308,20 @@ Stats view shows listening habits without external tracking.
 | `POST /api/v1/sync` | Full sync |
 | `GET/POST /api/v1/subscriptions` | Subscriptions |
 | `POST /api/v1/play` | Record play position |
-| `POST /api/v1/likes/{feed}` | Like a podcast |
+| `POST /api/v1/likes` | Like a podcast or episode |
 | `DELETE /api/v1/likes/{feed}` | Unlike a podcast |
-| `GET /api/v1/rss/proxy/{feed}` | CORS proxy |
+| `GET /api/v1/rss/proxy/{feed}` | CORS proxy (JWT required, 120 req/min/user) |
 | `GET /api/v1/rss/user/{token}/subscriptions` | Aggregated feed |
 | `GET /api/v1/public/trending/podcasts` | Trending data |
 
 ### Data Encoding
 
-```typescript
-// Feed URL to ID
-const rssFeed = btoa(feedUrl)
+URL-safe base64 without padding, via `src/utils/rssEncoding.ts`:
 
-// Episode ID
-const rssItem = btoa(`${guid},${enclosureUrl}`)
+```typescript
+import { encodeRssFeed, encodeRssItem } from "./utils/rssEncoding";
+const rssFeed = encodeRssFeed(feedUrl);
+const rssItem = encodeRssItem(guid, enclosureUrl); // decode with lastIndexOf(",")
 ```
 
 ### Authentication
@@ -348,6 +348,11 @@ VITE_DEFAULT_LOCALE=fr                           # Default language
 ---
 
 ## Work In Progress
+
+### Durcissement sécurité (2026-11-05) - COMPLÈTE
+
+- [x] #68 DOMPurify 3.4.17 + tests `renderShowNotes` (PR #69) — suivi #71
+- [x] #70 erreurs 401/403/429 du proxy sync remontées, disjoncteur `syncAuthExpired`, settings transactionnels (PR #72) — suivis #73 à #77
 
 ### Synchronisation (Phase 4) - COMPLÈTE
 
@@ -403,6 +408,6 @@ const episodeId = generateEpisodeId(guid, enclosureUrl)
 - `GET/POST/DELETE /api/v1/subscriptions` - Abonnements
 - `POST /api/v1/play` - Position de lecture
 - `GET /api/v1/rss/proxy/{base64url_feed}` - CORS proxy
-- `POST /api/v1/likes/{feed}` - Liker un podcast
+- `POST /api/v1/likes` - Liker un podcast ou un épisode
 - `DELETE /api/v1/likes/{feed}` - Unliker un podcast
 - `GET /api/v1/public/trending/podcasts` - Tendances
