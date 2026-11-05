@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { Clock, Headphones, History, Plus, Settings, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../services/storage";
 import { getHiddenEpisodeIds } from "../../services/storage/hiddenEpisodes";
@@ -31,12 +31,22 @@ export const Library = ({ onNavigate }: LibraryProps) => {
     return episodes.filter((e) => !hidden.has(e.episodeId)).length;
   }, []);
 
-  // Initialize with default subscription if empty
-  useLiveQuery(async () => {
-    const count = await db.subscriptions.count();
-    if (count === 0) {
-      await addSubscription(DEFAULT_FEED);
-    }
+  // Initialize with default subscription if empty. This is a one-shot write,
+  // so it runs in an effect: Dexie 4.4 rejects readwrite transactions started
+  // from inside a liveQuery querier ("Readwrite transaction in liveQuery context").
+  useEffect(() => {
+    let cancelled = false;
+    db.subscriptions
+      .count()
+      .then((count) => {
+        if (!cancelled && count === 0) {
+          return addSubscription(DEFAULT_FEED);
+        }
+      })
+      .catch((error) => console.error("Failed to seed default subscription", error));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSubscribe = async (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
