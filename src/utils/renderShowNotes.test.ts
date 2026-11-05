@@ -29,6 +29,14 @@ describe("renderShowNotes", () => {
 
     expect(html).not.toContain("javascript:");
     expect(html).not.toContain("href=");
+    expect(html).toContain("<a>x</a>");
+  });
+
+  it("drops links with unknown protocols", () => {
+    const html = renderShowNotes('<a href="foo:bar">x</a>');
+
+    expect(html).not.toContain("href=");
+    expect(html).toContain("<a>x</a>");
   });
 
   it("strips iframes and inline styles", () => {
