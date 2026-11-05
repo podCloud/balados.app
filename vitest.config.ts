@@ -7,6 +7,10 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    // Per-test budget. Keep it above Testing Library's asyncUtilTimeout
+    // (src/test/setup.ts) so a test with several sequential waitFor/findBy
+    // calls still fails with Testing Library's diagnostic, not this timeout.
+    testTimeout: 10_000,
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     coverage: {
       provider: "v8",

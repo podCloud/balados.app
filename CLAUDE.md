@@ -44,6 +44,7 @@ git push -u origin <branch-name>
 ### RÈGLES DE MERGE
 
 - **JAMAIS de squash merge** - utiliser `~/.config/podclaude/gh.sh pr merge <number> --merge --delete-branch`
+- **CI verte obligatoire** : le workflow `Tests` doit être vert sur le dernier commit de la PR (`~/.config/podclaude/gh.sh pr checks <number>`, voir « Continuous Integration »)
 - **LIRE LES REVIEWS EN ENTIER** avant de merger
 - **APPLIQUER les suggestions** des reviews avant de merger (sauf si explicitement optionnelles)
 - Si une review demande des changements, les faire et re-demander une review
@@ -84,9 +85,26 @@ npm run lint      # Run Biome check (lint + format check)
 npm run lint:fix  # Auto-fix lint and formatting issues
 npm run format    # Format all files with Biome
 npm run preview   # Preview production build
-npm test          # Run tests (Vitest)
-npm test -- --watch  # Watch mode
+npm test          # Vitest in watch mode (run once with: npx vitest run)
+npx vitest run    # Run the whole suite once (what CI runs)
 ```
+
+## Continuous Integration
+
+`.github/workflows/test.yml` runs on every pull request and on every push to `main` (job name `Lint, build and test`). Node comes from `.nvmrc` (`actions/setup-node` with the npm cache), then exactly:
+
+```bash
+npm ci
+npm run lint
+npm run build
+npx vitest run
+```
+
+Lint, build and tests all run even if one of them fails, so a single run reports every red reason. Concurrency: a new push to a PR supersedes its running job; pushes to `main` get one run per commit, never cancelled.
+
+**Node version**: `.nvmrc` and `.tool-versions` both pin the same Node 24.x patch (`nvm`/`fnm` read the first, `asdf` reads the second; `asdf` ignores `.nvmrc` unless `legacy_version_file = yes`). `package.json` declares `engines.node >= 24` (advisory: npm only warns unless `engine-strict` is set). Reproduce CI locally by selecting that Node, then running the same four commands.
+
+**Merge rule**: GitHub does not enforce the check on `main` yet (no branch protection), so the merger checks it: a PR is merged only when the `Tests` workflow is green on its head commit (`~/.config/podclaude/gh.sh pr checks <number>`). A failure unrelated to the PR gets its own issue, or a comment on the existing one (the known flaky suite is [#76](https://github.com/podCloud/balados.app/issues/76)); see "Never ignore failing tests".
 
 ## Tech Stack
 
@@ -177,7 +195,7 @@ Review is **local** via the `development-workflow` skill (at `balados/.claude/sk
 
 **NEVER merge a PR without a completed local review.**
 
-**Never ignore failing tests.** If `npm test` reveals failures (even pre-existing and unrelated to current work), create a GitHub issue to track them.
+**Never ignore failing tests.** If the suite (`npx vitest run`) reveals failures (even pre-existing and unrelated to current work), create a GitHub issue to track them.
 
 **Always run `npm run lint:fix` before committing.** A pre-commit hook in `.githooks/` does this automatically (activate with `git config core.hooksPath .githooks`).
 
@@ -191,6 +209,7 @@ A PR is ready to merge only when:
 1. The local review (skill `development-workflow`) has been run and completed
 2. Review comments indicate **no critical issues** remaining
 3. If issues were raised, they must be fixed and a new review run
+4. The `Tests` workflow is green on the PR's head commit (`~/.config/podclaude/gh.sh pr checks <number>`), see "Continuous Integration"
 
 **After fixing review issues:** Re-run the `development-workflow` skill to trigger a new review, then wait for the review to complete before proceeding.
 
