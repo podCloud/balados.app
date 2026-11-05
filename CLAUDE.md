@@ -99,7 +99,7 @@ npm run build
 npx vitest run
 ```
 
-Lint, build and tests all run even if one of them fails, so a single run reports every red reason.
+Lint, build and tests all run even if one of them fails, so a single run reports every red reason. Concurrency: a new push to a PR supersedes its running job; pushes to `main` get one run per commit, never cancelled.
 
 **Node version**: `.nvmrc` and `.tool-versions` both pin the same Node 24.x patch (`nvm`/`fnm` read the first, `asdf` reads the second; `asdf` ignores `.nvmrc` unless `legacy_version_file = yes`). `package.json` declares `engines.node >= 24` (advisory: npm only warns unless `engine-strict` is set). Reproduce CI locally by selecting that Node, then running the same four commands.
 
