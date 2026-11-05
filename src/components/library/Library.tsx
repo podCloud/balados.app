@@ -32,7 +32,7 @@ export const Library = ({ onNavigate }: LibraryProps) => {
   }, []);
 
   // Initialize with default subscription if empty. This is a one-shot write,
-  // so it runs in an effect: Dexie 4.4 rejects readwrite transactions started
+  // so it runs in an effect: Dexie rejects readwrite transactions started
   // from inside a liveQuery querier ("Readwrite transaction in liveQuery context").
   useEffect(() => {
     let cancelled = false;
