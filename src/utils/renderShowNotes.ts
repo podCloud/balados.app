@@ -28,6 +28,7 @@ const PURIFY_CONFIG = {
     "hr",
   ],
   ALLOWED_ATTR: ["href", "src", "alt", "target", "rel", "width", "height"],
+  // Keep leading text/whitespace nodes instead of letting the parser drop them into <head>.
   FORCE_BODY: true,
 };
 

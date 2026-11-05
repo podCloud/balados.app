@@ -2,9 +2,9 @@ import { ChevronDown, ChevronUp, ExternalLink, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";
+import { renderShowNotes } from "../../utils/renderShowNotes";
 import { DownloadButton } from "../ui/DownloadButton";
 import { PlayerControls } from "./PlayerControls";
-import { renderShowNotes } from "./renderShowNotes";
 
 export const EpisodePlayer = () => {
   const { t } = useTranslation();
