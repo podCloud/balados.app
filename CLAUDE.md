@@ -84,13 +84,13 @@ npm run lint      # Run Biome check (lint + format check)
 npm run lint:fix  # Auto-fix lint and formatting issues
 npm run format    # Format all files with Biome
 npm run preview   # Preview production build
-npm test          # Run tests (Vitest)
-npm test -- --watch  # Watch mode
+npm test          # Vitest in watch mode (run once with: npx vitest run)
+npx vitest run    # Run the whole suite once (what CI runs)
 ```
 
 ## Continuous Integration
 
-`.github/workflows/test.yml` runs on every pull request and on every push to `main`. Node comes from `.nvmrc` (`actions/setup-node` with the npm cache), then exactly:
+`.github/workflows/test.yml` runs on every pull request and on every push to `main` (job name `Lint, build and test`). Node comes from `.nvmrc` (`actions/setup-node` with the npm cache), then exactly:
 
 ```bash
 npm ci
@@ -99,7 +99,11 @@ npm run build
 npx vitest run
 ```
 
-Reproduce locally with `nvm use` (or `asdf`/`fnm` reading `.nvmrc`) before the same four commands. A red workflow blocks the merge; a failure unrelated to the PR gets its own issue (see "Never ignore failing tests").
+Lint, build and tests all run even if one of them fails, so a single run reports every red reason.
+
+**Node version**: `.nvmrc` and `.tool-versions` both pin the same Node 24.x patch (`nvm`/`fnm` read the first, `asdf` reads the second; `asdf` ignores `.nvmrc` unless `legacy_version_file = yes`). `package.json` declares `engines.node >= 24`. Reproduce CI locally by selecting that Node, then running the same four commands.
+
+**Merge rule**: GitHub does not enforce the check on `main` yet (no branch protection), so the merger checks it: a PR is merged only when the `Tests` workflow is green on its head commit (`~/.config/podclaude/gh.sh pr checks <number>`). A failure unrelated to the PR gets its own issue, or a comment on the existing one (the known flaky suite is [#76](https://github.com/podCloud/balados.app/issues/76)); see "Never ignore failing tests".
 
 ## Tech Stack
 

@@ -255,6 +255,10 @@ Dépend de `balados.sync` Phase B (endpoint `POST /api/v1/rss/sign` + capability
 
 ---
 
+## Intégration continue
+
+- [x] `.github/workflows/test.yml` : lint, build et tests Vitest sur chaque PR et chaque push sur `main`, Node épinglé par `.nvmrc` / `.tool-versions` ([#78](https://github.com/podCloud/balados.app/issues/78)). Filet de sécurité posé avant les montées de version majeures (plan directeur, phase 3).
+
 ## Dépendances techniques
 
 ```json
