@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ChevronRight, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { fetchAndParseRSS } from "../../services/rss/parser";
-import { rssQueryRetryDelay } from "../../services/rss/proxyManager";
+import { rssQueryRetry, rssQueryRetryDelay } from "../../services/rss/proxyManager";
 import { removeSubscription } from "../../services/storage/subscriptions";
 import type { PodcastFeed } from "../../types";
 
@@ -21,6 +21,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
   } = useQuery<PodcastFeed>({
     queryKey: ["feed", url],
     queryFn: () => fetchAndParseRSS(url),
+    retry: rssQueryRetry,
     retryDelay: rssQueryRetryDelay,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

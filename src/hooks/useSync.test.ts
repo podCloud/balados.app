@@ -88,7 +88,7 @@ vi.mock("../services/sync/merger", () => ({
 }));
 
 import { getSettings, saveSettings } from "../services/storage";
-import { notifySyncAuthError } from "../services/sync/authEvents";
+import { clearSyncAuthError, notifySyncAuthError } from "../services/sync/authEvents";
 
 describe("useSync", () => {
   beforeEach(() => {
@@ -148,6 +148,52 @@ describe("useSync", () => {
 
     expect(result.current.status).toBe("error");
     expect(result.current.error).toMatch(/session expired/i);
+  });
+
+  it("stops listening to auth errors after unmount", async () => {
+    const { result, unmount } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("disconnected"));
+    unmount();
+
+    expect(() => notifySyncAuthError()).not.toThrow();
+  });
+
+  it("starts in error status when the sync session is flagged expired in settings", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+      syncAuthExpired: true,
+    });
+
+    const { result } = renderHook(() => useSync());
+
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.error).toMatch(/session expired/i);
+    expect(mockTestConnection).not.toHaveBeenCalled();
+  });
+
+  it("recovers from the auth error when the flag is cleared", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+    });
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+    act(() => {
+      notifySyncAuthError();
+    });
+    expect(result.current.status).toBe("error");
+
+    act(() => {
+      clearSyncAuthError();
+    });
+
+    expect(result.current.status).toBe("connected");
+    expect(result.current.error).toBeNull();
   });
 
   it("sets error status when connection test fails on mount", async () => {

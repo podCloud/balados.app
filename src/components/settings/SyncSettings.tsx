@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSyncQueue } from "../../hooks/useSyncQueue";
 import { getSettings, saveSettings } from "../../services/storage";
+import { subscribeSyncAuthError } from "../../services/sync/authEvents";
 import { SyncClient } from "../../services/sync/client";
 
 type ConnectionStatus = "disconnected" | "connected" | "connecting" | "error";
@@ -43,6 +44,19 @@ export const SyncSettings = () => {
   useEffect(() => {
     const loadSettings = async () => {
       const settings = await getSettings();
+      if (settings.syncServerUrl && settings.syncToken && settings.syncAuthExpired) {
+        // The server rejected the token: /health would still answer, so skip
+        // the connection test and ask the user to reconnect.
+        setServerInput(settings.syncServerUrl);
+        setState({
+          status: "error",
+          serverUrl: settings.syncServerUrl,
+          lastSyncAt: settings.lastSyncAt ?? null,
+          error: t("syncSettings.sessionExpired"),
+        });
+        setIsLoading(false);
+        return;
+      }
       if (settings.syncServerUrl && settings.syncToken) {
         // Test connection to see if still valid
         const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
@@ -59,6 +73,18 @@ export const SyncSettings = () => {
     };
 
     loadSettings();
+  }, [t]);
+
+  // React to auth failures raised while this screen is open
+  useEffect(() => {
+    return subscribeSyncAuthError((expired) => {
+      if (!expired) return;
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        error: t("syncSettings.sessionExpired"),
+      }));
+    });
   }, [t]);
 
   // Handle OAuth callback via postMessage

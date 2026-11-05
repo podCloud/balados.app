@@ -210,13 +210,20 @@ const proxyUrl = `${serverUrl}/api/v1/rss/proxy/${btoa(feedUrl)}`
 
 ### Cascade et erreurs d'authentification
 
-`fetchWithProxy` (`src/services/rss/proxyManager.ts`) essaie dans l'ordre : fetch direct → proxy serveur (avec `Authorization: Bearer`) → proxies publics. Le proxy serveur exige le JWT ; deux statuts sortent de la cascade au lieu de retomber en silence sur les proxies publics (ce qui ferait fuir la bibliothèque vers un tiers avec un token mort) :
+`fetchWithProxy` (`src/services/rss/proxyManager.ts`) essaie dans l'ordre : fetch direct → proxy serveur (avec `Authorization: Bearer`) → proxies publics. Le proxy serveur exige le JWT ; trois statuts sortent de la cascade au lieu de retomber en silence sur les proxies publics (ce qui ferait fuir la bibliothèque vers un tiers avec un token mort) :
 
 | Statut serveur | Comportement |
 |----------------|--------------|
-| `401` | Une tentative de refresh (`SyncClient.tryRefresh()`, dédupliquée entre appels parallèles). Succès → la requête serveur est rejouée avec le nouveau token. Échec → `SyncProxyAuthError`, `notifySyncAuthError()` fait passer `useSync` en `error` (« Sync session expired, reconnect the sync server »). Aucun appel aux proxies publics. |
-| `429` | `SyncProxyRateLimitError` portant `retryAfterSeconds` (header `Retry-After`, 60 s par défaut). Les `useQuery` de flux utilisent `rssQueryRetryDelay` pour attendre ce délai. Aucun appel aux proxies publics. |
+| `401` | Si les settings contiennent déjà un token plus récent que celui envoyé (un autre appel a rafraîchi entre-temps), la requête est rejouée directement. Sinon une tentative de refresh (`SyncClient.tryRefresh()`, une seule en vol pour tous les appels parallèles). Succès → requête rejouée avec le nouveau token (un `429` au rejeu est traité comme ci-dessous, un `5xx`/erreur réseau retombe sur les proxies publics). Échec, ou `401`/`403` au rejeu → `SyncProxyAuthError`. Si l'utilisateur s'est déconnecté pendant le refresh, cascade silencieuse vers les proxies publics (mode autonome). |
+| `403` | Token valide mais scope insuffisant : `SyncProxyAuthError` immédiate, sans refresh. |
+| `429` | `SyncProxyRateLimitError` portant `retryAfterSeconds` (header `Retry-After` en secondes ou date HTTP, 60 s par défaut si absent ou mal formé). Aucun appel aux proxies publics. |
 | autre non-ok, erreur réseau | Cascade vers les proxies publics (inchangé). |
+
+**Disjoncteur.** `SyncProxyAuthError` appelle `notifySyncAuthError()` (`src/services/sync/authEvents.ts`) qui persiste `syncAuthExpired: true` dans les settings et prévient les abonnés. Tant que ce drapeau est levé, `fetchWithProxy` ne contacte plus le serveur et lève directement l'erreur (pas de requête réseau avec un token mort). `SyncClient.saveCredentials()` remet le drapeau à `false` et notifie : toute reconnexion (popup OAuth, token manuel, `useSync.connect`) réarme le proxy.
+
+**UI.** `useSync` passe en `error` (« Sync session expired, reconnect the sync server ») à la notification ou au chargement si le drapeau est levé, et revient en `connected` quand il est levé ; `SyncStatusIcon` affiche l'icône rouge. `SyncSettings` affiche le message i18n `syncSettings.sessionExpired` avec le formulaire de connexion pré-rempli, sans tester `/health` (qui répondrait OK sans auth).
+
+**Retries TanStack Query.** Les `useQuery` de flux (`PodcastDetail`, `SubscriptionItem`) utilisent `rssQueryRetry` (jamais de retry sur `SyncProxyAuthError`, pas de retry si `Retry-After` dépasse 60 s, sinon 2 retries) et `rssQueryRetryDelay` (`Retry-After` plafonné à 60 s, sinon backoff exponentiel plafonné à 30 s).
 
 Note : le flux d'autorisation actuel (`/authorize?response_type=token`) ne fournit pas de refresh token, donc `tryRefresh()` renvoie `false` et un `401` mène directement à la reconnexion.
 

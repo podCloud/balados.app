@@ -59,6 +59,8 @@ interface SyncState {
  * - Pending action count from syncQueue
  * - Error handling
  */
+const AUTH_EXPIRED_ERROR = "Sync session expired, reconnect the sync server";
+
 export function useSync(): UseSyncReturn {
   const [state, setState] = useState<SyncState>({
     status: "disconnected",
@@ -83,6 +85,18 @@ export function useSync(): UseSyncReturn {
       if (!isMounted.current) return;
 
       if (settings.syncServerUrl && settings.syncToken) {
+        if (settings.syncAuthExpired) {
+          // Token known dead: no point testing the connection (health needs no auth).
+          setState({
+            status: "error",
+            serverUrl: settings.syncServerUrl,
+            lastSyncAt: settings.lastSyncAt ? new Date(settings.lastSyncAt) : null,
+            error: AUTH_EXPIRED_ERROR,
+            isSyncing: false,
+          });
+          return;
+        }
+
         // Create client and test connection
         const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
         clientRef.current = client;
@@ -118,14 +132,15 @@ export function useSync(): UseSyncReturn {
   // Surface auth failures raised by the RSS proxy cascade (token rejected,
   // refresh impossible): the user must reconnect the sync server.
   useEffect(() => {
-    return subscribeSyncAuthError(() => {
+    return subscribeSyncAuthError((expired) => {
       if (!isMounted.current) return;
-      setState((prev) => ({
-        ...prev,
-        status: "error",
-        isSyncing: false,
-        error: "Sync session expired, reconnect the sync server",
-      }));
+      setState((prev) => {
+        if (expired) {
+          return { ...prev, status: "error", isSyncing: false, error: AUTH_EXPIRED_ERROR };
+        }
+        if (prev.error !== AUTH_EXPIRED_ERROR) return prev;
+        return { ...prev, status: prev.serverUrl ? "connected" : "disconnected", error: null };
+      });
     });
   }, []);
 

@@ -77,6 +77,7 @@ vi.mock("react-i18next", () => ({
         "syncSettings.hideToken": "Hide token",
         "syncSettings.tokenPlaceholder": "Paste token here",
         "syncSettings.connectWithToken": "Connect with token",
+        "syncSettings.sessionExpired": "Session expired, reconnect the sync server",
         "sync.syncing": "Syncing...",
         "sync.pending": `${opts?.count} pending`,
         "sync.syncError": "Sync error",
@@ -95,6 +96,24 @@ describe("SyncSettings", () => {
       proxies: [],
     });
     mockTestConnection.mockResolvedValue(true);
+  });
+
+  it("shows the session-expired banner and the connect form when the sync token was rejected", async () => {
+    mockGetSettings.mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "dead-token",
+      syncAuthExpired: true,
+    });
+
+    render(<SyncSettings />);
+
+    expect(
+      await screen.findByText("Session expired, reconnect the sync server"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
+    expect(mockTestConnection).not.toHaveBeenCalled();
   });
 
   it("shows loading state initially", () => {

@@ -5,6 +5,7 @@ import {
   createProxyConfig,
   DEFAULT_PROXIES,
   fetchWithProxy,
+  rssQueryRetry,
   rssQueryRetryDelay,
   SyncProxyAuthError,
   SyncProxyRateLimitError,
@@ -17,17 +18,24 @@ vi.mock("../storage", () => ({
 
 // Mock sync client (token refresh) and auth events (UI notification)
 const mockTryRefresh = vi.fn<() => Promise<boolean>>();
-vi.mock("../sync/client", () => ({
-  SyncClient: {
-    fromSettings: vi.fn(async () => ({ tryRefresh: mockTryRefresh })),
-  },
-}));
 vi.mock("../sync/authEvents", () => ({
   notifySyncAuthError: vi.fn(),
 }));
 
+// SyncApiError is the real class (classes under test extend it)
+vi.mock("../sync/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../sync/client")>();
+  return {
+    SyncApiError: actual.SyncApiError,
+    SyncClient: {
+      fromSettings: vi.fn(async () => ({ tryRefresh: mockTryRefresh })),
+    },
+  };
+});
+
 import { getSettings } from "../storage";
 import { notifySyncAuthError } from "../sync/authEvents";
+import { SyncApiError, SyncClient } from "../sync/client";
 
 const mockGetSettings = vi.mocked(getSettings);
 
@@ -59,11 +67,7 @@ const failResponse = () => Promise.resolve({ ok: false, status: 500 } as Respons
 const networkError = () => Promise.reject(new Error("Network error"));
 
 const statusResponse = (status: number, headers: Record<string, string> = {}) =>
-  Promise.resolve({
-    ok: false,
-    status,
-    headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
-  } as unknown as Response);
+  Promise.resolve({ ok: false, status, headers: new Headers(headers) } as unknown as Response);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -351,6 +355,154 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
     expect((error as SyncProxyRateLimitError).retryAfterSeconds).toBe(60);
   });
 
+  it("treats 403 as an auth failure without attempting a refresh", async () => {
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(403));
+
+    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+
+    expect(mockTryRefresh).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(notifySyncAuthError).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws SyncProxyRateLimitError when the replay after refresh is rate limited", async () => {
+    mockTryRefresh.mockResolvedValue(true);
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401))
+      .mockImplementationOnce(() => statusResponse(429, { "Retry-After": "12" }));
+
+    const error = await fetchWithProxy(FEED_URL).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SyncProxyRateLimitError);
+    expect((error as SyncProxyRateLimitError).retryAfterSeconds).toBe(12);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("falls back to public proxies when the replay after refresh fails with 500", async () => {
+    mockTryRefresh.mockResolvedValue(true);
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401))
+      .mockImplementationOnce(() => statusResponse(500))
+      .mockImplementationOnce(() => okResponse("<rss>proxy1</rss>"));
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.proxyUsed).toBe("Proxy1");
+    expect(notifySyncAuthError).not.toHaveBeenCalled();
+  });
+
+  it("falls back to public proxies when the replay after refresh has a network error", async () => {
+    mockTryRefresh.mockResolvedValue(true);
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401))
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => okResponse("<rss>proxy1</rss>"));
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.proxyUsed).toBe("Proxy1");
+  });
+
+  it("skips the refresh and replays directly when the token already changed", async () => {
+    // Our request went out with "test-jwt-token"; by the time the 401 lands,
+    // another caller has refreshed and settings hold a newer token.
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => {
+        mockGetSettings.mockResolvedValue({ ...SYNC_SETTINGS, syncToken: "newer-token" });
+        return statusResponse(401);
+      })
+      .mockImplementationOnce(() => okResponse("<rss>fresh</rss>"));
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.text).toBe("<rss>fresh</rss>");
+    expect(mockTryRefresh).not.toHaveBeenCalled();
+    expect(mockFetch.mock.calls[2][1]).toEqual({
+      headers: { Authorization: "Bearer newer-token" },
+    });
+  });
+
+  it("treats a failing SyncClient.fromSettings as a failed refresh", async () => {
+    vi.mocked(SyncClient.fromSettings).mockRejectedValueOnce(new Error("dexie boom"));
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401));
+
+    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+  });
+
+  it("falls back silently when the user disconnected during the refresh", async () => {
+    mockTryRefresh.mockImplementation(async () => {
+      mockGetSettings.mockResolvedValue(BASE_SETTINGS); // no server, no token anymore
+      return true;
+    });
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401))
+      .mockImplementationOnce(() => okResponse("<rss>proxy1</rss>"));
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.proxyUsed).toBe("Proxy1");
+    expect(notifySyncAuthError).not.toHaveBeenCalled();
+  });
+
+  it("does not call the server at all while the sync session is flagged expired", async () => {
+    mockGetSettings.mockResolvedValue({ ...SYNC_SETTINGS, syncAuthExpired: true });
+    mockFetch.mockImplementationOnce(networkError);
+
+    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1); // direct fetch only
+    expect(mockTryRefresh).not.toHaveBeenCalled();
+    expect(notifySyncAuthError).not.toHaveBeenCalled();
+  });
+
+  it("parses an HTTP-date Retry-After into seconds", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-21T07:00:00Z") });
+    try {
+      mockFetch
+        .mockImplementationOnce(networkError)
+        .mockImplementationOnce(() =>
+          statusResponse(429, { "Retry-After": "Wed, 21 Oct 2026 07:00:45 GMT" }),
+        );
+
+      const error = await fetchWithProxy(FEED_URL).catch((e: unknown) => e);
+
+      expect((error as SyncProxyRateLimitError).retryAfterSeconds).toBe(45);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ignores a malformed Retry-After and uses the default", async () => {
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(429, { "Retry-After": "30abc" }));
+
+    const error = await fetchWithProxy(FEED_URL).catch((e: unknown) => e);
+
+    expect((error as SyncProxyRateLimitError).retryAfterSeconds).toBe(60);
+  });
+
+  it("exposes the proxy errors as SyncApiError subclasses", () => {
+    const auth = new SyncProxyAuthError();
+    const limited = new SyncProxyRateLimitError(5);
+
+    expect(auth).toBeInstanceOf(SyncApiError);
+    expect(auth.statusCode).toBe(401);
+    expect(auth.isRetryable).toBe(false);
+    expect(limited).toBeInstanceOf(SyncApiError);
+    expect(limited.statusCode).toBe(429);
+    expect(limited.isRetryable).toBe(true);
+  });
+
   it("still falls back to public proxies on a 500 from the sync proxy", async () => {
     mockFetch
       .mockImplementationOnce(networkError)
@@ -364,9 +516,26 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
   });
 });
 
+describe("rssQueryRetry", () => {
+  it("never retries an auth error", () => {
+    expect(rssQueryRetry(0, new SyncProxyAuthError())).toBe(false);
+  });
+
+  it("does not retry a rate limit longer than the cap", () => {
+    expect(rssQueryRetry(0, new SyncProxyRateLimitError(3600))).toBe(false);
+  });
+
+  it("retries a short rate limit and other errors twice", () => {
+    expect(rssQueryRetry(0, new SyncProxyRateLimitError(30))).toBe(true);
+    expect(rssQueryRetry(1, new Error("x"))).toBe(true);
+    expect(rssQueryRetry(2, new Error("x"))).toBe(false);
+  });
+});
+
 describe("rssQueryRetryDelay", () => {
-  it("uses Retry-After for rate limit errors", () => {
+  it("uses Retry-After for rate limit errors, capped at 60s", () => {
     expect(rssQueryRetryDelay(0, new SyncProxyRateLimitError(45))).toBe(45_000);
+    expect(rssQueryRetryDelay(0, new SyncProxyRateLimitError(600))).toBe(60_000);
   });
 
   it("uses exponential backoff capped at 30s otherwise", () => {

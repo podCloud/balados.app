@@ -1,6 +1,7 @@
 import type { PlayStatus, Subscription } from "../../types";
 import { decodeRssFeed, encodeRssFeed } from "../../utils/rssEncoding";
 import { getSettings, saveSettings } from "../storage";
+import { clearSyncAuthError } from "./authEvents";
 
 // API Response types
 export interface SyncConfig {
@@ -175,7 +176,9 @@ export class SyncClient {
     await saveSettings({
       syncServerUrl: this.serverUrl,
       syncToken: this.token ?? undefined,
+      syncAuthExpired: false,
     });
+    clearSyncAuthError();
   }
 
   /**
