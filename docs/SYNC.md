@@ -204,9 +204,21 @@ const proxyUrl = `${serverUrl}/api/v1/rss/proxy/${btoa(feedUrl)}`
 ### Avantages du proxy serveur
 
 - Cache LRU côté serveur (5 min)
-- Pas de limite de rate
+- Quota par utilisateur (le serveur renvoie `429` + `Retry-After` au-delà)
 - Fiabilité garantie
 - Headers CORS corrects
+
+### Cascade et erreurs d'authentification
+
+`fetchWithProxy` (`src/services/rss/proxyManager.ts`) essaie dans l'ordre : fetch direct → proxy serveur (avec `Authorization: Bearer`) → proxies publics. Le proxy serveur exige le JWT ; deux statuts sortent de la cascade au lieu de retomber en silence sur les proxies publics (ce qui ferait fuir la bibliothèque vers un tiers avec un token mort) :
+
+| Statut serveur | Comportement |
+|----------------|--------------|
+| `401` | Une tentative de refresh (`SyncClient.tryRefresh()`, dédupliquée entre appels parallèles). Succès → la requête serveur est rejouée avec le nouveau token. Échec → `SyncProxyAuthError`, `notifySyncAuthError()` fait passer `useSync` en `error` (« Sync session expired, reconnect the sync server »). Aucun appel aux proxies publics. |
+| `429` | `SyncProxyRateLimitError` portant `retryAfterSeconds` (header `Retry-After`, 60 s par défaut). Les `useQuery` de flux utilisent `rssQueryRetryDelay` pour attendre ce délai. Aucun appel aux proxies publics. |
+| autre non-ok, erreur réseau | Cascade vers les proxies publics (inchangé). |
+
+Note : le flux d'autorisation actuel (`/authorize?response_type=token`) ne fournit pas de refresh token, donc `tryRefresh()` renvoie `false` et un `401` mène directement à la reconnexion.
 
 ## UI de synchronisation
 

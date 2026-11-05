@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { fetchAndParseRSS } from "../../services/rss/parser";
+import { rssQueryRetryDelay } from "../../services/rss/proxyManager";
 import { invalidateFeedCache } from "../../services/storage";
 import type { PodcastFeed } from "../../types";
 import { LikeButton } from "../ui/LikeButton";
@@ -24,6 +25,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
   } = useQuery<PodcastFeed>({
     queryKey: ["feed", feedUrl],
     queryFn: () => fetchAndParseRSS(feedUrl),
+    retryDelay: rssQueryRetryDelay,
     staleTime: 1000 * 60 * 5,
   });
 

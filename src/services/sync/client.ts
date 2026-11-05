@@ -288,6 +288,14 @@ export class SyncClient {
   }
 
   /**
+   * Try to refresh the access token. Public entry point used by the RSS proxy
+   * cascade; returns false when no refresh token is available.
+   */
+  async tryRefresh(): Promise<boolean> {
+    return this.refreshAccessToken();
+  }
+
+  /**
    * Refresh access token using refresh token
    */
   private async refreshAccessToken(): Promise<boolean> {

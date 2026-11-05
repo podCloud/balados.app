@@ -1,3 +1,4 @@
+export { notifySyncAuthError, subscribeSyncAuthError } from "./authEvents";
 export type {
   PlayStatusSync,
   SubscriptionSync,

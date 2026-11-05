@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { db, getSettings, saveSettings } from "../services/storage";
 import { getSubscriptions } from "../services/storage/subscriptions";
+import { subscribeSyncAuthError } from "../services/sync/authEvents";
 import { registerPeriodicSync, unregisterPeriodicSync } from "../services/sync/backgroundSync";
 import type { LikeSync } from "../services/sync/client";
 import { SyncClient } from "../services/sync/client";
@@ -112,6 +113,20 @@ export function useSync(): UseSyncReturn {
     return () => {
       isMounted.current = false;
     };
+  }, []);
+
+  // Surface auth failures raised by the RSS proxy cascade (token rejected,
+  // refresh impossible): the user must reconnect the sync server.
+  useEffect(() => {
+    return subscribeSyncAuthError(() => {
+      if (!isMounted.current) return;
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        isSyncing: false,
+        error: "Sync session expired, reconnect the sync server",
+      }));
+    });
   }, []);
 
   // Update status based on pending count

@@ -88,6 +88,7 @@ vi.mock("../services/sync/merger", () => ({
 }));
 
 import { getSettings, saveSettings } from "../services/storage";
+import { notifySyncAuthError } from "../services/sync/authEvents";
 
 describe("useSync", () => {
   beforeEach(() => {
@@ -128,6 +129,25 @@ describe("useSync", () => {
 
     expect(result.current.serverUrl).toBe("https://sync.example.com");
     expect(result.current.lastSyncAt).toEqual(new Date(1700000000000));
+  });
+
+  it("switches to error status when the RSS proxy reports an auth failure", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+    });
+
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+
+    act(() => {
+      notifySyncAuthError();
+    });
+
+    expect(result.current.status).toBe("error");
+    expect(result.current.error).toMatch(/session expired/i);
   });
 
   it("sets error status when connection test fails on mount", async () => {

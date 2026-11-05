@@ -1,14 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppSettings } from "../../types";
 import { encodeRssFeed } from "../../utils/rssEncoding";
-import { createProxyConfig, DEFAULT_PROXIES, fetchWithProxy } from "./proxyManager";
+import {
+  createProxyConfig,
+  DEFAULT_PROXIES,
+  fetchWithProxy,
+  rssQueryRetryDelay,
+  SyncProxyAuthError,
+  SyncProxyRateLimitError,
+} from "./proxyManager";
 
 // Mock storage module
 vi.mock("../storage", () => ({
   getSettings: vi.fn(),
 }));
 
+// Mock sync client (token refresh) and auth events (UI notification)
+const mockTryRefresh = vi.fn<() => Promise<boolean>>();
+vi.mock("../sync/client", () => ({
+  SyncClient: {
+    fromSettings: vi.fn(async () => ({ tryRefresh: mockTryRefresh })),
+  },
+}));
+vi.mock("../sync/authEvents", () => ({
+  notifySyncAuthError: vi.fn(),
+}));
+
 import { getSettings } from "../storage";
+import { notifySyncAuthError } from "../sync/authEvents";
 
 const mockGetSettings = vi.mocked(getSettings);
 
@@ -38,6 +57,13 @@ const okResponse = (text: string) =>
 const failResponse = () => Promise.resolve({ ok: false, status: 500 } as Response);
 
 const networkError = () => Promise.reject(new Error("Network error"));
+
+const statusResponse = (status: number, headers: Record<string, string> = {}) =>
+  Promise.resolve({
+    ok: false,
+    status,
+    headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
+  } as unknown as Response);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -222,6 +248,131 @@ describe("fetchWithProxy", () => {
     mockFetch.mockImplementation(networkError);
 
     await expect(fetchWithProxy(FEED_URL)).rejects.toThrow("Impossible de recuperer le flux RSS");
+  });
+});
+
+describe("fetchWithProxy - sync proxy auth and rate limit", () => {
+  beforeEach(() => {
+    mockGetSettings.mockResolvedValue(SYNC_SETTINGS);
+    mockTryRefresh.mockReset();
+  });
+
+  it("throws SyncProxyAuthError on 401 when refresh fails and does not call public proxies", async () => {
+    mockTryRefresh.mockResolvedValue(false);
+    mockFetch
+      .mockImplementationOnce(networkError) // direct fails
+      .mockImplementationOnce(() => statusResponse(401)); // sync proxy 401
+
+    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const urls = mockFetch.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes("proxy1.example.com"))).toBe(false);
+    expect(notifySyncAuthError).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries the sync proxy once with the refreshed token after a 401", async () => {
+    mockTryRefresh.mockImplementation(async () => {
+      mockGetSettings.mockResolvedValue({ ...SYNC_SETTINGS, syncToken: "new-token" });
+      return true;
+    });
+    mockFetch
+      .mockImplementationOnce(networkError) // direct fails
+      .mockImplementationOnce(() => statusResponse(401)) // sync proxy 401
+      .mockImplementationOnce(() => okResponse("<rss>refreshed</rss>")); // replay OK
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.proxyUsed).toBe("Sync Server");
+    expect(result.text).toBe("<rss>refreshed</rss>");
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(mockFetch.mock.calls[2][1]).toEqual({
+      headers: { Authorization: "Bearer new-token" },
+    });
+    expect(notifySyncAuthError).not.toHaveBeenCalled();
+  });
+
+  it("throws SyncProxyAuthError when the replay after refresh is still 401", async () => {
+    mockTryRefresh.mockResolvedValue(true);
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(401))
+      .mockImplementationOnce(() => statusResponse(401));
+
+    await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
+    expect(mockTryRefresh).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("dedupes concurrent refreshes triggered by parallel 401s", async () => {
+    let release: (value: boolean) => void = () => {};
+    mockTryRefresh.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          release = resolve;
+        }),
+    );
+    mockFetch.mockImplementation((url: string) =>
+      String(url).includes("sync.example.com") ? statusResponse(401) : networkError(),
+    );
+
+    const pending = Promise.allSettled([
+      fetchWithProxy("https://a.example.com/feed.xml"),
+      fetchWithProxy("https://b.example.com/feed.xml"),
+    ]);
+    await vi.waitFor(() => expect(mockTryRefresh).toHaveBeenCalledTimes(1));
+    release(false);
+    const results = await pending;
+
+    expect(mockTryRefresh).toHaveBeenCalledTimes(1);
+    expect(results.every((r) => r.status === "rejected")).toBe(true);
+  });
+
+  it("throws SyncProxyRateLimitError with retryAfterSeconds on 429 and skips public proxies", async () => {
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(429, { "retry-after": "30" }));
+
+    const error = await fetchWithProxy(FEED_URL).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SyncProxyRateLimitError);
+    expect((error as SyncProxyRateLimitError).retryAfterSeconds).toBe(30);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockTryRefresh).not.toHaveBeenCalled();
+  });
+
+  it("defaults retryAfterSeconds to 60 when Retry-After is missing", async () => {
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(429));
+
+    const error = await fetchWithProxy(FEED_URL).catch((e: unknown) => e);
+
+    expect((error as SyncProxyRateLimitError).retryAfterSeconds).toBe(60);
+  });
+
+  it("still falls back to public proxies on a 500 from the sync proxy", async () => {
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => statusResponse(500))
+      .mockImplementationOnce(() => okResponse("<rss>proxy1</rss>"));
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.proxyUsed).toBe("Proxy1");
+    expect(mockTryRefresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("rssQueryRetryDelay", () => {
+  it("uses Retry-After for rate limit errors", () => {
+    expect(rssQueryRetryDelay(0, new SyncProxyRateLimitError(45))).toBe(45_000);
+  });
+
+  it("uses exponential backoff capped at 30s otherwise", () => {
+    expect(rssQueryRetryDelay(0, new Error("x"))).toBe(1_000);
+    expect(rssQueryRetryDelay(2, new Error("x"))).toBe(4_000);
+    expect(rssQueryRetryDelay(10, new Error("x"))).toBe(30_000);
   });
 });
 
