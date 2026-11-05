@@ -88,6 +88,19 @@ npm test          # Run tests (Vitest)
 npm test -- --watch  # Watch mode
 ```
 
+## Continuous Integration
+
+`.github/workflows/test.yml` runs on every pull request and on every push to `main`. Node comes from `.nvmrc` (`actions/setup-node` with the npm cache), then exactly:
+
+```bash
+npm ci
+npm run lint
+npm run build
+npx vitest run
+```
+
+Reproduce locally with `nvm use` (or `asdf`/`fnm` reading `.nvmrc`) before the same four commands. A red workflow blocks the merge; a failure unrelated to the PR gets its own issue (see "Never ignore failing tests").
+
 ## Tech Stack
 
 - **React 19** with TypeScript
