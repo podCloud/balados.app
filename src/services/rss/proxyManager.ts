@@ -104,8 +104,8 @@ const fetchFromSyncProxy = (serverUrl: string, token: string, url: string): Prom
   return fetch(syncProxyUrl, { headers: { Authorization: `Bearer ${token}` } });
 };
 
-const authFailure = (failedToken: string): never => {
-  void notifySyncAuthError(failedToken);
+const authFailure = (failedToken: string, serverUrl: string): never => {
+  void notifySyncAuthError(failedToken, serverUrl);
   throw new SyncProxyAuthError();
 };
 
@@ -127,7 +127,7 @@ const trySyncProxy = async (
     return null; // network error: fall back to public proxies
   }
 
-  if (response.status === 403) return authFailure(token);
+  if (response.status === 403) return authFailure(token, serverUrl);
 
   if (response.status === 401) {
     let fresh = await getSettings();
@@ -137,7 +137,7 @@ const trySyncProxy = async (
     // Another caller may already have refreshed while our request was in
     // flight: in that case replay with the newer token, no second refresh.
     if (fresh.syncToken === token) {
-      if (!(await refreshSyncToken())) return authFailure(token);
+      if (!(await refreshSyncToken())) return authFailure(token, serverUrl);
       fresh = await getSettings();
       if (!fresh.syncServerUrl || !fresh.syncToken) return null;
     }
@@ -147,7 +147,8 @@ const trySyncProxy = async (
     } catch {
       return null;
     }
-    if (response.status === 401 || response.status === 403) return authFailure(replayToken);
+    if (response.status === 401 || response.status === 403)
+      return authFailure(replayToken, fresh.syncServerUrl);
   }
 
   if (response.status === 429) {

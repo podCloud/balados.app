@@ -62,6 +62,19 @@ export const SyncSettings = () => {
         const client = new SyncClient(settings.syncServerUrl, settings.syncToken);
         const isConnected = await client.testConnection();
 
+        if ((await getSettings()).syncAuthExpired) {
+          // The token was rejected while /health was pending: the flag wins.
+          setServerInput(settings.syncServerUrl);
+          setState({
+            status: "error",
+            serverUrl: settings.syncServerUrl,
+            lastSyncAt: settings.lastSyncAt ?? null,
+            error: t("syncSettings.sessionExpired"),
+          });
+          setIsLoading(false);
+          return;
+        }
+
         setState({
           status: isConnected ? "connected" : "error",
           serverUrl: settings.syncServerUrl,
@@ -320,7 +333,7 @@ export const SyncSettings = () => {
             </div>
           </div>
 
-          {(state.status === "connected" || (state.status === "error" && state.serverUrl)) && (
+          {state.serverUrl && state.status !== "disconnected" && (
             <button
               type="button"
               onClick={handleDisconnect}

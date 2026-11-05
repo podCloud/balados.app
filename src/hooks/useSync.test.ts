@@ -46,6 +46,10 @@ vi.mock("../services/storage", () => ({
   }),
   saveSettings: vi.fn().mockResolvedValue(undefined),
   db: {
+    transaction: vi.fn(async (_mode: string, _table: unknown, fn: () => Promise<unknown>) => fn()),
+    settings: {
+      put: vi.fn().mockResolvedValue(undefined),
+    },
     playStatuses: {
       toArray: vi.fn().mockResolvedValue([]),
     },
@@ -165,11 +169,11 @@ describe("useSync", () => {
     const { result } = renderHook(() => useSync());
     await waitFor(() => expect(result.current.status).toBe("connected"));
 
-    act(() => {
-      notifySyncAuthError();
+    await act(async () => {
+      await notifySyncAuthError("token");
     });
 
-    expect(result.current.status).toBe("error");
+    await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error).toMatch(/session expired/i);
   });
 
@@ -206,10 +210,10 @@ describe("useSync", () => {
     });
     const { result } = renderHook(() => useSync());
     await waitFor(() => expect(result.current.status).toBe("connected"));
-    act(() => {
-      notifySyncAuthError();
+    await act(async () => {
+      await notifySyncAuthError("token");
     });
-    expect(result.current.status).toBe("error");
+    await waitFor(() => expect(result.current.status).toBe("error"));
 
     vi.mocked(getSettings).mockResolvedValue({
       locale: "fr",
@@ -217,6 +221,7 @@ describe("useSync", () => {
       syncServerUrl: "https://other.example.com",
       syncToken: "token2",
     });
+    mockRegisterPeriodicSync.mockClear();
     await act(async () => {
       await clearSyncAuthError();
     });
@@ -224,19 +229,132 @@ describe("useSync", () => {
     await waitFor(() => expect(result.current.status).toBe("connected"));
     expect(result.current.error).toBeNull();
     expect(result.current.serverUrl).toBe("https://other.example.com");
-    expect(mockRegisterPeriodicSync).toHaveBeenCalled();
+    expect(mockRegisterPeriodicSync).toHaveBeenCalledTimes(1);
   });
 
   it("ignores an auth error while no server is configured", async () => {
     const { result } = renderHook(() => useSync());
     await waitFor(() => expect(result.current.status).toBe("disconnected"));
 
-    act(() => {
-      void notifySyncAuthError();
+    await act(async () => {
+      await notifySyncAuthError("token");
     });
 
     expect(result.current.status).toBe("disconnected");
     expect(result.current.error).toBeNull();
+  });
+
+  it("does not lose an auth error raised during the startup health check", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+    });
+    let resolveHealth: (ok: boolean) => void = () => {};
+    mockTestConnection.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveHealth = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(mockTestConnection).toHaveBeenCalled());
+
+    // A feed fetch hits 401 while /health is still pending: the flag lands in settings.
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+      syncAuthExpired: true,
+    });
+    await act(async () => {
+      await notifySyncAuthError("token");
+    });
+    await act(async () => {
+      resolveHealth(true);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.error).toMatch(/session expired/i);
+  });
+
+  it("goes back to disconnected when the auth error clears after a disconnect", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+      syncAuthExpired: true,
+    });
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("error"));
+
+    vi.mocked(getSettings).mockResolvedValue({ locale: "fr", proxies: [] });
+    await act(async () => {
+      await clearSyncAuthError();
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("disconnected"));
+    expect(result.current.serverUrl).toBeNull();
+    expect(mockRegisterPeriodicSync).not.toHaveBeenCalled();
+  });
+
+  it("rebuilds the client from settings after a recovery", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "old",
+    });
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+    await act(async () => {
+      await notifySyncAuthError("old");
+    });
+    await waitFor(() => expect(result.current.status).toBe("error"));
+
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "new",
+    });
+    mockFromSettings.mockResolvedValueOnce({
+      sync: mockSync,
+      saveCredentials: mockSaveCredentials,
+    });
+    await act(async () => {
+      await clearSyncAuthError();
+    });
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+    await act(async () => {
+      await result.current.sync();
+    });
+
+    expect(mockFromSettings).toHaveBeenCalled();
+  });
+
+  it("disconnect clears the stored credentials even when loaded in the expired state", async () => {
+    vi.mocked(getSettings).mockResolvedValue({
+      locale: "fr",
+      proxies: [],
+      syncServerUrl: "https://sync.example.com",
+      syncToken: "token",
+      syncAuthExpired: true,
+    });
+    mockFromSettings.mockResolvedValueOnce({ clearCredentials: mockClearCredentials });
+    const { result } = renderHook(() => useSync());
+    await waitFor(() => expect(result.current.status).toBe("error"));
+
+    await act(async () => {
+      await result.current.disconnect();
+    });
+
+    expect(mockClearCredentials).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("disconnected");
   });
 
   it("sets error status when connection test fails on mount", async () => {

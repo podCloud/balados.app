@@ -32,13 +32,38 @@ describe("authEvents", () => {
   });
 
   it("does not overwrite credentials saved while the notification was in flight", async () => {
-    // Settings read by the proxy before the reconnect hold the old token.
-    const pendingNotify = notifySyncAuthError("current");
-    await saveSettings({ syncToken: "fresh" });
-    await pendingNotify;
+    // Save first so its read lands before the notify transaction: without the
+    // transactional saveSettings the stale read would be written back.
+    await Promise.all([saveSettings({ syncToken: "fresh" }), notifySyncAuthError("current")]);
 
     const settings = await getSettings();
     expect(settings.syncToken).toBe("fresh");
+  });
+
+  it("never loses the flag or the token under concurrent writers", async () => {
+    for (let round = 0; round < 20; round++) {
+      await saveSettings({ syncServerUrl: "https://sync.example.com", syncToken: "current" });
+      await Promise.all([
+        saveSettings({ lastSyncAt: round }),
+        notifySyncAuthError("current"),
+        saveSettings({ locale: "en" }),
+      ]);
+      const settings = await getSettings();
+      expect(settings.syncAuthExpired).toBe(true);
+      expect(settings.syncToken).toBe("current");
+      expect(settings.lastSyncAt).toBe(round);
+    }
+  });
+
+  it("ignores a rejection coming from another server", async () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSyncAuthError(listener);
+
+    await notifySyncAuthError("current", "https://old-server.example.com");
+
+    expect((await getSettings()).syncAuthExpired).toBeFalsy();
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 
   it("clears the flag and tells listeners", async () => {

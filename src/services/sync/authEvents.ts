@@ -32,16 +32,20 @@ const patchSettings = (
   });
 
 /**
- * The sync server rejected `failedToken` and a refresh was impossible.
- * Ignored when the stored token has already changed (the user reconnected
- * while the failing request was in flight), so a late 401 cannot poison a
- * fresh session.
+ * The sync server at `serverUrl` rejected `failedToken` and a refresh was
+ * impossible. Ignored when the stored credentials have already changed (the
+ * user reconnected, possibly to another server, while the failing request was
+ * in flight), so a late 401 cannot poison a fresh session.
  */
-export const notifySyncAuthError = async (failedToken?: string): Promise<void> => {
+export const notifySyncAuthError = async (
+  failedToken: string,
+  serverUrl?: string,
+): Promise<void> => {
   let flagged = false;
   try {
     flagged = await patchSettings((current) => {
-      if (failedToken !== undefined && current.syncToken !== failedToken) return false;
+      if (current.syncToken !== failedToken) return false;
+      if (serverUrl !== undefined && current.syncServerUrl !== serverUrl) return false;
       current.syncAuthExpired = true;
       return true;
     });

@@ -274,7 +274,7 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
     const urls = mockFetch.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes("proxy1.example.com"))).toBe(false);
     expect(notifySyncAuthError).toHaveBeenCalledTimes(1);
-    expect(notifySyncAuthError).toHaveBeenCalledWith("test-jwt-token");
+    expect(notifySyncAuthError).toHaveBeenCalledWith("test-jwt-token", "https://sync.example.com");
   });
 
   it("retries the sync proxy once with the refreshed token after a 401", async () => {
@@ -396,7 +396,7 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
     await expect(fetchWithProxy(FEED_URL)).rejects.toBeInstanceOf(SyncProxyAuthError);
 
     expect(mockFetch).toHaveBeenCalledTimes(3);
-    expect(notifySyncAuthError).toHaveBeenCalledWith("new-token");
+    expect(notifySyncAuthError).toHaveBeenCalledWith("new-token", "https://sync.example.com");
   });
 
   it("treats Retry-After: 0 as the default delay", async () => {
@@ -504,6 +504,22 @@ describe("fetchWithProxy - sync proxy auth and rate limit", () => {
 
     expect(result.proxyUsed).toBe("Proxy1");
     expect(mockTryRefresh).not.toHaveBeenCalled();
+    expect(notifySyncAuthError).not.toHaveBeenCalled();
+  });
+
+  it("skips the server when a URL is stored without a token and never flags the session", async () => {
+    mockGetSettings.mockResolvedValue({
+      ...BASE_SETTINGS,
+      syncServerUrl: "https://sync.example.com",
+    });
+    mockFetch
+      .mockImplementationOnce(networkError)
+      .mockImplementationOnce(() => okResponse("<rss>proxy1</rss>"));
+
+    const result = await fetchWithProxy(FEED_URL);
+
+    expect(result.proxyUsed).toBe("Proxy1");
+    expect(mockFetch).toHaveBeenCalledTimes(2); // direct + public, no server call
     expect(notifySyncAuthError).not.toHaveBeenCalled();
   });
 
