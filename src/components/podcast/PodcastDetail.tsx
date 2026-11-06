@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ChevronLeft, Loader2, RefreshCw } from "lucide-react";
+import { ChevronLeft, LoaderCircle, RefreshCw, TriangleExclamationPoint } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { rssQueryRetry, rssQueryRetryDelay } from "../../services/rss/proxyManager";
@@ -40,7 +40,7 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <Loader2
+          <LoaderCircle
             size={48}
             className="mx-auto mb-4 text-blue-500 animate-spin"
             aria-hidden="true"
@@ -66,7 +66,11 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
         </div>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
-            <AlertTriangle size={48} className="mx-auto mb-4 text-orange-500" aria-hidden="true" />
+            <TriangleExclamationPoint
+              size={48}
+              className="mx-auto mb-4 text-orange-500"
+              aria-hidden="true"
+            />
             <h2 className="text-lg font-semibold text-gray-700 mb-2">{t("common.error")}</h2>
             <p className="text-sm text-gray-500 mb-4">{t("podcast.loadError")}</p>
             <button

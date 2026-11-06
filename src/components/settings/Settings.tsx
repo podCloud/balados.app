@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, Check } from "lucide-react";
+import { ArrowLeft, ChartColumn, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StorageSettings } from "./StorageSettings";
 import { SyncSettings } from "./SyncSettings";
@@ -77,7 +77,7 @@ export const Settings = ({ onBack, onNavigate }: SettingsProps) => {
               onClick={() => onNavigate?.("stats")}
               className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50"
             >
-              <BarChart3 size={20} className="text-blue-500" aria-hidden="true" />
+              <ChartColumn size={20} className="text-blue-500" aria-hidden="true" />
               <span className="text-gray-900">{t("stats.title")}</span>
             </button>
           </div>

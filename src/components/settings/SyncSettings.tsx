@@ -1,5 +1,5 @@
 import {
-  AlertCircle,
+  CircleExclamationPoint,
   Clock,
   ExternalLink,
   Loader,
@@ -319,7 +319,7 @@ export const SyncSettings = () => {
             ) : state.status === "connecting" ? (
               <Loader size={20} className="animate-spin text-blue-500" aria-hidden="true" />
             ) : state.status === "error" ? (
-              <AlertCircle size={20} className="text-red-500" aria-hidden="true" />
+              <CircleExclamationPoint size={20} className="text-red-500" aria-hidden="true" />
             ) : (
               <WifiOff size={20} className="text-gray-400" aria-hidden="true" />
             )}

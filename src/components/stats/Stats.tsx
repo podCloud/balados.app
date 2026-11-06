@@ -1,4 +1,11 @@
-import { AlertCircle, ArrowLeft, CheckCircle, Clock, Play, Radio } from "lucide-react";
+import {
+  ArrowLeft,
+  CircleCheckBig,
+  CircleExclamationPoint,
+  Clock,
+  Play,
+  Radio,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getEvents, getListeningStats } from "../../services/storage/events";
@@ -99,7 +106,7 @@ export const Stats = ({ onBack }: StatsProps) => {
       case "play_started":
         return <Play size={16} className="text-green-500" aria-hidden="true" />;
       case "play_completed":
-        return <CheckCircle size={16} className="text-blue-500" aria-hidden="true" />;
+        return <CircleCheckBig size={16} className="text-blue-500" aria-hidden="true" />;
       case "play_paused":
         return <Clock size={16} className="text-orange-500" aria-hidden="true" />;
       case "subscription_added":
@@ -178,7 +185,11 @@ export const Stats = ({ onBack }: StatsProps) => {
           <div className="p-4 text-center text-gray-500">{t("common.loading")}</div>
         ) : error ? (
           <div className="p-8 text-center">
-            <AlertCircle size={48} className="mx-auto text-red-400 mb-2" aria-hidden="true" />
+            <CircleExclamationPoint
+              size={48}
+              className="mx-auto text-red-400 mb-2"
+              aria-hidden="true"
+            />
             <p className="text-red-500">{error}</p>
           </div>
         ) : (

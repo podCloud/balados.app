@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ChevronLeft, History as HistoryIcon } from "lucide-react";
+import { ChevronLeft, RotateCcwClock as HistoryIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";

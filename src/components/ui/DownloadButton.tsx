@@ -1,4 +1,4 @@
-import { AlertCircle, Check, Download, Loader2, Trash2 } from "lucide-react";
+import { Check, CircleExclamationPoint, Download, LoaderCircle, Trash } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDownload } from "../../contexts";
 import { getEpisodeId } from "../../services/storage/downloads";
@@ -52,7 +52,7 @@ export const DownloadButton = ({
         title={progress.error || t("downloads.error")}
         aria-label={t("downloads.retryDownload")}
       >
-        <AlertCircle size={iconSize} />
+        <CircleExclamationPoint size={iconSize} />
         {showLabel && <span className="ml-2 text-sm">{t("downloads.error")}</span>}
       </button>
     );
@@ -67,7 +67,7 @@ export const DownloadButton = ({
         disabled
         aria-label={t("downloads.downloading")}
       >
-        <Loader2 size={iconSize} className="animate-spin" />
+        <LoaderCircle size={iconSize} className="animate-spin" />
         {progress && progress.percent > 0 && (
           <span className="absolute -bottom-1 -right-1 text-[10px] font-medium bg-blue-600 text-white rounded px-1">
             {progress.percent}%
@@ -89,7 +89,7 @@ export const DownloadButton = ({
         aria-label={t("downloads.downloaded")}
       >
         <Check size={iconSize} className="group-hover:hidden" />
-        <Trash2 size={iconSize} className="hidden group-hover:block" />
+        <Trash size={iconSize} className="hidden group-hover:block" />
         {showLabel && (
           <span className="ml-2 text-sm group-hover:hidden">{t("downloads.downloaded")}</span>
         )}

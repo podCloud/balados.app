@@ -1,4 +1,4 @@
-import { AlertCircle, Clock, RefreshCw, WifiOff, X } from "lucide-react";
+import { CircleExclamationPoint, Clock, RefreshCw, WifiOff, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "../../hooks/useOnline";
 import { useSyncQueue } from "../../hooks/useSyncQueue";
@@ -18,7 +18,7 @@ export const OfflineBanner = () => {
     <div className="text-white text-sm">
       {showError && (
         <div className="bg-red-500 py-2 px-4 flex items-center justify-center gap-2" role="alert">
-          <AlertCircle size={16} aria-hidden="true" />
+          <CircleExclamationPoint size={16} aria-hidden="true" />
           <span>
             {t("sync.syncError")}: {lastSyncError}
           </span>
