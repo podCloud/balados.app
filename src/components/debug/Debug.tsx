@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, Info, Terminal } from "lucide-react";
+import { CircleExclamationPoint, Info, Terminal, TriangleExclamationPoint } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { clearDebugLogs, getDebugLogs, subscribeToDebugLogs } from "../../services/debug";
@@ -18,9 +18,9 @@ const getLogColor = (type: DebugLog["type"]) => {
 const getLogIcon = (type: DebugLog["type"]) => {
   switch (type) {
     case "error":
-      return <AlertCircle size={14} className="text-red-500" aria-hidden="true" />;
+      return <CircleExclamationPoint size={14} className="text-red-500" aria-hidden="true" />;
     case "warn":
-      return <AlertTriangle size={14} className="text-orange-500" aria-hidden="true" />;
+      return <TriangleExclamationPoint size={14} className="text-orange-500" aria-hidden="true" />;
     default:
       return <Info size={14} className="text-blue-500" aria-hidden="true" />;
   }

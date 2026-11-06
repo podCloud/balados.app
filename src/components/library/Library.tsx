@@ -1,5 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Clock, Headphones, History, Plus, Settings, X } from "lucide-react";
+import { Clock, Headphones, Plus, RotateCcwClock, Settings, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../services/storage";
@@ -97,7 +97,7 @@ export const Library = ({ onNavigate }: LibraryProps) => {
               title={t("listeningHistory.title")}
               aria-label={t("listeningHistory.title")}
             >
-              <History size={20} />
+              <RotateCcwClock size={20} />
             </button>
             <button
               type="button"

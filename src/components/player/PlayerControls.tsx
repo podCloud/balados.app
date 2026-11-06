@@ -1,4 +1,4 @@
-import { Loader2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { LoaderCircle, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";
 
@@ -120,7 +120,7 @@ export const PlayerControls = () => {
           aria-label={isPlaying ? t("player.pause") : t("player.play")}
         >
           {isLoading ? (
-            <Loader2 size={32} className="animate-spin" />
+            <LoaderCircle size={32} className="animate-spin" />
           ) : isPlaying ? (
             <Pause size={32} fill="currentColor" />
           ) : (

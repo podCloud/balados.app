@@ -1,4 +1,4 @@
-import { AlertCircle, Cloud, Loader2 } from "lucide-react";
+import { CircleExclamationPoint, Cloud, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useSync } from "../../hooks/useSync";
 
@@ -30,9 +30,9 @@ export const SyncStatusIcon = ({ onNavigate }: SyncStatusIconProps) => {
   const renderIcon = () => {
     switch (status) {
       case "syncing":
-        return <Loader2 size={18} className="text-blue-500 animate-spin" aria-hidden="true" />;
+        return <LoaderCircle size={18} className="text-blue-500 animate-spin" aria-hidden="true" />;
       case "error":
-        return <AlertCircle size={18} className="text-red-500" aria-hidden="true" />;
+        return <CircleExclamationPoint size={18} className="text-red-500" aria-hidden="true" />;
       case "pending":
         return (
           <>

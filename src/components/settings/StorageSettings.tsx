@@ -1,4 +1,4 @@
-import { HardDrive, Trash2 } from "lucide-react";
+import { HardDrive, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDownload } from "../../contexts";
@@ -91,7 +91,7 @@ export const StorageSettings = () => {
               onClick={handleClearAll}
               className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
             >
-              <Trash2 size={14} aria-hidden="true" />
+              <Trash size={14} aria-hidden="true" />
               {t("downloads.clearAll")}
             </button>
           </div>
@@ -119,7 +119,7 @@ export const StorageSettings = () => {
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
                 aria-label={`${t("downloads.delete")} ${download.title}`}
               >
-                <Trash2 size={18} aria-hidden="true" />
+                <Trash size={18} aria-hidden="true" />
               </button>
             </div>
           ))}

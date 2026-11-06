@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ChevronRight, Loader2, X } from "lucide-react";
+import { ChevronRight, LoaderCircle, TriangleExclamationPoint, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { fetchAndParseRSS } from "../../services/rss/parser";
 import { rssQueryRetry, rssQueryRetryDelay } from "../../services/rss/proxyManager";
@@ -44,7 +44,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
     return (
       <div className="flex items-center px-4 py-3 bg-red-50 border-b border-red-100">
         <div className="w-14 h-14 bg-red-200 rounded-lg flex items-center justify-center">
-          <AlertTriangle size={24} className="text-red-600" aria-hidden="true" />
+          <TriangleExclamationPoint size={24} className="text-red-600" aria-hidden="true" />
         </div>
         <div className="ml-3 flex-1 min-w-0">
           <div className="text-sm font-medium text-red-900 truncate">{displayTitle}</div>
@@ -73,7 +73,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
         <img src={displayImage} alt={displayTitle} className="w-14 h-14 rounded-lg" />
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 rounded-lg">
-            <Loader2 size={24} className="text-blue-500 animate-spin" aria-hidden="true" />
+            <LoaderCircle size={24} className="text-blue-500 animate-spin" aria-hidden="true" />
           </div>
         )}
       </div>
