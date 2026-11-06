@@ -79,7 +79,7 @@ Phase 5: Tendances & Social  █████████████████
 - [x] Stratégies de cache:
   - [x] App shell (precache)
   - [x] Flux RSS (network-first, 1h cache)
-  - [x] Images (cache-first, 30 jours)
+  - [x] Images (stale-while-revalidate, 30 jours, 50 entrées, réponses opaques incluses — #108)
   - [x] Audio (cache-first, 7 jours, range requests)
 - [x] Background sync pour actions offline
 
@@ -181,7 +181,7 @@ Phase 5: Tendances & Social  █████████████████
 Dépend de `balados.sync` Phase B (endpoint `POST /api/v1/rss/sign` + capability URLs `?sig=`).
 
 - [ ] En mode connecté, obtenir l'URL signée via `POST /api/v1/rss/sign` (au lieu de construire l'URL côté client) ; rendre le feed réécrit (les `<img src>` pointent déjà vers `/api/v1/rss/asset/{urlB64}?sig=…`, DOMPurify autorise déjà `src`).
-- [ ] **Service Worker** : élargir la route de cache images — la regex actuelle `/\.(png|jpg|jpeg|webp|gif)$/` **ne matchera pas** une URL proxifiée terminant par `?sig=…`. Sans ça, les images proxifiées contournent le cache 30 j (`workers/sw.ts`).
+- [x] **Service Worker** : la route de cache images reconnaît `request.destination === "image"` depuis #108 (`workers/artworkCache.ts`), donc une URL proxifiée terminant par `?sig=…` sera mise en cache telle quelle. Les images proxifiées par notre serveur seront même servies en CORS (réponses non opaques, sans le surcoût de quota, cf. #112).
 - [ ] **Modal d'avertissement trackers** au play/download (feature sœur — pendant « audio » : l'audio n'est pas proxifié, on prévient l'user des trackers connus au moment où il engage la lecture/le téléchargement).
 
 ---
