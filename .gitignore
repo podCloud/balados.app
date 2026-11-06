@@ -26,3 +26,6 @@ dist-ssr
 *.sln
 *.sw?
 .worktrees/
+
+# Vitest coverage report (npx vitest run --coverage)
+coverage/
