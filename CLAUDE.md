@@ -110,6 +110,7 @@ Lint, build and tests all run even if one of them fails, so a single run reports
 
 - **React 19** with TypeScript
 - **Vite 8** (Rolldown) as build tool, with `@vitejs/plugin-react` 6
+  - Default build target (Vite 8 `baseline-widely-available`): Chrome 111, Firefox 114, Safari 16.4. iOS/Safari 16.0–16.3 are no longer guaranteed; set `build.target` if they matter.
 - **Tailwind CSS** via @tailwindcss/vite plugin
 - **Biome** for linting + formatting (replaced ESLint in PR #59)
 - **Vitest** + Testing Library for tests

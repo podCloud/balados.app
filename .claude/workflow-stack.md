@@ -18,7 +18,8 @@
 - Le hook pre-commit (`.githooks/`, activé par `postinstall`) lance Biome sur les fichiers stagés : après un script d'édition, relancer `npm run lint:fix` puis vérifier par `grep` que toutes les modifications attendues sont présentes (une assertion sur du texte reformaté casse en silence).
 - Mocks Vitest de `../services/storage` : exposer `SETTINGS_ID`, `db.transaction`, `db.settings.put`, sinon `authEvents` prend sa branche d'échec et les tests passent à vide.
 - Mocks `t` (i18n) dans les tests de composants : fonction stable, sinon les effets dépendant de `[t]` rejouent.
-- `package.json` garde un `overrides` sur `@babel/plugin-transform-runtime` (`^7.29.0`) : sans lui, npm 11 refuse `@vitejs/plugin-react` 6 (chaîne optionnelle `@rolldown/plugin-babel` → transform-runtime 8 → `@babel/core` 8, en conflit avec le Babel 7 de `workbox-build`). Rien n'est installé par cette chaîne ; retirer l'override quand workbox passe à Babel 8.
+- Monter `@vitejs/plugin-react` de 5 à 6 depuis un lockfile en 5 donne un `ERESOLVE` de npm 11 (chaîne optionnelle `@rolldown/plugin-babel` → `@babel/plugin-transform-runtime` 8 → `@babel/core` 8, contre le Babel 7 de `workbox-build`). Le lockfile en 6 n'a plus ce problème : pour une montée similaire, un `overrides` temporaire le temps du `npm install`, puis le retirer.
+- Vérification navigateur : le profil Playwright est persistant. Un service worker de production enregistré sur un port réutilisé ensuite par `vite` (dev) continue de servir l'ancien build ; désinscrire les service workers avant de changer de mode sur un même port.
 - Tests flaky connus : `ListeningHistory` pagination sous charge (#76).
 
 ## PR
