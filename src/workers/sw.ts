@@ -20,6 +20,7 @@ import { registerRoute } from "workbox-routing";
 import { CacheFirst, NetworkFirst } from "workbox-strategies";
 
 import { notifySyncComplete, processQueue } from "../services/sync/queueProcessor";
+import { createArtworkStrategy, isArtworkRequest } from "./artworkCache";
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -52,19 +53,8 @@ registerRoute(
   }),
 );
 
-// Podcast images - cache first
-registerRoute(
-  /\.(?:png|jpg|jpeg|webp|gif)$/,
-  new CacheFirst({
-    cacheName: "podcast-images",
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-      }),
-    ],
-  }),
-);
+// Podcast and episode artwork - cache first, opaque responses included (#108)
+registerRoute(isArtworkRequest, createArtworkStrategy());
 
 // Audio files - cache first with range request support
 registerRoute(

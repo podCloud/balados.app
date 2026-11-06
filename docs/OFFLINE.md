@@ -80,7 +80,7 @@ self.addEventListener("periodicsync", (event) => {
 | Type | Stratégie | Taille max |
 |------|-----------|------------|
 | App shell | Precache | ~500KB |
-| Images podcasts | Cache-first | 50MB |
+| Images podcasts (`src/workers/artworkCache.ts`) | Cache-first, toute requête `destination: image`, réponses opaques des autres domaines acceptées (statut 0) | 100 entrées, 30 jours, purge si quota dépassé |
 | Audio téléchargé | Cache-first | Configurable |
 | Flux RSS | Network-first | 10MB |
 
