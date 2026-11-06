@@ -109,6 +109,7 @@ Lint, build and tests all run even if one of them fails, so a single run reports
 ## Tech Stack
 
 - **React 19** with TypeScript 7 (Go compiler: `tsc -b` type-checks the project in under a second)
+  - Pinned with `~` (TypeScript minors can add type-check breaks). TS 7 ships no `tsserver`: editors keep their bundled TypeScript unless the TypeScript native extension (LSP, `tsc --lsp`) is installed, so `npm run build` is the source of truth.
 - **Vite 8** (Rolldown) as build tool, with `@vitejs/plugin-react` 6
   - Default build target (Vite 8 `baseline-widely-available`): Chrome/Edge 111, Firefox 114, Safari 16.4 (Vite 7: Chrome 107, Firefox 104, Safari 16). Older browsers, notably iOS/Safari 16.0–16.3, are no longer guaranteed; set `build.target` if they matter.
 - **Tailwind CSS** via @tailwindcss/vite plugin
