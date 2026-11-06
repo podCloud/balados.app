@@ -109,7 +109,7 @@ Lint, build and tests all run even if one of them fails, so a single run reports
 ## Tech Stack
 
 - **React 19** with TypeScript
-- **Vite 7** as build tool
+- **Vite 8** (Rolldown) as build tool, with `@vitejs/plugin-react` 6
 - **Tailwind CSS** via @tailwindcss/vite plugin
 - **Biome** for linting + formatting (replaced ESLint in PR #59)
 - **Vitest** + Testing Library for tests

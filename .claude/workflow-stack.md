@@ -1,4 +1,4 @@
-# Workflow stack — balados.app (React 19 / TS strict / Vite 7 PWA)
+# Workflow stack — balados.app (React 19 / TS strict / Vite 8 PWA)
 
 ## Commands
 - Install (worktree) : `npm ci` — jamais de symlink vers le `node_modules` du checkout principal.
@@ -18,6 +18,7 @@
 - Le hook pre-commit (`.githooks/`, activé par `postinstall`) lance Biome sur les fichiers stagés : après un script d'édition, relancer `npm run lint:fix` puis vérifier par `grep` que toutes les modifications attendues sont présentes (une assertion sur du texte reformaté casse en silence).
 - Mocks Vitest de `../services/storage` : exposer `SETTINGS_ID`, `db.transaction`, `db.settings.put`, sinon `authEvents` prend sa branche d'échec et les tests passent à vide.
 - Mocks `t` (i18n) dans les tests de composants : fonction stable, sinon les effets dépendant de `[t]` rejouent.
+- `package.json` garde un `overrides` sur `@babel/plugin-transform-runtime` (`^7.29.0`) : sans lui, npm 11 refuse `@vitejs/plugin-react` 6 (chaîne optionnelle `@rolldown/plugin-babel` → transform-runtime 8 → `@babel/core` 8, en conflit avec le Babel 7 de `workbox-build`). Rien n'est installé par cette chaîne ; retirer l'override quand workbox passe à Babel 8.
 - Tests flaky connus : `ListeningHistory` pagination sous charge (#76).
 
 ## PR
