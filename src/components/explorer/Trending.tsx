@@ -1,11 +1,12 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Podcast, RefreshCw, TrendingUp } from "lucide-react";
+import { RefreshCw, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTrending } from "../../hooks/useTrending";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
 import type { TrendingPodcast } from "../../services/sync/client";
+import { PodcastIcon } from "../ui/icons/PodcastIcon";
 import { LikeButton } from "../ui/LikeButton";
 
 interface TrendingProps {
@@ -45,7 +46,7 @@ export const Trending = ({ onNavigate }: TrendingProps) => {
   if (!podcasts || podcasts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-        <Podcast size={48} className="mb-3 text-gray-300" />
+        <PodcastIcon size={48} className="mb-3 text-gray-300" />
         <p className="text-sm">{t("trending.empty")}</p>
       </div>
     );
@@ -114,7 +115,7 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
           />
         ) : (
           <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <Podcast size={24} className="text-gray-400" aria-hidden="true" />
+            <PodcastIcon size={24} className="text-gray-400" aria-hidden="true" />
           </div>
         )}
         <div className="flex-1 min-w-0">
