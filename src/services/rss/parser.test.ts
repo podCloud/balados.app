@@ -338,6 +338,16 @@ describe("parseRSSText with the iTunes namespace (#108)", () => {
     const feed = parseRSSText(BOTH_IMAGES_RSS, "https://example.com/both.xml");
     expect(feed.image).toBe("https://example.com/artwork-3000.jpg");
   });
+
+  it("keeps the RSS <image> as the fallback when both exist", () => {
+    const feed = parseRSSText(BOTH_IMAGES_RSS, "https://example.com/both.xml");
+    expect(feed.imageFallback).toBe("https://example.com/small-logo.png");
+  });
+
+  it("has no separate fallback when there is only one image", () => {
+    expect(parseRSSText(ITUNES_RSS, "https://example.com/i.xml").imageFallback).toBeUndefined();
+    expect(parseRSSText(VALID_RSS, "https://example.com/v.xml").imageFallback).toBeUndefined();
+  });
 });
 
 describe("episode artwork fallback (#108 review)", () => {

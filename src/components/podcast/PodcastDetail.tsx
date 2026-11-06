@@ -114,7 +114,12 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
 
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="flex gap-4">
-          <Artwork src={feed.image} alt={feed.title} className="w-20 h-20 rounded-lg shadow-sm" />
+          <Artwork
+            src={feed.image}
+            fallbackSrc={feed.imageFallback}
+            alt={feed.title}
+            className="w-20 h-20 rounded-lg shadow-sm"
+          />
           <div className="flex-1 min-w-0">
             <h1 className="font-semibold text-base text-gray-900 mb-1">{feed.title}</h1>
             <p className="text-xs text-gray-500 line-clamp-3">{feed.description}</p>

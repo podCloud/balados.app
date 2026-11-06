@@ -18,6 +18,8 @@ export interface PodcastFeed {
   title: string;
   description: string;
   image: string;
+  /** RSS <image> when itunes:image is the main artwork: tried if it fails to load. */
+  imageFallback?: string;
   items: Episode[];
   url: string;
 }

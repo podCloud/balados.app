@@ -130,15 +130,16 @@ export const parseRSSText = (text: string, url: string): PodcastFeed => {
 
   const title = getElementText(channel, "title");
   const description = getElementText(channel, "description");
-  // itunes:image is the full podcast artwork; the RSS <image> is often a small logo.
-  const image =
-    getItunesChild(channel, "image")?.getAttribute("href")?.trim() ||
-    channel.querySelector(":scope > image > url")?.textContent?.trim() ||
-    "";
+  // itunes:image is the full podcast artwork; the RSS <image> is often a small
+  // logo, kept as the fallback when both exist.
+  const itunesImage = getItunesChild(channel, "image")?.getAttribute("href")?.trim() || "";
+  const rssImage = channel.querySelector(":scope > image > url")?.textContent?.trim() || "";
+  const image = itunesImage || rssImage;
+  const imageFallback = itunesImage && rssImage && rssImage !== itunesImage ? rssImage : undefined;
 
   const items = Array.from(xml.querySelectorAll("item")).map((item) => parseEpisode(item, image));
 
-  return { title, description, image, items, url };
+  return { title, description, image, imageFallback, items, url };
 };
 
 export const fetchAndParseRSS = async (

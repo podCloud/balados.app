@@ -68,7 +68,12 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
       className={`w-full flex items-center px-4 py-3 bg-white hover:bg-gray-50 active:bg-gray-100 ${isLoading ? "opacity-60" : ""}`}
     >
       <div className="relative">
-        <Artwork src={feed?.image} alt={displayTitle} className="w-14 h-14 rounded-lg" />
+        <Artwork
+          src={feed?.image}
+          fallbackSrc={feed?.imageFallback}
+          alt={displayTitle}
+          className="w-14 h-14 rounded-lg"
+        />
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 rounded-lg">
             <LoaderCircle size={24} className="text-blue-500 animate-spin" aria-hidden="true" />
