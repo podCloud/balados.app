@@ -12,15 +12,27 @@
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 import { createLucideIcon } from "lucide-react";
 
-export const PodcastIcon = createLucideIcon("podcast", [
-  [
-    "path",
-    { d: "M13 17a1 1 0 1 0-2 0l.5 4.5a0.5 0.5 0 0 0 1 0z", fill: "currentColor", key: "x1mxqr" },
+export const PodcastIcon = createLucideIcon({
+  name: "podcast",
+  size: 24,
+  node: [
+    [
+      "path",
+      { d: "M13 17a1 1 0 1 0-2 0l.5 4.5a0.5 0.5 0 0 0 1 0z", fill: "currentColor", key: "x1mxqr" },
+    ],
+    ["path", { d: "M16.85 18.58a9 9 0 1 0-9.7 0", key: "d71mpg" }],
+    ["path", { d: "M8 14a5 5 0 1 1 8 0", key: "fc81rn" }],
+    ["circle", { cx: "12", cy: "11", r: "1", fill: "currentColor", key: "vqiwd" }],
   ],
-  ["path", { d: "M16.85 18.58a9 9 0 1 0-9.7 0", key: "d71mpg" }],
-  ["path", { d: "M8 14a5 5 0 1 1 8 0", key: "fc81rn" }],
-  ["circle", { cx: "12", cy: "11", r: "1", fill: "currentColor", key: "vqiwd" }],
-]);
+});

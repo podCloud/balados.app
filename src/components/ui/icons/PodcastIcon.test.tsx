@@ -12,8 +12,12 @@ describe("PodcastIcon", () => {
     expect(svg).toHaveAttribute("width", "48");
     expect(svg).toHaveAttribute("stroke-width", "2");
     expect(svg).toHaveAttribute("aria-hidden", "true");
-    expect(svg).toHaveClass("lucide", "text-gray-300");
-    expect(container.querySelector('path[d="M16.85 18.58a9 9 0 1 0-9.7 0"]')).not.toBeNull();
-    expect(container.querySelector('circle[cx="12"][cy="11"]')).not.toBeNull();
+    expect(svg).toHaveClass("lucide", "lucide-podcast", "text-gray-300");
+    expect([...container.querySelectorAll("path")].map((p) => p.getAttribute("d"))).toEqual([
+      "M13 17a1 1 0 1 0-2 0l.5 4.5a0.5 0.5 0 0 0 1 0z",
+      "M16.85 18.58a9 9 0 1 0-9.7 0",
+      "M8 14a5 5 0 1 1 8 0",
+    ]);
+    expect(container.querySelector('circle[cx="12"][cy="11"][r="1"]')).not.toBeNull();
   });
 });
