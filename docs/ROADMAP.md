@@ -274,7 +274,7 @@ Dépend de `balados.sync` Phase B (endpoint `POST /api/v1/rss/sign` + capability
     "dompurify": "^3.x",
     "i18next": "^26.x",
     "i18next-browser-languagedetector": "^8.x",
-    "lucide-react": "^0.x",
+    "lucide-react": "^1.x",
     "marked": "^17.x",
     "react-i18next": "^17.x",
     "turndown": "^7.x"
