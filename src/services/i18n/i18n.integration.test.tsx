@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { afterAll, describe, expect, it } from "vitest";
 import i18n from "./index";
 
-// Every component test stubs react-i18next; this one runs the real i18next,
+// Component tests stub react-i18next; this one runs the real i18next,
 // react-i18next and locale files so a dependency upgrade that breaks plural
 // selection, interpolation or re-rendering on language change fails here.
 const episodeCount = (count: number) => {
@@ -18,6 +18,8 @@ describe("i18n (real i18next + react-i18next)", () => {
 
   it("selects the plural form and interpolates the count", async () => {
     await act(() => i18n.changeLanguage("fr"));
+    // 0 tells the French plural rules from the English ones (CLDR: fr 0 is "one")
+    expect(episodeCount(0).text()).toBe("0 épisode");
     expect(episodeCount(1).text()).toBe("1 épisode");
     expect(episodeCount(3).text()).toBe("3 épisodes");
   });
@@ -31,6 +33,7 @@ describe("i18n (real i18next + react-i18next)", () => {
     await act(() => i18n.changeLanguage("en"));
     expect(result.current.t).not.toBe(before);
     expect(text()).toBe("2 episodes");
+    expect(result.current.t("library.episodeCount", { count: 0 })).toBe("0 episodes");
   });
 
   it("falls back to French for an unsupported language", async () => {
