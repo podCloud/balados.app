@@ -325,7 +325,7 @@ Request feed
 | Catégorie | Technologie | Justification |
 |-----------|-------------|---------------|
 | Framework | React 19 | Écosystème mature, hooks |
-| Build | Vite 7 | Rapide, HMR natif |
+| Build | Vite 8 (Rolldown) | Rapide, HMR natif |
 | State | TanStack Query | Cache, sync, offline |
 | Storage | Dexie.js | Wrapper IndexedDB ergonomique |
 | PWA | Workbox | Service Worker simplifié |
