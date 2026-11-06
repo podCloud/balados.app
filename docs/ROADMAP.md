@@ -282,7 +282,7 @@ Dépend de `balados.sync` Phase B (endpoint `POST /api/v1/rss/sign` + capability
   "devDependencies": {
     "vitest": "^4.x",
     "@testing-library/react": "^16.x",
-    "vite-plugin-pwa": "^1.x",
+    "vite-plugin-pwa": "^2.x",
     "workbox-precaching": "^7.x",
     "workbox-routing": "^7.x",
     "workbox-strategies": "^7.x",
