@@ -5,6 +5,7 @@ import { fetchAndParseRSS } from "../../services/rss/parser";
 import { rssQueryRetry, rssQueryRetryDelay } from "../../services/rss/proxyManager";
 import { removeSubscription } from "../../services/storage/subscriptions";
 import type { PodcastFeed } from "../../types";
+import { Artwork } from "../ui/Artwork";
 
 interface SubscriptionItemProps {
   url: string;
@@ -35,9 +36,6 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
 
   const displayTitle =
     feed?.title || url.replace("https://", "").replace("http://", "").split("/")[0];
-  const displayImage =
-    feed?.image ||
-    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="56" height="56"%3E%3Crect fill="%23ddd" width="56" height="56"/%3E%3C/svg%3E';
   const episodeCount = feed?.items?.length || 0;
 
   if (error) {
@@ -70,7 +68,7 @@ export const SubscriptionItem = ({ url, onNavigate }: SubscriptionItemProps) => 
       className={`w-full flex items-center px-4 py-3 bg-white hover:bg-gray-50 active:bg-gray-100 ${isLoading ? "opacity-60" : ""}`}
     >
       <div className="relative">
-        <img src={displayImage} alt={displayTitle} className="w-14 h-14 rounded-lg" />
+        <Artwork src={feed?.image} alt={displayTitle} className="w-14 h-14 rounded-lg" />
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 rounded-lg">
             <LoaderCircle size={24} className="text-blue-500 animate-spin" aria-hidden="true" />

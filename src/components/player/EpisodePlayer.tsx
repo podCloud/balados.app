@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";
 import { renderShowNotes } from "../../utils/renderShowNotes";
+import { Artwork } from "../ui/Artwork";
 import { DownloadButton } from "../ui/DownloadButton";
 import { PlayerControls } from "./PlayerControls";
 
@@ -34,11 +35,8 @@ export const EpisodePlayer = () => {
     <div className="h-full pb-16 flex flex-col bg-white overflow-y-auto">
       {/* Episode artwork */}
       <div className="flex-shrink-0 flex flex-col items-center justify-center p-8">
-        <img
-          src={
-            currentEpisode.image ||
-            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="280" height="280"%3E%3Crect fill="%23e5e7eb" width="280" height="280"/%3E%3C/svg%3E'
-          }
+        <Artwork
+          src={currentEpisode.image}
           alt={currentEpisode.title}
           className="w-full max-w-[280px] aspect-square rounded-xl shadow-lg"
         />

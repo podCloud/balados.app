@@ -6,6 +6,7 @@ import { useTrending } from "../../hooks/useTrending";
 import { db } from "../../services/storage";
 import { addSubscription } from "../../services/storage/subscriptions";
 import type { TrendingPodcast } from "../../services/sync/client";
+import { Artwork } from "../ui/Artwork";
 import { PodcastIcon } from "../ui/icons/PodcastIcon";
 import { LikeButton } from "../ui/LikeButton";
 
@@ -106,18 +107,12 @@ const TrendingItem = ({ podcast, isSubscribed, onNavigate }: TrendingItemProps) 
         className="flex-1 min-w-0 flex items-center gap-3 cursor-pointer bg-transparent appearance-none border-0 p-0 text-left"
         onClick={() => onNavigate("podcast", podcast.feed_url)}
       >
-        {podcast.image ? (
-          <img
-            src={podcast.image}
-            alt={podcast.title}
-            className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-gray-100"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-            <PodcastIcon size={24} className="text-gray-400" aria-hidden="true" />
-          </div>
-        )}
+        <Artwork
+          src={podcast.image}
+          alt={podcast.title}
+          className="w-16 h-16 rounded-lg flex-shrink-0"
+          placeholder={<PodcastIcon size={24} className="text-gray-400" aria-hidden="true" />}
+        />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">{podcast.title}</p>
           <p className="text-xs text-gray-500 mt-0.5">
