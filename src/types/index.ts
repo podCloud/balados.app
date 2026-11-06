@@ -7,6 +7,8 @@ export interface Episode {
   enclosureUrl: string;
   duration: string;
   image: string;
+  /** Show artwork, the fallback when the episode's own image fails to load. */
+  feedImage?: string;
   guid?: string;
   link?: string;
 }

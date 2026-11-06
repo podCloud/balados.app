@@ -39,7 +39,12 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
 
       <div className="max-w-md mx-auto flex items-center px-4 py-2 gap-3">
         {/* Episode image */}
-        <Artwork src={currentEpisode.image} alt="" className="w-10 h-10 rounded-md flex-shrink-0" />
+        <Artwork
+          src={currentEpisode.image}
+          fallbackSrc={currentEpisode.feedImage}
+          alt=""
+          className="w-10 h-10 rounded-md flex-shrink-0"
+        />
 
         {/* Episode title */}
         <div className="flex-1 min-w-0">

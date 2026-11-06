@@ -15,6 +15,11 @@ describe("formatItunesDuration", () => {
     expect(formatItunesDuration("5:07")).toBe("5:07");
   });
 
+  it("drops fractional seconds", () => {
+    expect(formatItunesDuration("3723.5")).toBe("1:02:03");
+    expect(formatItunesDuration("01:02:03.500")).toBe("1:02:03");
+  });
+
   it("returns an empty string for missing or unreadable values", () => {
     expect(formatItunesDuration("")).toBe("");
     expect(formatItunesDuration("0")).toBe("");

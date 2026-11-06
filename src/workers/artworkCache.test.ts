@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { StaleWhileRevalidate } from "workbox-strategies";
 import { createArtworkStrategy, isArtworkRequest } from "./artworkCache";
 
 const req = (url: string, destination: RequestDestination) =>
@@ -17,6 +18,12 @@ describe("artwork runtime caching (#108)", () => {
     expect(isArtworkRequest(req("https://cdn.ex.com/ep.mp3", "audio"))).toBe(false);
     expect(isArtworkRequest(req("https://ex.com/feed.jpg", ""))).toBe(false);
     expect(isArtworkRequest(req("https://ex.com/", "document"))).toBe(false);
+  });
+
+  it("revalidates in the background, so a cached error response heals on the next view", () => {
+    // Cross-origin errors are opaque (status 0) too and cannot be told apart
+    // from a good image: cache-first would keep one for 30 days.
+    expect(createArtworkStrategy()).toBeInstanceOf(StaleWhileRevalidate);
   });
 
   it("caches opaque cross-origin responses (status 0) as well as 200", async () => {

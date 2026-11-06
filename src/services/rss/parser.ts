@@ -32,9 +32,9 @@ const ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd";
  * Direct child of `parent` in the iTunes namespace (e.g. itunes:image).
  * DOMParser gives namespaced elements a local name ("image") and a prefix
  * ("itunes"), so a CSS selector like "itunes\\:image" never matches them
- * (#108). Falls back to the qualified tag name for feeds that use the
- * prefix without declaring the namespace. Children only, so a channel never
- * picks up one of its items' tags.
+ * (#108). The qualified-name fallback catches the old mixed-case namespace
+ * URI (".../DTDs/Podcast-1.0.dtd"). Children only, so a channel never picks
+ * up one of its items' tags.
  */
 const getItunesChild = (parent: Element, localName: string): Element | undefined =>
   Array.from(parent.children).find(
@@ -80,7 +80,7 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
 const parseEpisode = (item: Element, feedImage: string): Episode => {
   const enclosure = item.querySelector("enclosure");
   const duration = getItunesChild(item, "duration")?.textContent?.trim() || "";
-  const itemImage = getItunesChild(item, "image")?.getAttribute("href") || feedImage;
+  const itemImage = getItunesChild(item, "image")?.getAttribute("href")?.trim() || feedImage;
 
   // Get guid or fall back to enclosure URL
   const guidEl = item.querySelector("guid");
@@ -107,6 +107,7 @@ const parseEpisode = (item: Element, feedImage: string): Episode => {
     enclosureUrl: enclosure?.getAttribute("url") || "",
     duration: duration || "",
     image: itemImage,
+    feedImage: feedImage || undefined,
     guid,
     link,
   };
@@ -131,7 +132,7 @@ export const parseRSSText = (text: string, url: string): PodcastFeed => {
   const description = getElementText(channel, "description");
   // itunes:image is the full podcast artwork; the RSS <image> is often a small logo.
   const image =
-    getItunesChild(channel, "image")?.getAttribute("href") ||
+    getItunesChild(channel, "image")?.getAttribute("href")?.trim() ||
     channel.querySelector(":scope > image > url")?.textContent?.trim() ||
     "";
 

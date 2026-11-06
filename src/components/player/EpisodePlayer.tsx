@@ -37,6 +37,7 @@ export const EpisodePlayer = () => {
       <div className="flex-shrink-0 flex flex-col items-center justify-center p-8">
         <Artwork
           src={currentEpisode.image}
+          fallbackSrc={currentEpisode.feedImage}
           alt={currentEpisode.title}
           className="w-full max-w-[280px] aspect-square rounded-xl shadow-lg"
         />

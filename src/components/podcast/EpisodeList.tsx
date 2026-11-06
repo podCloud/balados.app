@@ -50,7 +50,12 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
           >
             <div className="flex gap-3">
               <div className="relative flex-shrink-0">
-                <Artwork src={episode.image} alt={episode.title} className="w-14 h-14 rounded-lg" />
+                <Artwork
+                  src={episode.image}
+                  fallbackSrc={episode.feedImage}
+                  alt={episode.title}
+                  className="w-14 h-14 rounded-lg"
+                />
                 <div
                   className={`absolute inset-0 flex items-center justify-center rounded-lg ${
                     isCurrent ? "bg-blue-500/80" : "bg-black/40 opacity-0 hover:opacity-100"

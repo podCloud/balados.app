@@ -339,3 +339,30 @@ describe("parseRSSText with the iTunes namespace (#108)", () => {
     expect(feed.image).toBe("https://example.com/artwork-3000.jpg");
   });
 });
+
+describe("episode artwork fallback (#108 review)", () => {
+  const rss = (itemImage: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Show</title>
+    <itunes:image href="  https://example.com/show.jpg \n"/>
+    <item>
+      <title>Ep</title>
+      <itunes:image href="${itemImage}"/>
+      <enclosure url="https://example.com/a.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>`;
+
+  it("keeps the show artwork on each episode as feedImage, trimmed", () => {
+    const feed = parseRSSText(rss("https://example.com/ep.jpg"), "https://example.com/f.xml");
+    expect(feed.image).toBe("https://example.com/show.jpg");
+    expect(feed.items[0].image).toBe("https://example.com/ep.jpg");
+    expect(feed.items[0].feedImage).toBe("https://example.com/show.jpg");
+  });
+
+  it("ignores a blank episode href and uses the show artwork", () => {
+    const feed = parseRSSText(rss("   "), "https://example.com/f.xml");
+    expect(feed.items[0].image).toBe("https://example.com/show.jpg");
+  });
+});

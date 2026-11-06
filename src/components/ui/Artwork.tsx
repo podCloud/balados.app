@@ -38,7 +38,7 @@ export const Artwork = ({ src, fallbackSrc, alt, className = "", placeholder }: 
       key={current}
       src={current}
       alt={alt}
-      className={`${className} object-cover`}
+      className={`${className} object-cover bg-gray-100`}
       loading="lazy"
       decoding="async"
       onError={() => setFailed((list) => [...list, current])}

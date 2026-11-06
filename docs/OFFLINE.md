@@ -80,7 +80,7 @@ self.addEventListener("periodicsync", (event) => {
 | Type | Stratégie | Taille max |
 |------|-----------|------------|
 | App shell | Precache | ~500KB |
-| Images podcasts (`src/workers/artworkCache.ts`) | Cache-first, toute requête `destination: image`, réponses opaques des autres domaines acceptées (statut 0) | 100 entrées, 30 jours, purge si quota dépassé |
+| Images podcasts (`src/workers/artworkCache.ts`) | Stale-while-revalidate, toute requête `destination: image`, réponses opaques des autres domaines acceptées (statut 0 : une erreur opaque se répare à l'affichage suivant) | 50 entrées, 30 jours ; Chrome compte chaque réponse opaque pour plusieurs Mo de quota : purge si quota dépassé, et un téléchargement audio à court de place vide ce cache puis réessaie |
 | Audio téléchargé | Cache-first | Configurable |
 | Flux RSS | Network-first | 10MB |
 
