@@ -284,3 +284,58 @@ describe("parseRSSText", () => {
     expect(feed.items[0].descriptionPreview).toContain("…");
   });
 });
+
+// Real podcast feeds declare the iTunes namespace; DOMParser then gives
+// <itunes:image> the local name "image" with prefix "itunes", which a CSS
+// selector such as "itunes\\:image" does not match (#108).
+const ITUNES_RSS = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>iTunes Podcast</title>
+    <description>Only itunes:image at channel level</description>
+    <item>
+      <title>Episode with its own art</title>
+      <itunes:image href="https://example.com/ep-art.jpg"/>
+      <itunes:duration>01:02:03</itunes:duration>
+      <enclosure url="https://example.com/a.mp3" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Episode without art</title>
+      <enclosure url="https://example.com/b.mp3" type="audio/mpeg"/>
+    </item>
+    <itunes:image href="https://example.com/show-art.jpg"/>
+  </channel>
+</rss>`;
+
+const BOTH_IMAGES_RSS = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Both</title>
+    <description>RSS image and itunes:image</description>
+    <image><url>https://example.com/small-logo.png</url></image>
+    <itunes:image href="https://example.com/artwork-3000.jpg"/>
+  </channel>
+</rss>`;
+
+describe("parseRSSText with the iTunes namespace (#108)", () => {
+  it("reads the channel artwork from itunes:image, not from an item", () => {
+    const feed = parseRSSText(ITUNES_RSS, "https://example.com/itunes.xml");
+    expect(feed.image).toBe("https://example.com/show-art.jpg");
+  });
+
+  it("reads each episode's own itunes:image and falls back to the channel artwork", () => {
+    const feed = parseRSSText(ITUNES_RSS, "https://example.com/itunes.xml");
+    expect(feed.items[0].image).toBe("https://example.com/ep-art.jpg");
+    expect(feed.items[1].image).toBe("https://example.com/show-art.jpg");
+  });
+
+  it("reads itunes:duration", () => {
+    const feed = parseRSSText(ITUNES_RSS, "https://example.com/itunes.xml");
+    expect(feed.items[0].duration).toBe("01:02:03");
+  });
+
+  it("prefers itunes:image (full artwork) over the RSS <image> logo", () => {
+    const feed = parseRSSText(BOTH_IMAGES_RSS, "https://example.com/both.xml");
+    expect(feed.image).toBe("https://example.com/artwork-3000.jpg");
+  });
+});
