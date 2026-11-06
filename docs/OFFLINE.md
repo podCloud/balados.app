@@ -36,13 +36,14 @@ import { precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { NetworkFirst, CacheFirst } from "workbox-strategies";
 import { processQueue, notifySyncComplete } from "../services/sync/queueProcessor";
+import { createArtworkStrategy, isArtworkRequest } from "./artworkCache";
 
 // Precache app shell
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Runtime caching strategies
 registerRoute(/^https:\/\/(api\.allorigins\.win|corsproxy\.io)/, new NetworkFirst({ ... }));
-registerRoute(/\.(png|jpg|jpeg|webp|gif)$/, new CacheFirst({ ... }));
+registerRoute(isArtworkRequest, createArtworkStrategy()); // stale-while-revalidate, opaque included
 registerRoute(/\.(mp3|m4a|ogg|wav|aac)$/, new CacheFirst({ ... }));
 
 // Background Sync - processes queue when connectivity returns

@@ -1,4 +1,5 @@
 import type { DownloadedEpisode, Episode } from "../../types";
+import { ARTWORK_CACHE_NAME } from "../../workers/artworkCacheName";
 import { db } from "./index";
 
 const CACHE_NAME = "podcast-audio";
@@ -111,7 +112,7 @@ export const putWithQuotaRecovery = async (
     await cache.put(url, makeResponse());
   } catch (error) {
     if (!(error instanceof DOMException) || error.name !== "QuotaExceededError") throw error;
-    await caches.delete("podcast-images");
+    await caches.delete(ARTWORK_CACHE_NAME);
     await cache.put(url, makeResponse());
   }
 };

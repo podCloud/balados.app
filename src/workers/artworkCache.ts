@@ -2,6 +2,7 @@ import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import type { RouteMatchCallbackOptions } from "workbox-core";
 import { ExpirationPlugin } from "workbox-expiration";
 import { StaleWhileRevalidate } from "workbox-strategies";
+import { ARTWORK_CACHE_NAME } from "./artworkCacheName";
 
 /**
  * Podcast and episode artwork (#108). Matched by request destination rather
@@ -22,7 +23,7 @@ export const isArtworkRequest = ({ request }: RouteMatchCallbackOptions): boolea
  */
 export const createArtworkStrategy = () =>
   new StaleWhileRevalidate({
-    cacheName: "podcast-images",
+    cacheName: ARTWORK_CACHE_NAME,
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({

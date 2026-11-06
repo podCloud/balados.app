@@ -130,7 +130,7 @@ The SW (`src/workers/sw.ts`) is built using the **injectManifest** strategy from
 | Resource | Strategy | Cache Name | TTL |
 |----------|----------|------------|-----|
 | RSS feeds (CORS proxies) | NetworkFirst | `rss-feeds` | 1 hour |
-| Podcast images | CacheFirst | `podcast-images` | 30 days |
+| Podcast images (`destination: image`, opaque responses included; `src/workers/artworkCache.ts`) | StaleWhileRevalidate | `podcast-images` | 30 days, 50 entries |
 | Audio files | CacheFirst + Range | `podcast-audio` | 7 days |
 
 ## Browser Support

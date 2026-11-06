@@ -20,6 +20,7 @@ const episode: Episode = {
   duration: "",
   image: "https://ex.com/dead-episode.jpg",
   feedImage: "https://ex.com/show.jpg",
+  feedImageFallback: "https://ex.com/rss-logo.png",
   guid: "1",
 };
 
@@ -34,6 +35,16 @@ describe("EpisodeList artwork", () => {
     expect(screen.getByRole("img", { name: "Ep 1" })).toHaveAttribute(
       "src",
       "https://ex.com/show.jpg",
+    );
+  });
+
+  it("then falls back to the show's RSS image", () => {
+    render(<EpisodeList episodes={[episode]} feedUrl="https://ex.com/feed.xml" />);
+    fireEvent.error(screen.getByRole("img", { name: "Ep 1" }));
+    fireEvent.error(screen.getByRole("img", { name: "Ep 1" }));
+    expect(screen.getByRole("img", { name: "Ep 1" })).toHaveAttribute(
+      "src",
+      "https://ex.com/rss-logo.png",
     );
   });
 });
