@@ -29,6 +29,20 @@ describe("Artwork (#108)", () => {
     expect(placeholder).toHaveClass("w-14", "h-14");
   });
 
+  it("walks a list of fallbacks in order", () => {
+    render(
+      <Artwork
+        src="https://ex.com/ep.jpg"
+        fallbackSrc={["https://ex.com/itunes.jpg", undefined, "https://ex.com/rss.png"]}
+        alt="Ep"
+      />,
+    );
+    fireEvent.error(screen.getByRole("img"));
+    expect(screen.getByRole("img")).toHaveAttribute("src", "https://ex.com/itunes.jpg");
+    fireEvent.error(screen.getByRole("img"));
+    expect(screen.getByRole("img")).toHaveAttribute("src", "https://ex.com/rss.png");
+  });
+
   it("shows the placeholder and its content when there is no image at all", () => {
     render(<Artwork src="" alt="Show" className="w-16 h-16" placeholder={<span>P</span>} />);
     expect(screen.queryByRole("img")).toBeNull();

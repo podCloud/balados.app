@@ -52,7 +52,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
               <div className="relative flex-shrink-0">
                 <Artwork
                   src={episode.image}
-                  fallbackSrc={episode.feedImage}
+                  fallbackSrc={[episode.feedImage, episode.feedImageFallback]}
                   alt={episode.title}
                   className="w-14 h-14 rounded-lg"
                 />

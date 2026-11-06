@@ -53,7 +53,7 @@ registerRoute(
   }),
 );
 
-// Podcast and episode artwork - cache first, opaque responses included (#108)
+// Podcast and episode artwork - stale-while-revalidate, opaque responses included (#108)
 registerRoute(isArtworkRequest, createArtworkStrategy());
 
 // Audio files - cache first with range request support

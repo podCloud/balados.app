@@ -77,7 +77,7 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
   return `${lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) : truncated}…`;
 };
 
-const parseEpisode = (item: Element, feedImage: string): Episode => {
+const parseEpisode = (item: Element, feedImage: string, feedImageFallback?: string): Episode => {
   const enclosure = item.querySelector("enclosure");
   const duration = getItunesChild(item, "duration")?.textContent?.trim() || "";
   const itemImage = getItunesChild(item, "image")?.getAttribute("href")?.trim() || feedImage;
@@ -108,6 +108,7 @@ const parseEpisode = (item: Element, feedImage: string): Episode => {
     duration: duration || "",
     image: itemImage,
     feedImage: feedImage || undefined,
+    feedImageFallback,
     guid,
     link,
   };
@@ -137,7 +138,9 @@ export const parseRSSText = (text: string, url: string): PodcastFeed => {
   const image = itunesImage || rssImage;
   const imageFallback = itunesImage && rssImage && rssImage !== itunesImage ? rssImage : undefined;
 
-  const items = Array.from(xml.querySelectorAll("item")).map((item) => parseEpisode(item, image));
+  const items = Array.from(xml.querySelectorAll("item")).map((item) =>
+    parseEpisode(item, image, imageFallback),
+  );
 
   return { title, description, image, imageFallback, items, url };
 };

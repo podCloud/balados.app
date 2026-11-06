@@ -9,6 +9,8 @@ export interface Episode {
   image: string;
   /** Show artwork, the fallback when the episode's own image fails to load. */
   feedImage?: string;
+  /** Show's RSS <image>, the last fallback when it differs from feedImage. */
+  feedImageFallback?: string;
   guid?: string;
   link?: string;
 }

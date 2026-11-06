@@ -344,6 +344,18 @@ describe("parseRSSText with the iTunes namespace (#108)", () => {
     expect(feed.imageFallback).toBe("https://example.com/small-logo.png");
   });
 
+  it("gives each episode the RSS <image> as its last fallback", () => {
+    const feed = parseRSSText(
+      BOTH_IMAGES_RSS.replace(
+        "</channel>",
+        `<item><title>E</title><enclosure url="https://example.com/e.mp3" type="audio/mpeg"/></item></channel>`,
+      ),
+      "https://example.com/both.xml",
+    );
+    expect(feed.items[0].feedImage).toBe("https://example.com/artwork-3000.jpg");
+    expect(feed.items[0].feedImageFallback).toBe("https://example.com/small-logo.png");
+  });
+
   it("has no separate fallback when there is only one image", () => {
     expect(parseRSSText(ITUNES_RSS, "https://example.com/i.xml").imageFallback).toBeUndefined();
     expect(parseRSSText(VALID_RSS, "https://example.com/v.xml").imageFallback).toBeUndefined();
