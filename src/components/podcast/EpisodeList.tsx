@@ -2,6 +2,8 @@ import { ChevronRight, Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";
 import type { Episode } from "../../types";
+import { formatItunesDuration } from "../../utils/formatItunesDuration";
+import { Artwork } from "../ui/Artwork";
 import { DownloadButton } from "../ui/DownloadButton";
 
 interface EpisodeListProps {
@@ -35,6 +37,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
       {episodes.map((episode, idx) => {
         const isCurrent = isCurrentEpisode(episode);
         const isEpisodePlaying = isCurrent && isPlaying;
+        const duration = formatItunesDuration(episode.duration);
 
         return (
           <button
@@ -47,11 +50,12 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
           >
             <div className="flex gap-3">
               <div className="relative flex-shrink-0">
-                {episode.image ? (
-                  <img src={episode.image} alt={episode.title} className="w-14 h-14 rounded-lg" />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-gray-200" />
-                )}
+                <Artwork
+                  src={episode.image}
+                  fallbackSrc={[episode.feedImage, episode.feedImageFallback]}
+                  alt={episode.title}
+                  className="w-14 h-14 rounded-lg"
+                />
                 <div
                   className={`absolute inset-0 flex items-center justify-center rounded-lg ${
                     isCurrent ? "bg-blue-500/80" : "bg-black/40 opacity-0 hover:opacity-100"
@@ -76,7 +80,7 @@ export const EpisodeList = ({ episodes, feedUrl }: EpisodeListProps) => {
                   {episode.descriptionPreview}
                 </div>
                 <div className="flex gap-3 text-xs text-gray-400">
-                  {episode.duration && <span>{episode.duration}</span>}
+                  {duration && <span>{duration}</span>}
                   {episode.pubDate && (
                     <span>
                       {new Date(episode.pubDate).toLocaleDateString(i18n.language, {

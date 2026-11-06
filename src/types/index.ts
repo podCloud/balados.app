@@ -7,6 +7,10 @@ export interface Episode {
   enclosureUrl: string;
   duration: string;
   image: string;
+  /** Show artwork, the fallback when the episode's own image fails to load. */
+  feedImage?: string;
+  /** Show's RSS <image>, the last fallback when it differs from feedImage. */
+  feedImageFallback?: string;
   guid?: string;
   link?: string;
 }
@@ -16,6 +20,8 @@ export interface PodcastFeed {
   title: string;
   description: string;
   image: string;
+  /** RSS <image> when itunes:image is the main artwork: tried if it fails to load. */
+  imageFallback?: string;
   items: Episode[];
   url: string;
 }

@@ -5,6 +5,7 @@ import { fetchAndParseRSS } from "../../services/rss/parser";
 import { rssQueryRetry, rssQueryRetryDelay } from "../../services/rss/proxyManager";
 import { invalidateFeedCache } from "../../services/storage";
 import type { PodcastFeed } from "../../types";
+import { Artwork } from "../ui/Artwork";
 import { LikeButton } from "../ui/LikeButton";
 import { EpisodeList } from "./EpisodeList";
 
@@ -113,11 +114,9 @@ export const PodcastDetail = ({ feedUrl, onNavigate }: PodcastDetailProps) => {
 
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="flex gap-4">
-          <img
-            src={
-              feed.image ||
-              'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Crect fill="%23ddd" width="80" height="80"/%3E%3C/svg%3E'
-            }
+          <Artwork
+            src={feed.image}
+            fallbackSrc={feed.imageFallback}
             alt={feed.title}
             className="w-20 h-20 rounded-lg shadow-sm"
           />

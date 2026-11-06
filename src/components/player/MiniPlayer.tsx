@@ -1,6 +1,7 @@
 import { Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "../../contexts";
+import { Artwork } from "../ui/Artwork";
 
 interface MiniPlayerProps {
   onExpand: () => void;
@@ -38,11 +39,9 @@ export const MiniPlayer = ({ onExpand }: MiniPlayerProps) => {
 
       <div className="max-w-md mx-auto flex items-center px-4 py-2 gap-3">
         {/* Episode image */}
-        <img
-          src={
-            currentEpisode.image ||
-            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40"%3E%3Crect fill="%23e5e7eb" width="40" height="40"/%3E%3C/svg%3E'
-          }
+        <Artwork
+          src={currentEpisode.image}
+          fallbackSrc={[currentEpisode.feedImage, currentEpisode.feedImageFallback]}
           alt=""
           className="w-10 h-10 rounded-md flex-shrink-0"
         />

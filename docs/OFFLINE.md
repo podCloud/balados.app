@@ -36,13 +36,14 @@ import { precacheAndRoute } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { NetworkFirst, CacheFirst } from "workbox-strategies";
 import { processQueue, notifySyncComplete } from "../services/sync/queueProcessor";
+import { createArtworkStrategy, isArtworkRequest } from "./artworkCache";
 
 // Precache app shell
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Runtime caching strategies
 registerRoute(/^https:\/\/(api\.allorigins\.win|corsproxy\.io)/, new NetworkFirst({ ... }));
-registerRoute(/\.(png|jpg|jpeg|webp|gif)$/, new CacheFirst({ ... }));
+registerRoute(isArtworkRequest, createArtworkStrategy()); // stale-while-revalidate, opaque included
 registerRoute(/\.(mp3|m4a|ogg|wav|aac)$/, new CacheFirst({ ... }));
 
 // Background Sync - processes queue when connectivity returns
@@ -80,7 +81,7 @@ self.addEventListener("periodicsync", (event) => {
 | Type | Stratégie | Taille max |
 |------|-----------|------------|
 | App shell | Precache | ~500KB |
-| Images podcasts | Cache-first | 50MB |
+| Images podcasts (`src/workers/artworkCache.ts`) | Stale-while-revalidate, toute requête `destination: image`, réponses opaques des autres domaines acceptées (statut 0 : une erreur opaque se répare à l'affichage suivant) | 50 entrées, 30 jours ; Chrome compte chaque réponse opaque pour plusieurs Mo de quota : purge si quota dépassé, et un téléchargement audio à court de place vide ce cache puis réessaie |
 | Audio téléchargé | Cache-first | Configurable |
 | Flux RSS | Network-first | 10MB |
 

@@ -1,4 +1,5 @@
 import type { DownloadedEpisode, Episode } from "../../types";
+import { ARTWORK_CACHE_NAME } from "../../workers/artworkCacheName";
 import { db } from "./index";
 
 const CACHE_NAME = "podcast-audio";
@@ -54,15 +55,15 @@ export const downloadEpisode = async (
       position += chunk.length;
     }
 
-    // Create a new response for caching
+    // Content type kept for the cached response
     const contentType = response.headers.get("content-type") || "audio/mpeg";
-    const cacheResponse = new Response(allChunks, {
-      headers: { "Content-Type": contentType },
-    });
-
     // Store in cache
     const cache = await caches.open(CACHE_NAME);
-    await cache.put(episode.enclosureUrl, cacheResponse);
+    await putWithQuotaRecovery(
+      cache,
+      episode.enclosureUrl,
+      () => new Response(allChunks, { headers: { "Content-Type": contentType } }),
+    );
 
     // Store metadata in IndexedDB
     const metadata: DownloadedEpisode = {
@@ -78,10 +79,9 @@ export const downloadEpisode = async (
   } else {
     // Fallback: no progress tracking
     const blob = await response.blob();
-    const cacheResponse = new Response(blob);
 
     const cache = await caches.open(CACHE_NAME);
-    await cache.put(episode.enclosureUrl, cacheResponse);
+    await putWithQuotaRecovery(cache, episode.enclosureUrl, () => new Response(blob));
 
     const metadata: DownloadedEpisode = {
       episodeId,
@@ -94,6 +94,26 @@ export const downloadEpisode = async (
 
     await db.downloads.put(metadata);
     onProgress?.(100);
+  }
+};
+
+/**
+ * cache.put that survives a full origin quota once: artwork responses are
+ * opaque and Chrome pads each to several MB of quota (#108), so drop the
+ * artwork cache (rebuilt as images are viewed again) and retry with a fresh
+ * response body. Other errors propagate.
+ */
+export const putWithQuotaRecovery = async (
+  cache: Cache,
+  url: string,
+  makeResponse: () => Response,
+): Promise<void> => {
+  try {
+    await cache.put(url, makeResponse());
+  } catch (error) {
+    if (!(error instanceof DOMException) || error.name !== "QuotaExceededError") throw error;
+    await caches.delete(ARTWORK_CACHE_NAME);
+    await cache.put(url, makeResponse());
   }
 };
 

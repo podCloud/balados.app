@@ -284,3 +284,107 @@ describe("parseRSSText", () => {
     expect(feed.items[0].descriptionPreview).toContain("…");
   });
 });
+
+// Real podcast feeds declare the iTunes namespace; DOMParser then gives
+// <itunes:image> the local name "image" with prefix "itunes", which a CSS
+// selector such as "itunes\\:image" does not match (#108).
+const ITUNES_RSS = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>iTunes Podcast</title>
+    <description>Only itunes:image at channel level</description>
+    <item>
+      <title>Episode with its own art</title>
+      <itunes:image href="https://example.com/ep-art.jpg"/>
+      <itunes:duration>01:02:03</itunes:duration>
+      <enclosure url="https://example.com/a.mp3" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Episode without art</title>
+      <enclosure url="https://example.com/b.mp3" type="audio/mpeg"/>
+    </item>
+    <itunes:image href="https://example.com/show-art.jpg"/>
+  </channel>
+</rss>`;
+
+const BOTH_IMAGES_RSS = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Both</title>
+    <description>RSS image and itunes:image</description>
+    <image><url>https://example.com/small-logo.png</url></image>
+    <itunes:image href="https://example.com/artwork-3000.jpg"/>
+  </channel>
+</rss>`;
+
+describe("parseRSSText with the iTunes namespace (#108)", () => {
+  it("reads the channel artwork from itunes:image, not from an item", () => {
+    const feed = parseRSSText(ITUNES_RSS, "https://example.com/itunes.xml");
+    expect(feed.image).toBe("https://example.com/show-art.jpg");
+  });
+
+  it("reads each episode's own itunes:image and falls back to the channel artwork", () => {
+    const feed = parseRSSText(ITUNES_RSS, "https://example.com/itunes.xml");
+    expect(feed.items[0].image).toBe("https://example.com/ep-art.jpg");
+    expect(feed.items[1].image).toBe("https://example.com/show-art.jpg");
+  });
+
+  it("reads itunes:duration", () => {
+    const feed = parseRSSText(ITUNES_RSS, "https://example.com/itunes.xml");
+    expect(feed.items[0].duration).toBe("01:02:03");
+  });
+
+  it("prefers itunes:image (full artwork) over the RSS <image> logo", () => {
+    const feed = parseRSSText(BOTH_IMAGES_RSS, "https://example.com/both.xml");
+    expect(feed.image).toBe("https://example.com/artwork-3000.jpg");
+  });
+
+  it("keeps the RSS <image> as the fallback when both exist", () => {
+    const feed = parseRSSText(BOTH_IMAGES_RSS, "https://example.com/both.xml");
+    expect(feed.imageFallback).toBe("https://example.com/small-logo.png");
+  });
+
+  it("gives each episode the RSS <image> as its last fallback", () => {
+    const feed = parseRSSText(
+      BOTH_IMAGES_RSS.replace(
+        "</channel>",
+        `<item><title>E</title><enclosure url="https://example.com/e.mp3" type="audio/mpeg"/></item></channel>`,
+      ),
+      "https://example.com/both.xml",
+    );
+    expect(feed.items[0].feedImage).toBe("https://example.com/artwork-3000.jpg");
+    expect(feed.items[0].feedImageFallback).toBe("https://example.com/small-logo.png");
+  });
+
+  it("has no separate fallback when there is only one image", () => {
+    expect(parseRSSText(ITUNES_RSS, "https://example.com/i.xml").imageFallback).toBeUndefined();
+    expect(parseRSSText(VALID_RSS, "https://example.com/v.xml").imageFallback).toBeUndefined();
+  });
+});
+
+describe("episode artwork fallback (#108 review)", () => {
+  const rss = (itemImage: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Show</title>
+    <itunes:image href="  https://example.com/show.jpg \n"/>
+    <item>
+      <title>Ep</title>
+      <itunes:image href="${itemImage}"/>
+      <enclosure url="https://example.com/a.mp3" type="audio/mpeg"/>
+    </item>
+  </channel>
+</rss>`;
+
+  it("keeps the show artwork on each episode as feedImage, trimmed", () => {
+    const feed = parseRSSText(rss("https://example.com/ep.jpg"), "https://example.com/f.xml");
+    expect(feed.image).toBe("https://example.com/show.jpg");
+    expect(feed.items[0].image).toBe("https://example.com/ep.jpg");
+    expect(feed.items[0].feedImage).toBe("https://example.com/show.jpg");
+  });
+
+  it("ignores a blank episode href and uses the show artwork", () => {
+    const feed = parseRSSText(rss("   "), "https://example.com/f.xml");
+    expect(feed.items[0].image).toBe("https://example.com/show.jpg");
+  });
+});

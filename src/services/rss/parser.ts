@@ -26,6 +26,23 @@ const getElementText = (parent: Element, tag: string): string => {
   return el?.textContent || "";
 };
 
+const ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd";
+
+/**
+ * Direct child of `parent` in the iTunes namespace (e.g. itunes:image).
+ * DOMParser gives namespaced elements a local name ("image") and a prefix
+ * ("itunes"), so a CSS selector like "itunes\\:image" never matches them
+ * (#108). The qualified-name fallback catches the old mixed-case namespace
+ * URI (".../DTDs/Podcast-1.0.dtd"). Children only, so a channel never picks
+ * up one of its items' tags.
+ */
+const getItunesChild = (parent: Element, localName: string): Element | undefined =>
+  Array.from(parent.children).find(
+    (el) =>
+      (el.namespaceURI === ITUNES_NS && el.localName === localName) ||
+      el.tagName === `itunes:${localName}`,
+  );
+
 const getContentEncoded = (item: Element): string | null => {
   // content:encoded uses a namespace — try both selector forms
   const el =
@@ -60,10 +77,10 @@ const makePlainPreview = (markdown: string, maxLength = 300): string => {
   return `${lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) : truncated}…`;
 };
 
-const parseEpisode = (item: Element, feedImage: string): Episode => {
+const parseEpisode = (item: Element, feedImage: string, feedImageFallback?: string): Episode => {
   const enclosure = item.querySelector("enclosure");
-  const duration = getElementText(item, "itunes\\:duration");
-  const itemImage = item.querySelector("itunes\\:image")?.getAttribute("href") || feedImage;
+  const duration = getItunesChild(item, "duration")?.textContent?.trim() || "";
+  const itemImage = getItunesChild(item, "image")?.getAttribute("href")?.trim() || feedImage;
 
   // Get guid or fall back to enclosure URL
   const guidEl = item.querySelector("guid");
@@ -90,6 +107,8 @@ const parseEpisode = (item: Element, feedImage: string): Episode => {
     enclosureUrl: enclosure?.getAttribute("url") || "",
     duration: duration || "",
     image: itemImage,
+    feedImage: feedImage || undefined,
+    feedImageFallback,
     guid,
     link,
   };
@@ -112,14 +131,18 @@ export const parseRSSText = (text: string, url: string): PodcastFeed => {
 
   const title = getElementText(channel, "title");
   const description = getElementText(channel, "description");
-  const image =
-    channel.querySelector("image url")?.textContent ||
-    channel.querySelector("itunes\\:image")?.getAttribute("href") ||
-    "";
+  // itunes:image is the full podcast artwork; the RSS <image> is often a small
+  // logo, kept as the fallback when both exist.
+  const itunesImage = getItunesChild(channel, "image")?.getAttribute("href")?.trim() || "";
+  const rssImage = channel.querySelector(":scope > image > url")?.textContent?.trim() || "";
+  const image = itunesImage || rssImage;
+  const imageFallback = itunesImage && rssImage && rssImage !== itunesImage ? rssImage : undefined;
 
-  const items = Array.from(xml.querySelectorAll("item")).map((item) => parseEpisode(item, image));
+  const items = Array.from(xml.querySelectorAll("item")).map((item) =>
+    parseEpisode(item, image, imageFallback),
+  );
 
-  return { title, description, image, items, url };
+  return { title, description, image, imageFallback, items, url };
 };
 
 export const fetchAndParseRSS = async (
