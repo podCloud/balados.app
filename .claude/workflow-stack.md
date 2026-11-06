@@ -22,6 +22,7 @@
 - Ne pas supprimer `package-lock.json` pour le régénérer : npm 11.19 plante sans lockfile (`Cannot read properties of null (reading 'edgesOut')`, arborist pendant la résolution des peers de vitest). `npm ci` et `npm install` avec le lockfile fonctionnent.
 - Vérification navigateur : le profil Playwright est persistant. Un service worker de production enregistré sur un port réutilisé ensuite par `vite` (dev) continue de servir l'ancien build ; désinscrire les service workers avant de changer de mode sur un même port.
 - Tests flaky connus : `ListeningHistory` pagination sous charge (#76).
+- Sous très forte charge (plusieurs agents en parallèle), Vitest peut échouer à démarrer des workers (`[vitest-pool]: Failed to start forks worker ... Timeout`) : des fichiers entiers manquent au rapport. Relancer avant de conclure à une régression.
 
 ## PR
 - Créer la PR via `~/.config/podclaude/gh.sh pr create --assignee pofmagicfingers …`
